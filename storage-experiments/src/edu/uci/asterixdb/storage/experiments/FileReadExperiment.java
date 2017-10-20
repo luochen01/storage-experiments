@@ -22,6 +22,8 @@ public class FileReadExperiment {
 
     private final List<FileEntry> files = new ArrayList<>();
 
+    private final int numPages;
+
     private class FileEntry {
         File file;
         FileReader reader;
@@ -42,9 +44,10 @@ public class FileReadExperiment {
         }
     }
 
-    public FileReadExperiment(String dir, int numFiles, int bufferSize) throws IOException {
+    public FileReadExperiment(String dir, int numFiles, int bufferSize, int numPages) throws IOException {
         this.bufferSize = bufferSize;
         this.buffer = new char[bufferSize];
+        this.numPages = numPages;
         File dirFile = new File(dir);
         if (!dirFile.isDirectory()) {
             throw new IllegalArgumentException(dir + " is not directory");
@@ -72,9 +75,9 @@ public class FileReadExperiment {
         long begin = System.currentTimeMillis();
         for (FileEntry entry : files) {
             entry.open();
-
-            while (entry.reader.read(buffer, 0, bufferSize) != -1) {
-
+            int pages = 0;
+            while (entry.reader.read(buffer, 0, bufferSize) != -1 && pages < numPages) {
+                pages++;
             }
 
             System.out.println("Finished " + entry.file);
@@ -87,16 +90,22 @@ public class FileReadExperiment {
     private void randomRead() throws IOException {
         long begin = System.currentTimeMillis();
         Random rand = new Random(System.currentTimeMillis());
+        List<Integer> pages = new ArrayList<>(files.size());
         for (FileEntry e : files) {
             e.open();
+            pages.add(0);
         }
 
         while (files.size() > 0) {
             int i = rand.nextInt(files.size());
-            if (files.get(i).reader.read(buffer, 0, bufferSize) == -1) {
+            int ret = files.get(i).reader.read(buffer, 0, bufferSize);
+            pages.set(i, pages.get(i) + 1);
+
+            if (ret == -1 || pages.get(i) >= numPages) {
                 files.get(i).close();
                 System.out.println("Finished " + files.get(i).file);
                 files.remove(i);
+                pages.remove(i);
             }
         }
         long end = System.currentTimeMillis();
@@ -104,20 +113,24 @@ public class FileReadExperiment {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 3) {
-            System.err.println("args: dir numFiles bufferSize(kb)");
+        if (args.length != 3 && args.length != 4) {
+            System.err.println("args: dir numFiles bufferSize(kb) numPages");
             return;
         }
 
         String dir = args[0];
         int numFiles = Integer.valueOf(args[1]);
         int bufferSize = Integer.valueOf(args[2]) * 1024;
-
+        int numPages = Integer.MAX_VALUE;
+        if (args.length >= 3) {
+            numPages = Integer.valueOf(args[3]);
+        }
         System.out.println("File Read Experiment ");
         System.out.println("Num Files " + numFiles);
         System.out.println("Buffer Size " + bufferSize);
+        System.out.println("Num of Pages " + numPages);
 
-        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, bufferSize);
+        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, bufferSize, numPages);
         expr.run();
     }
 }
