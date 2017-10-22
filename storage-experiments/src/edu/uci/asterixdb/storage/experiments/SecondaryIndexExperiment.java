@@ -20,6 +20,8 @@ public class SecondaryIndexExperiment {
 
     private final String Twitter = "twitter";
 
+    private final String ds_tweet_s = "ds_tweet_s";
+
     private final String ds_tweet = "ds_tweet";
 
     private final String ds_tweet_sequential = "ds_tweet_c";
@@ -37,7 +39,7 @@ public class SecondaryIndexExperiment {
     private final Runnable cleanCache = new Runnable() {
         @Override
         public void run() {
-            String count = QueryGenerator.countQuery(Twitter, ds_tweet);
+            String count = QueryGenerator.countQuery(Twitter, ds_tweet_s);
             try {
                 System.out.println(count);
                 AsterixUtil.executeQuery(count);
@@ -50,24 +52,35 @@ public class SecondaryIndexExperiment {
     public SecondaryIndexExperiment(URI endpoint) {
         this.endpoint = endpoint;
 
+        QueryGroup prefix = new QueryGroup("prefix");
+        prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 51820, cleanCache));
+        prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 26115, cleanCache));
+        prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 54061, cleanCache));
+        prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 25027, cleanCache));
+        prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 24033, cleanCache));
+        prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 48113, cleanCache));
+        prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 6037, cleanCache));
+        prefix.addAction(new StateQueryAction(Twitter, ds_tweet, 6, cleanCache));
+        groups.add(prefix);
+
         QueryGroup sequential = new QueryGroup("sequential");
         sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 51820, cleanCache));
+        sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 26115, cleanCache));
         sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 54061, cleanCache));
-        sequential.addAction(new StateQueryAction(Twitter, ds_tweet_sequential, 10, cleanCache));
-        sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 32003, cleanCache));
-        sequential.addAction(new StateQueryAction(Twitter, ds_tweet_sequential, 32, cleanCache));
-        sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 48201, cleanCache));
+        sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 25027, cleanCache));
+        sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 24033, cleanCache));
+        sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 48113, cleanCache));
         sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 6037, cleanCache));
         sequential.addAction(new StateQueryAction(Twitter, ds_tweet_sequential, 6, cleanCache));
         groups.add(sequential);
 
         QueryGroup random = new QueryGroup("random");
         random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 51820, cleanCache));
+        random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 26115, cleanCache));
         random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 54061, cleanCache));
-        random.addAction(new StateQueryAction(Twitter, ds_tweet_random, 10, cleanCache));
-        random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 32003, cleanCache));
-        random.addAction(new StateQueryAction(Twitter, ds_tweet_random, 32, cleanCache));
-        random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 48201, cleanCache));
+        random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 25027, cleanCache));
+        random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 24033, cleanCache));
+        random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 48113, cleanCache));
         random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 6037, cleanCache));
         random.addAction(new StateQueryAction(Twitter, ds_tweet_random, 6, cleanCache));
         groups.add(random);
@@ -93,6 +106,7 @@ public class SecondaryIndexExperiment {
 
     public static void main(String[] args) throws Exception {
         URI endpoint = new URI("http://sensorium-22.ics.uci.edu:19002/query/service");
+        //URI endpoint = new URI("http://localhost:19002/query/service");
         AsterixUtil.init(endpoint);
         SecondaryIndexExperiment experiment = new SecondaryIndexExperiment(endpoint);
         experiment.run();
