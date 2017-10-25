@@ -28,13 +28,15 @@ public class SecondaryIndexExperiment {
 
     private final String ds_tweet_random = "ds_tweet_r";
 
+    private final String ds_tweet_prefix_random = "ds_tweet_pr";
+
     private final URI endpoint;
 
     private final List<QueryGroup> groups = new ArrayList<>();
 
     private final IQueryResultFormatter formatter = new QueryResultFormatter();
 
-    private final String basePath = "/Users/luochen/Documents/Research/experiments/results/secondary index experiments";
+    private final String basePath = "/home/cluo8/experiment";
 
     private final Runnable cleanCache = new Runnable() {
         @Override
@@ -61,7 +63,7 @@ public class SecondaryIndexExperiment {
         prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 48113, cleanCache));
         prefix.addAction(new CountyQueryAction(Twitter, ds_tweet, 6037, cleanCache));
         prefix.addAction(new StateQueryAction(Twitter, ds_tweet, 6, cleanCache));
-        groups.add(prefix);
+        // groups.add(prefix);
 
         QueryGroup sequential = new QueryGroup("sequential");
         sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 51820, cleanCache));
@@ -72,7 +74,7 @@ public class SecondaryIndexExperiment {
         sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 48113, cleanCache));
         sequential.addAction(new CountyQueryAction(Twitter, ds_tweet_sequential, 6037, cleanCache));
         sequential.addAction(new StateQueryAction(Twitter, ds_tweet_sequential, 6, cleanCache));
-        groups.add(sequential);
+        // groups.add(sequential);
 
         QueryGroup random = new QueryGroup("random");
         random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 51820, cleanCache));
@@ -83,7 +85,18 @@ public class SecondaryIndexExperiment {
         random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 48113, cleanCache));
         random.addAction(new CountyQueryAction(Twitter, ds_tweet_random, 6037, cleanCache));
         random.addAction(new StateQueryAction(Twitter, ds_tweet_random, 6, cleanCache));
-        groups.add(random);
+        // groups.add(random);
+
+        QueryGroup prefixRandom = new QueryGroup("prefix_random");
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 51820, cleanCache));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 26115, cleanCache));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 54061, cleanCache));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 25027, cleanCache));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 24033, cleanCache));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 48113, cleanCache));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache));
+        groups.add(prefixRandom);
     }
 
     public void run() {
