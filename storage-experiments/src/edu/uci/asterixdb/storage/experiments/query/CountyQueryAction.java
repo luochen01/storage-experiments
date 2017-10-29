@@ -6,7 +6,11 @@ import edu.uci.asterixdb.storage.experiments.util.QueryGenerator;
 public class CountyQueryAction extends AggregateQueryAction {
 
     public CountyQueryAction(String dataverse, String dataset, int countyId, Runnable preRun) {
-        super(dataverse, dataset, preRun);
+        this(dataverse, dataset, countyId, preRun, null);
+    }
+
+    public CountyQueryAction(String dataverse, String dataset, int countyId, Runnable preRun, String memory) {
+        super(dataverse, dataset, preRun, memory);
         this.countyId = countyId;
     }
 
@@ -20,6 +24,7 @@ public class CountyQueryAction extends AggregateQueryAction {
     @Override
     protected QueryResult runImpl() {
         String query = QueryGenerator.county(dataverse, dataset, countyId);
+        query = getSetMemoryStatement() + query;
         System.out.println(query);
         try {
             return toResult(AsterixUtil.executeQuery(query));

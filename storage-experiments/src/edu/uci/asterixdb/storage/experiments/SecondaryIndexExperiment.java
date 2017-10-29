@@ -88,14 +88,33 @@ public class SecondaryIndexExperiment {
         // groups.add(random);
 
         QueryGroup prefixRandom = new QueryGroup("prefix_random");
-        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 51820, cleanCache));
-        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 26115, cleanCache));
-        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 54061, cleanCache));
-        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 25027, cleanCache));
-        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 24033, cleanCache));
-        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 48113, cleanCache));
-        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache));
-        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache));
+
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "256KB"));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "512KB"));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "1MB"));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "2MB"));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "4MB"));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "8MB"));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "16MB"));
+        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "32MB"));
+
+
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "256KB"));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "512KB"));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "1MB"));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "2MB"));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "4MB"));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "8MB"));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "16MB"));
+        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "32MB"));
+
+        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 26115, cleanCache));
+        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 54061, cleanCache));
+        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 25027, cleanCache));
+        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 24033, cleanCache));
+        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 48113, cleanCache));
+        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache));
+        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache));
         groups.add(prefixRandom);
     }
 

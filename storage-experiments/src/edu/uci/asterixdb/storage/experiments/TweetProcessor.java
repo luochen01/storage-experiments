@@ -21,7 +21,7 @@ public class TweetProcessor {
 
         String id = "int64(\"";
         int count = 0;
-        Random random = new Random(System.currentTimeMillis());
+        Random random = new Random(50);
         while ((line = reader.readLine()) != null) {
             int startIndex = line.indexOf(id);
             startIndex += id.length();

@@ -6,7 +6,11 @@ import edu.uci.asterixdb.storage.experiments.util.QueryGenerator;
 public class StateQueryAction extends AggregateQueryAction {
 
     public StateQueryAction(String dataverse, String dataset, int stateId, Runnable preRun) {
-        super(dataverse, dataset, preRun);
+        this(dataverse, dataset, stateId, preRun, null);
+    }
+
+    public StateQueryAction(String dataverse, String dataset, int stateId, Runnable preRun, String memory) {
+        super(dataverse, dataset, preRun, memory);
         this.stateId = stateId;
     }
 
@@ -20,6 +24,7 @@ public class StateQueryAction extends AggregateQueryAction {
     @Override
     protected QueryResult runImpl() {
         String query = QueryGenerator.state(dataverse, dataset, stateId);
+        query = getSetMemoryStatement() + query;
         System.out.println(query);
         try {
             return toResult(AsterixUtil.executeQuery(query));
