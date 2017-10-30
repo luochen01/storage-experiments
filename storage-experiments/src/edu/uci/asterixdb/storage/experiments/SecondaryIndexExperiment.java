@@ -117,6 +117,27 @@ public class SecondaryIndexExperiment {
         prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache));
         prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache));
         groups.add(prefixRandom);
+
+        QueryGroup memory = new QueryGroup("memory");
+
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "256KB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "512KB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "1MB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "2MB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "4MB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "8MB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "16MB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "32MB"));
+
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "256KB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "512KB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "1MB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "2MB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "4MB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "8MB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "16MB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "32MB"));
+        groups.add(memory);
     }
 
     public void run() {
