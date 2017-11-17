@@ -51,7 +51,7 @@ public abstract class ResultProcessor<T extends StatObject> {
         File dir = new File(dirPath);
         for (File file : dir.listFiles()) {
             String fileName = file.getName();
-            if (fileName.contains("-") && !fileName.contains(".txt")) {
+            if (fileName.contains("-") && !fileName.contains(".txt") && file.isFile()) {
 
                 String experiment = fileName.substring(0, fileName.indexOf("-"));
                 String value = fileName.substring(fileName.indexOf("-") + 1);

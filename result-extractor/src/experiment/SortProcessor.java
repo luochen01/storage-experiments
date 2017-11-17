@@ -49,7 +49,7 @@ public class SortProcessor extends ResultProcessor<SortObject> {
     }
 
     public static void main(String[] args) throws IOException {
-        new SortProcessor("/Users/luochen/Documents/Research/experiments/results/sort-sensorium-before").run();
+        new SortProcessor("/Users/luochen/Documents/Research/experiments/results/sort/effective-cardinality").run();
     }
 
     @Override
