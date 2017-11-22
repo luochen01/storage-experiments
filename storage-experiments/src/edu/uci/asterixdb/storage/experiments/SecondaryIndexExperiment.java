@@ -128,6 +128,7 @@ public class SecondaryIndexExperiment {
         memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "8MB"));
         memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "16MB"));
         memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "32MB"));
+        memory.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "64MB"));
 
         memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "256KB"));
         memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "512KB"));
@@ -137,6 +138,8 @@ public class SecondaryIndexExperiment {
         memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "8MB"));
         memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "16MB"));
         memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "32MB"));
+        memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "64MB"));
+
         groups.add(memory);
     }
 
