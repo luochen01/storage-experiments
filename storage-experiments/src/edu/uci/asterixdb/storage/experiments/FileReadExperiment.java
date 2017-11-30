@@ -67,7 +67,7 @@ public class FileReadExperiment {
     }
 
     public void run() throws IOException {
-        sequentialRead();
+        // sequentialRead();
         randomRead();
     }
 
