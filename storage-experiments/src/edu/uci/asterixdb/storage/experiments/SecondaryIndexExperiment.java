@@ -44,7 +44,8 @@ public class SecondaryIndexExperiment {
             String count = QueryGenerator.countQuery(Twitter, ds_tweet_s);
             try {
                 System.out.println(count);
-                AsterixUtil.executeQuery(count);
+                String result = AsterixUtil.executeQuery(count);
+                System.out.println(result);
             } catch (Exception e) {
                 e.printStackTrace();
             }
