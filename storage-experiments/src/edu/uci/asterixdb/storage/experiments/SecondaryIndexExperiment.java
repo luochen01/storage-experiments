@@ -89,25 +89,6 @@ public class SecondaryIndexExperiment {
 
         QueryGroup prefixRandom = new QueryGroup("prefix_random");
 
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "256KB"));
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "512KB"));
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "1MB"));
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "2MB"));
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "4MB"));
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "8MB"));
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "16MB"));
-        //        prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 6037, cleanCache, "32MB"));
-        //
-        //
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "256KB"));
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "512KB"));
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "1MB"));
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "2MB"));
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "4MB"));
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "8MB"));
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "16MB"));
-        //        prefixRandom.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "32MB"));
-
         prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 51820, cleanCache));
         prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 26115, cleanCache));
         prefixRandom.addAction(new CountyQueryAction(Twitter, ds_tweet_prefix_random, 54061, cleanCache));
@@ -140,7 +121,7 @@ public class SecondaryIndexExperiment {
         memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "32MB"));
         memory.addAction(new StateQueryAction(Twitter, ds_tweet_prefix_random, 6, cleanCache, "64MB"));
 
-        groups.add(memory);
+        //groups.add(memory);
     }
 
     public void run() {

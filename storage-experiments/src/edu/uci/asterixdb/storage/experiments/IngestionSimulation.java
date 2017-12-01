@@ -2,11 +2,11 @@ package edu.uci.asterixdb.storage.experiments;
 
 public class IngestionSimulation {
 
-    private int totalRecords;
+    private long totalRecords;
 
-    private final int RecordSize = 300;
+    private final int RecordSize = 100;
 
-    private final double updateRatio = 0.01;
+    private final double updateRatio = 0.05;
 
     private final double insertRatio = 1 - updateRatio;
 
@@ -14,33 +14,39 @@ public class IngestionSimulation {
 
     private final int ComponentSize = GB;
 
-    private final int memory = (int) (1.5 * GB);
+    private final int memory = (GB);
 
     private final int PageSize = 128 * 1024;
 
-    // each record needs 0.0003s
-    private final double ConstIngestionCost = 0.0003;
+    private final double ConstIngestionCost = (double) 600 / 1882310;
 
     private final double DiskIoCost = 0.01;
 
     private final int MaxTime = 6 * 3600;
 
+    private final double BloomFilterFP = 0.01;
+
     public int getNumDiskComponents() {
-        return (int) Math.ceil((double) totalRecords * RecordSize / ComponentSize);
+        return (int) Math.ceil(getTotalData() / ComponentSize);
     }
 
     public double getIngestionCost() {
-        int workingMem = getWorkingMemory();
+        long workingMem = getWorkingMemory();
         if (workingMem < memory) {
             return ConstIngestionCost;
         } else {
-            return ConstIngestionCost
-                    + (updateRatio + 0.01 * getNumDiskComponents() * DiskIoCost) * (1 - (double) memory / workingMem);
+            double diskCost = (updateRatio * (1 + BloomFilterFP * getNumDiskComponents() / 2))
+                    * (1 - (double) memory / workingMem) * DiskIoCost;
+            return ConstIngestionCost + diskCost;
         }
     }
 
-    public int getWorkingMemory() {
-        return 0;
+    public long getWorkingMemory() {
+        return getTotalData();
+    }
+
+    public long getTotalData() {
+        return (long) (totalRecords * RecordSize * (1 - updateRatio));
     }
 
     public void run() {
@@ -50,6 +56,7 @@ public class IngestionSimulation {
             int ingestedRecord = (int) (1 / ingestCost);
             totalRecords += ingestedRecord;
             if (time % 60 == 0) {
+                //  System.out.println(time + "    " + totalRecords + "    " + ingestedRecord * 60);
                 System.out.println(totalRecords);
             }
         }
