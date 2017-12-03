@@ -28,13 +28,13 @@ public class SecondaryIndexExperiment {
     }
 
     private void buildValidationExperiments() {
-        Runnable clearCacheNone = getCleanCacheAction(Twitter, ds_tweet_v_c_r);
-        Runnable clearCacheValidation = getCleanCacheAction(Twitter, ds_tweet_n_s);
+        Runnable clearCacheNoneRandom = getCleanCacheAction(Twitter, ds_tweet_n_r);
+        Runnable clearCacheNoneSequential = getCleanCacheAction(Twitter, ds_tweet_n_s);
 
-        groups.add(buildNoneSequential(clearCacheNone));
-        groups.add(buildNoneRandom(clearCacheNone));
-        groups.add(buildValidationPrefixRandom(clearCacheValidation));
-        groups.add(buildValidationCorrelatedRandom(clearCacheValidation));
+        groups.add(buildNoneSequential(clearCacheNoneRandom));
+        groups.add(buildNoneRandom(clearCacheNoneSequential));
+        groups.add(buildValidationPrefixRandom(clearCacheNoneRandom));
+        groups.add(buildValidationCorrelatedRandom(clearCacheNoneSequential));
 
     }
 

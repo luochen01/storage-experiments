@@ -99,16 +99,16 @@ public class SecondaryIndexExperimentBuilder {
         return group;
     }
 
-    private static QueryGroup buildExperiment(String name, String dataverse, String dataset, Runnable beforeAction) {
+    private static QueryGroup buildExperiment(String name, String dataverse, String dataset, Runnable action) {
         QueryGroup group = new QueryGroup(name);
-        group.addAction(new CountyQueryAction(dataverse, dataset, 51820, beforeAction));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 26115, beforeAction));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 54061, beforeAction));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 25027, beforeAction));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 24033, beforeAction));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 48113, beforeAction));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 6037, beforeAction));
-        group.addAction(new StateQueryAction(dataverse, dataset, 6, beforeAction));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 51820, action));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 26115, action));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 54061, action));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 25027, action));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 24033, action));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 48113, action));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 6037, action));
+        group.addAction(new StateQueryAction(dataverse, dataset, 6, action));
         return group;
     }
 
@@ -118,6 +118,7 @@ public class SecondaryIndexExperimentBuilder {
             public void run() {
                 String count = QueryGenerator.countQuery(dataverse, dataset);
                 try {
+                    System.out.println(count);
                     String result = AsterixUtil.executeQuery(count);
                     System.out.println(result);
                 } catch (Exception e) {
