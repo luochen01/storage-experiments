@@ -17,7 +17,7 @@ public class Main {
     }
 
     public static double time(double N, double u) {
-        double rate = Math.min(30 * 1000 / N + u, 2 * 1000);
+        double rate = Math.min(30 * 1000 / N + Math.min(u, 30 * 1000 / N), 2 * 1000);
         return 15 * 1000000 / rate;
     }
 
