@@ -18,7 +18,7 @@ public class CountyQueryAction extends AggregateQueryAction {
 
     @Override
     public String getParameter() {
-        return "conutyId=" + countyId;
+        return "countyID=" + countyId;
     }
 
     @Override
