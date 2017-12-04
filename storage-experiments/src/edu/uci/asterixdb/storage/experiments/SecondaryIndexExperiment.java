@@ -44,7 +44,7 @@ public class SecondaryIndexExperiment {
 
         groups.add(buildIndexOnly(clearCacheNoneSequential));
         groups.add(buildValidationIndexOnly(clearCacheNoneSequential));
-        groups.add(buildPrefixRandom(clearCacheNoneSequential));
+        //groups.add(buildPrefixRandom(clearCacheNoneSequential));
     }
 
     private void buildBatchExperiments() {

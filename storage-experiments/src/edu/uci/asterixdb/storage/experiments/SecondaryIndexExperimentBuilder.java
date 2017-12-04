@@ -72,11 +72,11 @@ public class SecondaryIndexExperimentBuilder {
     }
 
     public static QueryGroup buildValidationIndexOnly(Runnable action) {
-        return buildExperiment("validation-index-only", Twitter, ds_tweet_v_p_r, action);
+        return buildIndexOnlyExperiment("validation-index-only", Twitter, ds_tweet_v_p_r, action);
     }
 
     public static QueryGroup buildIndexOnly(Runnable action) {
-        return buildExperiment("index-only", Twitter, ds_tweet_p_r, action);
+        return buildIndexOnlyExperiment("index-only", Twitter, ds_tweet_p_r, action);
     }
 
     public static QueryGroup buildCountyMemoryExperiment(String dataverse, String dataset, int countyID,
