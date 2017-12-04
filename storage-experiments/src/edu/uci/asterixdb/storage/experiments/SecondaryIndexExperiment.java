@@ -25,7 +25,8 @@ public class SecondaryIndexExperiment {
 
     public SecondaryIndexExperiment() {
         //buildBatchExperiments();
-        buildValidationExperiments();
+        // buildValidationExperiments();
+        buildValidationIndexOnlyExperiments();
     }
 
     private void buildValidationExperiments() {
@@ -33,9 +34,17 @@ public class SecondaryIndexExperiment {
         Runnable clearCacheNoneSequential = getCleanCacheAction(Twitter, ds_tweet_n_s);
 
         groups.add(buildNoneSequential(clearCacheNoneRandom));
-        // groups.add(buildNoneRandom(clearCacheNoneSequential));
-        // groups.add(buildValidationPrefixRandom(clearCacheNoneSequential));
-        // groups.add(buildValidationCorrelatedRandom(clearCacheNoneSequential));
+        groups.add(buildNoneRandom(clearCacheNoneSequential));
+        groups.add(buildValidationPrefixRandom(clearCacheNoneSequential));
+        groups.add(buildValidationCorrelatedRandom(clearCacheNoneSequential));
+    }
+
+    private void buildValidationIndexOnlyExperiments() {
+        Runnable clearCacheNoneSequential = getCleanCacheAction(Twitter, ds_tweet_n_s);
+
+        groups.add(buildIndexOnly(clearCacheNoneSequential));
+        groups.add(buildValidationIndexOnly(clearCacheNoneSequential));
+        groups.add(buildPrefixRandom(clearCacheNoneSequential));
     }
 
     private void buildBatchExperiments() {

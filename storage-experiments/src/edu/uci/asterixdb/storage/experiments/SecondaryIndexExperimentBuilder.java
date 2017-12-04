@@ -71,6 +71,14 @@ public class SecondaryIndexExperimentBuilder {
         return buildExperiment("validation-prefix-random", Twitter, ds_tweet_v_p_r, action);
     }
 
+    public static QueryGroup buildValidationIndexOnly(Runnable action) {
+        return buildExperiment("validation-index-only", Twitter, ds_tweet_v_p_r, action);
+    }
+
+    public static QueryGroup buildIndexOnly(Runnable action) {
+        return buildExperiment("index-only", Twitter, ds_tweet_p_r, action);
+    }
+
     public static QueryGroup buildCountyMemoryExperiment(String dataverse, String dataset, int countyID,
             Runnable before) {
         QueryGroup group = new QueryGroup("memory-county");
@@ -111,6 +119,27 @@ public class SecondaryIndexExperimentBuilder {
         group.addAction(new CountyQueryAction(dataverse, dataset, 48113, action, default_memory_size));
         group.addAction(new CountyQueryAction(dataverse, dataset, 6037, action, default_memory_size));
         group.addAction(new StateQueryAction(dataverse, dataset, 6, action, default_memory_size));
+        return group;
+    }
+
+    private static QueryGroup buildIndexOnlyExperiment(String name, String dataverse, String dataset, Runnable action) {
+        QueryGroup group = new QueryGroup(name);
+        group.addAction(new CountyQueryAction(dataverse, dataset, 51820, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 51820, null, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 26115, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 26115, null, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 54061, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 54061, null, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 25027, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 25027, null, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 24033, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 24033, null, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 48113, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 48113, null, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 6037, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 6037, null, default_memory_size));
+        group.addAction(new StateQueryAction(dataverse, dataset, 6, action, default_memory_size));
+        group.addAction(new StateQueryAction(dataverse, dataset, 6, null, default_memory_size));
         return group;
     }
 
