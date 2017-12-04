@@ -24,7 +24,8 @@ public class SecondaryIndexExperiment {
     private final String basePath = "/home/cluo8/experiment";
 
     public SecondaryIndexExperiment() {
-        buildBatchExperiments();
+        //buildBatchExperiments();
+        buildValidationExperiments();
     }
 
     private void buildValidationExperiments() {
@@ -32,9 +33,9 @@ public class SecondaryIndexExperiment {
         Runnable clearCacheNoneSequential = getCleanCacheAction(Twitter, ds_tweet_n_s);
 
         groups.add(buildNoneSequential(clearCacheNoneRandom));
-        groups.add(buildNoneRandom(clearCacheNoneSequential));
-        groups.add(buildValidationPrefixRandom(clearCacheNoneSequential));
-        groups.add(buildValidationCorrelatedRandom(clearCacheNoneSequential));
+        // groups.add(buildNoneRandom(clearCacheNoneSequential));
+        // groups.add(buildValidationPrefixRandom(clearCacheNoneSequential));
+        // groups.add(buildValidationCorrelatedRandom(clearCacheNoneSequential));
     }
 
     private void buildBatchExperiments() {
