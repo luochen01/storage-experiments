@@ -24,7 +24,7 @@ public class SecondaryIndexExperiment {
     private final String basePath = "/home/cluo8/experiment";
 
     public SecondaryIndexExperiment() {
-        buildValidationExperiments();
+        buildBatchExperiments();
     }
 
     private void buildValidationExperiments() {
@@ -33,9 +33,19 @@ public class SecondaryIndexExperiment {
 
         groups.add(buildNoneSequential(clearCacheNoneRandom));
         groups.add(buildNoneRandom(clearCacheNoneSequential));
-        groups.add(buildValidationPrefixRandom(clearCacheNoneRandom));
+        groups.add(buildValidationPrefixRandom(clearCacheNoneSequential));
         groups.add(buildValidationCorrelatedRandom(clearCacheNoneSequential));
+    }
 
+    private void buildBatchExperiments() {
+        Runnable clearCache = getCleanCacheAction(Twitter, ds_tweet_b_s);
+
+        groups.add(buildPrefixSequential(clearCache));
+        groups.add(buildPrefixRandom(clearCache));
+        groups.add(buildCorrelatedSequential(clearCache));
+        groups.add(buildCorrelatedRandom(clearCache));
+        groups.add(buildCountyMemoryExperiment(Twitter, ds_tweet_p_r, 6037, clearCache));
+        groups.add(buildStateMemoryExperiment(Twitter, ds_tweet_p_r, 6, clearCache));
     }
 
     public void run() {
@@ -53,7 +63,6 @@ public class SecondaryIndexExperiment {
                 e.printStackTrace();
             }
         }
-
     }
 
     public static void main(String[] args) throws Exception {

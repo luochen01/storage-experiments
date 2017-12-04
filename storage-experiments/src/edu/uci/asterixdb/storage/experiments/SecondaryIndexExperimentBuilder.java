@@ -29,6 +29,8 @@ public class SecondaryIndexExperimentBuilder {
 
     public static final String ds_tweet_n_r = ds_tweet_c_r;
 
+    public static final String default_memory_size = "1MB";
+
     public static QueryGroup buildBulkloadSequentialExperiment(Runnable action) {
         return buildExperiment("bulkload-sequential", Twitter, ds_tweet_b_s, action);
     }
@@ -37,7 +39,7 @@ public class SecondaryIndexExperimentBuilder {
         return buildExperiment("bulkload-random", Twitter, ds_tweet_b_r, action);
     }
 
-    public static QueryGroup buildCorrelatedSequentialExperiment(Runnable action) {
+    public static QueryGroup buildCorrelatedSequential(Runnable action) {
         return buildExperiment("correlated-sequential", Twitter, ds_tweet_c_s, action);
     }
 
@@ -69,9 +71,9 @@ public class SecondaryIndexExperimentBuilder {
         return buildExperiment("validation-prefix-random", Twitter, ds_tweet_v_p_r, action);
     }
 
-    public static QueryGroup buildCountyMemoryExperiment(String name, String dataverse, String dataset, int countyID,
+    public static QueryGroup buildCountyMemoryExperiment(String dataverse, String dataset, int countyID,
             Runnable before) {
-        QueryGroup group = new QueryGroup(name);
+        QueryGroup group = new QueryGroup("memory-county");
         group.addAction(new CountyQueryAction(dataverse, dataset, countyID, before, "128KB"));
         group.addAction(new CountyQueryAction(dataverse, dataset, countyID, before, "256KB"));
         group.addAction(new CountyQueryAction(dataverse, dataset, countyID, before, "512KB"));
@@ -84,9 +86,9 @@ public class SecondaryIndexExperimentBuilder {
         return group;
     }
 
-    public static QueryGroup buildStateMemoryExperiment(String name, String dataverse, String dataset, int stateID,
+    public static QueryGroup buildStateMemoryExperiment(String dataverse, String dataset, int stateID,
             Runnable before) {
-        QueryGroup group = new QueryGroup(name);
+        QueryGroup group = new QueryGroup("memory-state");
         group.addAction(new StateQueryAction(dataverse, dataset, stateID, before, "128KB"));
         group.addAction(new StateQueryAction(dataverse, dataset, stateID, before, "256KB"));
         group.addAction(new StateQueryAction(dataverse, dataset, stateID, before, "512KB"));
@@ -101,14 +103,14 @@ public class SecondaryIndexExperimentBuilder {
 
     private static QueryGroup buildExperiment(String name, String dataverse, String dataset, Runnable action) {
         QueryGroup group = new QueryGroup(name);
-        group.addAction(new CountyQueryAction(dataverse, dataset, 51820, action));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 26115, action));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 54061, action));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 25027, action));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 24033, action));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 48113, action));
-        group.addAction(new CountyQueryAction(dataverse, dataset, 6037, action));
-        group.addAction(new StateQueryAction(dataverse, dataset, 6, action));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 51820, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 26115, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 54061, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 25027, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 24033, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 48113, action, default_memory_size));
+        group.addAction(new CountyQueryAction(dataverse, dataset, 6037, action, default_memory_size));
+        group.addAction(new StateQueryAction(dataverse, dataset, 6, action, default_memory_size));
         return group;
     }
 
