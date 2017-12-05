@@ -25,6 +25,8 @@ public class SecondaryIndexExperimentBuilder {
 
     public static final String ds_tweet_v_c_r = "ds_tweet_v_c_r";
 
+    public static final String ds_tweet_v_c_s = "ds_tweet_v_c_s";
+
     public static final String ds_tweet_n_s = ds_tweet_p_s;
 
     public static final String ds_tweet_n_r = ds_tweet_c_r;
@@ -65,6 +67,10 @@ public class SecondaryIndexExperimentBuilder {
 
     public static QueryGroup buildValidationCorrelatedRandom(Runnable action) {
         return buildExperiment("validation-correlated-random", Twitter, ds_tweet_v_c_r, action);
+    }
+
+    public static QueryGroup buildValidationCorrelatedSequential(Runnable action) {
+        return buildExperiment("validation-correlated-sequential", Twitter, ds_tweet_v_c_s, action);
     }
 
     public static QueryGroup buildValidationPrefixRandom(Runnable action) {

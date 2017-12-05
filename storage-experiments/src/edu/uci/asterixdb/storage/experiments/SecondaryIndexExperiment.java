@@ -25,8 +25,8 @@ public class SecondaryIndexExperiment {
 
     public SecondaryIndexExperiment() {
         //buildBatchExperiments();
-        // buildValidationExperiments();
-        buildValidationIndexOnlyExperiments();
+        buildValidationExperiments();
+        // buildValidationIndexOnlyExperiments();
     }
 
     private void buildValidationExperiments() {
@@ -37,6 +37,7 @@ public class SecondaryIndexExperiment {
         groups.add(buildNoneRandom(clearCacheNoneSequential));
         groups.add(buildValidationPrefixRandom(clearCacheNoneSequential));
         groups.add(buildValidationCorrelatedRandom(clearCacheNoneSequential));
+        groups.add(buildValidationCorrelatedSequential(clearCacheNoneSequential));
     }
 
     private void buildValidationIndexOnlyExperiments() {
