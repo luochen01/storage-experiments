@@ -4,15 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import com.sun.management.OperatingSystemMXBean;
 
 public class FeedReporter extends TimerTask {
 
@@ -24,30 +17,20 @@ public class FeedReporter extends TimerTask {
 
     protected FileFeedDriver driver;
 
-    protected List<FeedSocketAdapterClient> clients;
+    protected FeedSocketAdapterClient client;
 
-    protected List<FeedStat> prevStats;
-
-    protected FeedStat prevAllStat = new FeedStat();
-
-    private final OperatingSystemMXBean bean;
-
-    protected NumberFormat cpuFormat = new DecimalFormat("#0.000");
+    protected FeedStat prevStat = new FeedStat();
 
     protected BufferedWriter logWriter;
 
-    public FeedReporter(FileFeedDriver driver, List<FeedSocketAdapterClient> clients, int period, String logPath)
+    public FeedReporter(FileFeedDriver driver, FeedSocketAdapterClient client, int period, String logPath)
             throws IOException {
         this.period = period;
         this.timer = new Timer();
         this.driver = driver;
 
-        this.clients = clients;
-        this.prevStats = new ArrayList<>();
-        for (int i = 0; i < clients.size(); i++) {
-            this.prevStats.add(new FeedStat());
-        }
-        bean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+        this.client = client;
+        this.prevStat = new FeedStat();
 
         File logFile = new File(logPath);
         if (logFile.getParentFile() != null) {
@@ -57,25 +40,15 @@ public class FeedReporter extends TimerTask {
         }
         logWriter = new BufferedWriter(new FileWriter(logFile));
 
-        writeLine("port,counter,records,bytes,total_records,total_bytes,cpu\n");
+        writeLine("counter,records,bytes,total_records,total_bytes\n");
     }
 
     @Override
     public void run() {
         StringBuilder sb = new StringBuilder();
-        if (clients.size() > 1) {
-            for (int i = 0; i < clients.size(); i++) {
-                FeedSocketAdapterClient client = clients.get(i);
-                FeedStat clientStat = client.stat;
-                FeedStat prevStat = prevStats.get(i);
-                sb.append(getLine(clientStat, prevStat, String.valueOf(client.port), "-"));
-                prevStat.update(clientStat);
-            }
-        }
-
-        FeedStat clientStat = FeedStat.sum(clients);
-        sb.append(getLine(clientStat, prevAllStat, "-", "-"));
-        prevAllStat.update(clientStat);
+        FeedStat clientStat = client.stat;
+        sb.append(getLine(clientStat, prevStat));
+        prevStat.update(clientStat);
 
         try {
             writeLine(sb.toString());
@@ -90,13 +63,12 @@ public class FeedReporter extends TimerTask {
         timer.schedule(this, period * 1000, period * 1000);
     }
 
-    protected String getLine(FeedStat stat, FeedStat prevStat, String port, String cpu) {
+    protected String getLine(FeedStat stat, FeedStat prevStat) {
         long records = (stat.totalRecords - prevStat.totalRecords);
         long bytes = (stat.totalBytes - prevStat.totalBytes);
         long totalRecords = stat.totalRecords;
         long totalBytes = stat.totalBytes;
-        return port + "," + counter + "," + records + "," + bytes + "," + totalRecords + "," + totalBytes + "," + cpu
-                + "\n";
+        return counter + "," + records + "," + bytes + "," + totalRecords + "," + totalBytes + "\n";
     }
 
     protected void writeLine(String line) throws IOException {

@@ -41,6 +41,7 @@ public class Datatypes {
     */
     public static class Tweet {
         public static final String ID = "id";
+        public static final String SID = "sid";
         public static final String USER = "user";
         public static final String GEOLOCATION = "geo";
         public static final String CREATED_AT = "created_at";

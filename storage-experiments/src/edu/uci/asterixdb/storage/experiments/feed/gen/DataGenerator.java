@@ -21,7 +21,6 @@ package edu.uci.asterixdb.storage.experiments.feed.gen;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -40,47 +39,14 @@ public class DataGenerator {
         initialize(new DefaultInitializationInfo());
     }
 
-    public class TweetMessageIterator implements Iterator<TweetMessage> {
-        private int tweetId;
-
-        private final double updateRatio;
-        private final Random rand = new Random(17);
-
-        public TweetMessageIterator(double updateRatio) {
-            this.tweetId = 1;
-            this.updateRatio = updateRatio;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return true;
-        }
-
-        @Override
-        public TweetMessage next() {
-            getTwitterUser(null);
-            Message message = randMessageGen.getNextRandomMessage();
-            Point location = randLocationGen.getRandomPoint();
-            DateTime sendTime = randDateGen.getNextRandomDatetime();
-            twMessage.reset(getTweetId(), twUser, location.getLatitude(), location.getLongitude(), sendTime.toString(),
-                    message, DEFAULT_COUNTRY);
-            return twMessage;
-        }
-
-        public int getTweetId() {
-            if (rand.nextDouble() < updateRatio) {
-                // update
-                return random.nextInt(tweetId);
-            } else {
-                // insert
-                return tweetId++;
-            }
-        }
-
-        @Override
-        public void remove() {
-        }
-
+    public TweetMessage getNext(long id, long sid) {
+        getTwitterUser(null);
+        Message message = randMessageGen.getNextRandomMessage();
+        Point location = randLocationGen.getRandomPoint();
+        DateTime sendTime = randDateGen.getNextRandomDatetime();
+        twMessage.reset(id, sid, twUser, location.getLatitude(), location.getLongitude(), sendTime.toString(), message,
+                DEFAULT_COUNTRY);
+        return twMessage;
     }
 
     public class DefaultInitializationInfo {
@@ -496,10 +462,11 @@ public class DataGenerator {
     public static class TweetMessage {
 
         private static final String[] DEFAULT_FIELDS =
-                new String[] { TweetFields.TWEETID, TweetFields.USER, TweetFields.LATITUDE, TweetFields.LONGITUDE,
-                        TweetFields.MESSAGE_TEXT, TweetFields.CREATED_AT, TweetFields.COUNTRY };
+                new String[] { TweetFields.TWEETID, TweetFields.SID, TweetFields.USER, TweetFields.LATITUDE,
+                        TweetFields.LONGITUDE, TweetFields.MESSAGE_TEXT, TweetFields.CREATED_AT, TweetFields.COUNTRY };
 
-        private int id;
+        private long id;
+        private long sid;
         private TwitterUser user;
         private double latitude;
         private double longitude;
@@ -513,6 +480,7 @@ public class DataGenerator {
             }
 
             public static final String TWEETID = "id";
+            public static final String SID = "sid";
             public static final String USER = "user";
             public static final String LATITUDE = "latitude";
             public static final String LONGITUDE = "longitude";
@@ -526,20 +494,10 @@ public class DataGenerator {
             // do nothing
         }
 
-        public TweetMessage(int tweetid, TwitterUser user, double latitude, double longitude, String created_at,
-                Message messageText, String country) {
+        public void reset(long tweetid, long sid, TwitterUser user, double latitude, double longitude,
+                String created_at, Message messageText, String country) {
             this.id = tweetid;
-            this.user = user;
-            this.latitude = latitude;
-            this.longitude = longitude;
-            this.created_at = created_at;
-            this.messageText = messageText;
-            this.country = country;
-        }
-
-        public void reset(int tweetid, TwitterUser user, double latitude, double longitude, String created_at,
-                Message messageText, String country) {
-            this.id = tweetid;
+            this.sid = sid;
             this.user = user;
             this.latitude = latitude;
             this.longitude = longitude;
@@ -560,6 +518,10 @@ public class DataGenerator {
                     case Datatypes.Tweet.ID:
                         appendFieldName(builder, Datatypes.Tweet.ID);
                         builder.append("int64(\"" + id + "\")");
+                        break;
+                    case Datatypes.Tweet.SID:
+                        appendFieldName(builder, Datatypes.Tweet.SID);
+                        builder.append("int64(\"" + sid + "\")");
                         break;
                     case Datatypes.Tweet.USER:
                         appendFieldName(builder, Datatypes.Tweet.USER);
@@ -604,12 +566,20 @@ public class DataGenerator {
             builder.append("\"" + fieldName + "\":");
         }
 
-        public int getTweetid() {
+        public long getId() {
             return id;
         }
 
-        public void setTweetid(int tweetid) {
-            this.id = tweetid;
+        public void setId(long id) {
+            this.id = id;
+        }
+
+        public long getSid() {
+            return id;
+        }
+
+        public void setSid(long sid) {
+            this.sid = sid;
         }
 
         public TwitterUser getUser() {

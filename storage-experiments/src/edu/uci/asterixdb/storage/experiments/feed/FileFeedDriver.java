@@ -1,10 +1,6 @@
 package edu.uci.asterixdb.storage.experiments.feed;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -12,6 +8,11 @@ import org.kohsuke.args4j.Option;
 import edu.uci.asterixdb.storage.experiments.feed.gen.TweetGenerator;
 
 public class FileFeedDriver {
+
+    public enum FeedMode {
+        Sequential,
+        Update
+    }
 
     @Option(required = true, name = "-u", aliases = "--url", usage = "url of the feed adapter")
     private String url;
@@ -23,15 +24,29 @@ public class FileFeedDriver {
     private String logPath;
 
     @Option(name = "-d", aliases = "--duration", usage = "maximum duration of this experiment in seconds")
-    private long duration = 3650;
+    private long duration = 0;
 
     @Option(name = "-update", aliases = "--update", usage = "update ratio")
-    private double update_ratio = 0.0d;
+    private double updateRatio = 0.0d;
 
-    @Option(name="-period", aliases="--period", usage="period of time to show info (in seconds)")
+    @Option(name = "-period", aliases = "--period", usage = "period of time to show info (in seconds)")
     private int period = 1;
 
-    private final List<FeedSocketAdapterClient> clients;
+    @Option(name = "-t", aliases = "--total", usage = "total records of this experiment")
+    private long totalRecords = 0L;
+
+    @Option(name = "-v", aliases = "--v", usage = "versions of each record")
+    private double versions = 0;
+
+    @Option(name = "-s", aliases = "--start", usage = "the start key range")
+    private int startRange = 0;
+
+    @Option(name = "-m", aliases = "--mode", usage = "the feed mode. validation options: sequential, update")
+    private FeedMode mode = FeedMode.Update;
+
+    private long endRange = 0;
+
+    private final FeedSocketAdapterClient client;
 
     private final FeedReporter reporter;
 
@@ -46,18 +61,28 @@ public class FileFeedDriver {
         CmdLineParser parser = new CmdLineParser(this);
         parser.parseArgument(args);
 
-        Map<String, String> conf = new HashMap<>();
-        conf.put(TweetGenerator.KEY_UPDATE_RATIO, String.valueOf(update_ratio));
-        gen = new TweetGenerator(conf);
-
-        String[] portStrs = ports.split(",");
-        clients = new ArrayList<>();
-        for (int i = 0; i < portStrs.length; i++) {
-            FeedSocketAdapterClient client = new FeedSocketAdapterClient(url, Integer.valueOf(portStrs[i]));
-            client.initialize();
-            clients.add(client);
+        if (mode == FeedMode.Update) {
+            endRange = (long) (startRange + totalRecords / versions);
         }
-        reporter = new FeedReporter(this, clients, period, logPath);
+
+        printConf();
+
+        gen = new TweetGenerator(mode, updateRatio, startRange, endRange);
+
+        client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
+        reporter = new FeedReporter(this, client, period, logPath);
+    }
+
+    private void printConf() {
+        System.out.println("FeedMode: " + mode);
+        System.out.println("UpdateRatio: " + updateRatio);
+        System.out.println("Duration: " + duration);
+        System.out.println("TotalRecords: " + totalRecords);
+        System.out.println("Versions: " + versions);
+        System.out.println("StartRange: " + startRange);
+        System.out.println("EndRange: " + endRange);
+        System.out.println("LogPath: " + logPath);
+
     }
 
     public String getTweet() {
@@ -66,18 +91,31 @@ public class FileFeedDriver {
 
     public void start() throws InterruptedException, IOException {
         try {
-            for (FeedSocketAdapterClient client : clients) {
-                Thread thread = new FileFeedRunner(client, this);
-                thread.start();
-            }
+            client.initialize();
+            Thread thread = new FileFeedRunner(client, this);
+            thread.start();
             reporter.start();
 
-            Thread.sleep(duration * 1000);
+            long startTime = System.currentTimeMillis();
+
+            while (!stop(startTime)) {
+                Thread.sleep(1000);
+            }
+
             reporter.close();
         } finally {
             System.exit(0);
         }
+    }
 
+    private boolean stop(long startTime) {
+        if (duration > 0 && (System.currentTimeMillis() - startTime) >= duration * 1000) {
+            return true;
+        }
+        if (client.stat.totalRecords >= totalRecords) {
+            return true;
+        }
+        return false;
     }
 
 }

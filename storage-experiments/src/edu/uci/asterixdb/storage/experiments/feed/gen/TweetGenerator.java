@@ -18,42 +18,61 @@
  */
 package edu.uci.asterixdb.storage.experiments.feed.gen;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Random;
 
+import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
 import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessage;
-import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessageIterator;
 
 public class TweetGenerator {
 
-    public static final String KEY_UPDATE_RATIO = "update_ratio";
-    private static final double DEFAULT_UDPATE_RATIO = 0;
-    private TweetMessageIterator tweetIterator = null;
     private DataGenerator dataGenerator = null;
-
+    private final FeedMode mode;
     private final double updateRatio;
+    private final long startRange;
+    private final long endRange;
 
-    public TweetGenerator(Map<String, String> configuration) {
+    private long nextId;
+    private long nextSid;
+
+    private long counter = 0;
+
+    private final Random random = new Random(17);
+
+    public TweetGenerator(FeedMode mode, double updateRatio, long startRange, long endRange) {
         dataGenerator = new DataGenerator();
-        updateRatio = configuration.get(KEY_UPDATE_RATIO) != null ? Double.valueOf(configuration.get(KEY_UPDATE_RATIO))
-                : DEFAULT_UDPATE_RATIO;
-        tweetIterator = dataGenerator.new TweetMessageIterator(updateRatio);
+        this.mode = mode;
+        this.updateRatio = updateRatio;
+        this.startRange = startRange;
+        this.endRange = endRange;
     }
 
     public String getNextTweet() {
-        TweetMessage msg = tweetIterator.next();
+        genNextIds();
+        TweetMessage msg = dataGenerator.getNext(nextId, nextSid);
         return msg.getAdmEquivalent(null) + "\n";
     }
 
-    public static void main(String[] args) {
-        Map<String, String> conf = new HashMap<>();
-        conf.put(KEY_UPDATE_RATIO, "0.2");
+    private void genNextIds() {
+        if (mode == FeedMode.Sequential) {
+            if (random.nextDouble() < updateRatio) {
+                //update
+                nextId = Math.abs(random.nextLong()) % counter;
+            } else {
+                nextId = counter++;
+            }
+            nextSid = nextId;
+        } else {
+            nextId = Math.abs(random.nextLong() % (endRange - startRange)) + startRange;
+            nextSid = Math.abs(random.nextLong()) % (endRange - startRange) + startRange;
+        }
 
-        TweetGenerator gen = new TweetGenerator(conf);
+    }
+
+    public static void main(String[] args) {
+        TweetGenerator gen = new TweetGenerator(FeedMode.Update, 0.0, 10, 20);
         for (int i = 0; i < 100; i++) {
             System.out.print(gen.getNextTweet());
         }
-
     }
 
 }
