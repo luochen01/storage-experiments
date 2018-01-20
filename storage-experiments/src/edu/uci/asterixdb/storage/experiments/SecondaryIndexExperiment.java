@@ -1,19 +1,35 @@
 package edu.uci.asterixdb.storage.experiments;
 
-import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.*;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.Twitter;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildCorrelatedRandom;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildCorrelatedSequential;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildCountyMemoryExperiment;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildIndexOnly;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildNoneRandom;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildNoneSequential;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildPrefixRandom;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildPrefixSequential;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildStateMemoryExperiment;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildValidationCorrelatedRandom;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildValidationCorrelatedSequential;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildValidationIndexOnly;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.buildValidationPrefixRandom;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.ds_tweet_b_s;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.ds_tweet_n_r;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.ds_tweet_n_s;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.ds_tweet_p_r;
+import static edu.uci.asterixdb.storage.experiments.SecondaryIndexExperimentBuilder.getCleanCacheAction;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.uci.asterixdb.storage.experiments.query.IQueryResultFormatter;
-import edu.uci.asterixdb.storage.experiments.query.QueryGroup;
-import edu.uci.asterixdb.storage.experiments.query.QueryResult;
-import edu.uci.asterixdb.storage.experiments.query.QueryResultFormatter;
-import edu.uci.asterixdb.storage.experiments.util.AsterixUtil;
+import edu.uci.asterixdb.storage.experiments.index.query.IQueryResultFormatter;
+import edu.uci.asterixdb.storage.experiments.index.query.QueryGroup;
+import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
+import edu.uci.asterixdb.storage.experiments.util.QueryResult;
+import edu.uci.asterixdb.storage.experiments.util.QueryResultFormatter;
 
 public class SecondaryIndexExperiment {
 
@@ -62,24 +78,16 @@ public class SecondaryIndexExperiment {
     public void run() {
         long time = System.currentTimeMillis();
         for (QueryGroup group : groups) {
+            String path = basePath + File.separator + group.getName() + "-" + time;
             List<QueryResult> results = group.run();
-            String result = formatter.format(results);
-            System.out.println(group.getName());
-            System.out.println(result);
-            try {
-                FileWriter writer = new FileWriter(new File(basePath, group.getName() + "-" + time));
-                writer.write(result);
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            QueryUtil.outputQueryResults(results, path);
         }
     }
 
     public static void main(String[] args) throws Exception {
         URI endpoint = new URI("http://sensorium-22.ics.uci.edu:19002/query/service");
         //URI endpoint = new URI("http://localhost:19002/query/service");
-        AsterixUtil.init(endpoint);
+        QueryUtil.init(endpoint);
         SecondaryIndexExperiment experiment = new SecondaryIndexExperiment();
         experiment.run();
     }

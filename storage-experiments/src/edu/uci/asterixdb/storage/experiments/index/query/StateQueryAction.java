@@ -1,7 +1,8 @@
-package edu.uci.asterixdb.storage.experiments.query;
+package edu.uci.asterixdb.storage.experiments.index.query;
 
-import edu.uci.asterixdb.storage.experiments.util.AsterixUtil;
+import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
 import edu.uci.asterixdb.storage.experiments.util.QueryGenerator;
+import edu.uci.asterixdb.storage.experiments.util.QueryResult;
 
 public class StateQueryAction extends AggregateQueryAction {
 
@@ -27,7 +28,7 @@ public class StateQueryAction extends AggregateQueryAction {
         query = getSetMemoryStatement() + query;
         System.out.println(query);
         try {
-            return toResult(AsterixUtil.executeQuery(query));
+            return QueryUtil.executeQuery(getParameter(), query);
         } catch (Exception e) {
             e.printStackTrace();
             return null;

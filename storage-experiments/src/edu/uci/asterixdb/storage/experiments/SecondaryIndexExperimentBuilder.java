@@ -1,9 +1,9 @@
 package edu.uci.asterixdb.storage.experiments;
 
-import edu.uci.asterixdb.storage.experiments.query.CountyQueryAction;
-import edu.uci.asterixdb.storage.experiments.query.QueryGroup;
-import edu.uci.asterixdb.storage.experiments.query.StateQueryAction;
-import edu.uci.asterixdb.storage.experiments.util.AsterixUtil;
+import edu.uci.asterixdb.storage.experiments.index.query.CountyQueryAction;
+import edu.uci.asterixdb.storage.experiments.index.query.QueryGroup;
+import edu.uci.asterixdb.storage.experiments.index.query.StateQueryAction;
+import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
 import edu.uci.asterixdb.storage.experiments.util.QueryGenerator;
 
 public class SecondaryIndexExperimentBuilder {
@@ -155,9 +155,7 @@ public class SecondaryIndexExperimentBuilder {
             public void run() {
                 String count = QueryGenerator.countQuery(dataverse, dataset);
                 try {
-                    System.out.println(count);
-                    String result = AsterixUtil.executeQuery(count);
-                    System.out.println(result);
+                    QueryUtil.executeQuery("clear cache", count);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

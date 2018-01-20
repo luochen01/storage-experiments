@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.experiments.query;
+package edu.uci.asterixdb.storage.experiments.util;
 
 public class QueryResult {
 

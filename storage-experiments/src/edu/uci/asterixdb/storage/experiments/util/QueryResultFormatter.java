@@ -1,6 +1,8 @@
-package edu.uci.asterixdb.storage.experiments.query;
+package edu.uci.asterixdb.storage.experiments.util;
 
 import java.util.List;
+
+import edu.uci.asterixdb.storage.experiments.index.query.IQueryResultFormatter;
 
 public class QueryResultFormatter implements IQueryResultFormatter {
 
