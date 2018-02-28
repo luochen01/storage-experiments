@@ -44,7 +44,7 @@ public class DataGenerator {
         Message message = randMessageGen.getNextRandomMessage();
         Point location = randLocationGen.getRandomPoint();
         DateTime sendTime = randDateGen.getNextRandomDatetime();
-        twMessage.reset(id, sid, twUser, location.getLatitude(), location.getLongitude(), sendTime.toString(), message,
+        twMessage.reset(id, sid, twUser, location.getLatitude(), location.getLongitude(), sendTime, message,
                 DEFAULT_COUNTRY);
         return twMessage;
     }
@@ -71,10 +71,9 @@ public class DataGenerator {
     }
 
     public void getTwitterUser(String usernameSuffix) {
-        String suggestedName = randNameGen.getRandomName();
-        String[] nameComponents = suggestedName.split(" ");
+        String[] nameComponents = randNameGen.getRandomName();
         String screenName = nameComponents[0] + nameComponents[1] + randNameGen.getRandomNameSuffix();
-        String name = suggestedName;
+        String name = screenName;
         if (usernameSuffix != null) {
             name = name + usernameSuffix;
         }
@@ -293,23 +292,23 @@ public class DataGenerator {
 
         private final String[] connectors = new String[] { "_", "#", "$", "@" };
 
+        private final String[] nameComponents = new String[2];
+
         public RandomNameGenerator(String[] firstNames, String[] lastNames) {
             this.firstNames = firstNames;
             this.lastNames = lastNames;
         }
 
-        public String getRandomName() {
-            String name;
-            name = getSuggestedName();
-            return name;
-
+        public String[] getRandomName() {
+            return getSuggestedName();
         }
 
-        private String getSuggestedName() {
+        private String[] getSuggestedName() {
             int firstNameIndex = random.nextInt(firstNames.length);
             int lastNameIndex = random.nextInt(lastNames.length);
-            String suggestedName = firstNames[firstNameIndex] + " " + lastNames[lastNameIndex];
-            return suggestedName;
+            nameComponents[0] = firstNames[firstNameIndex];
+            nameComponents[1] = lastNames[lastNameIndex];
+            return nameComponents;
         }
 
         public String getRandomNameSuffix() {
@@ -470,7 +469,7 @@ public class DataGenerator {
         private TwitterUser user;
         private double latitude;
         private double longitude;
-        private String created_at;
+        private DateTime created_at;
         private Message messageText;
         private String country;
 
@@ -495,7 +494,7 @@ public class DataGenerator {
         }
 
         public void reset(long tweetid, long sid, TwitterUser user, double latitude, double longitude,
-                String created_at, Message messageText, String country) {
+                DateTime created_at, Message messageText, String country) {
             this.id = tweetid;
             this.sid = sid;
             this.user = user;
@@ -545,7 +544,9 @@ public class DataGenerator {
                         break;
                     case Datatypes.Tweet.CREATED_AT:
                         appendFieldName(builder, Datatypes.Tweet.CREATED_AT);
+                        builder.append("datetime(");
                         builder.append(created_at);
+                        builder.append(")");
                         break;
                     case Datatypes.Tweet.COUNTRY:
                         appendFieldName(builder, Datatypes.Tweet.COUNTRY);
@@ -594,7 +595,7 @@ public class DataGenerator {
             return latitude;
         }
 
-        public String getSendTime() {
+        public DateTime getSendTime() {
             return created_at;
         }
 

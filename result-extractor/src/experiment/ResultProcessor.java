@@ -44,23 +44,19 @@ public abstract class ResultProcessor<T extends StatObject> {
     }
 
     public void run() throws IOException {
-        extractResults(inputPath);
+        extractResults();
     }
 
-    protected void extractResults(String dirPath) throws IOException {
-        File dir = new File(dirPath);
+    protected void extractResults() throws IOException {
+        File dir = new File(inputPath);
         for (File file : dir.listFiles()) {
-            String fileName = file.getName();
-            if (fileName.contains("-") && !fileName.contains(".txt") && file.isFile()) {
-
-                String experiment = fileName.substring(0, fileName.indexOf("-"));
-                String value = fileName.substring(fileName.indexOf("-") + 1);
+            if (acceptFile(file)) {
+                String[] strs = parseFileName(file);
                 StatObject object = extractStatObject(file);
-
-                addResult(experiment, value, object);
+                addResult(strs[0], strs[1], object);
             }
         }
-        writeResult(dirPath);
+        writeResult();
     }
 
     protected void addResult(String experiment, String method, StatObject object) {
@@ -84,9 +80,9 @@ public abstract class ResultProcessor<T extends StatObject> {
         return object;
     }
 
-    protected void writeResult(String dir) throws IOException {
+    protected void writeResult() throws IOException {
         for (String experiment : resultMap.keySet()) {
-            File file = new File(dir, experiment + ".txt");
+            File file = getOutputFile(experiment);
             PrintWriter writer = new PrintWriter(file);
             Map<String, StatObject> map = resultMap.get(experiment);
             List<String> values = new ArrayList<String>(map.keySet());
@@ -101,16 +97,37 @@ public abstract class ResultProcessor<T extends StatObject> {
                 writer.println(obj);
             }
             writer.close();
+            writeExtraFile(experiment, map);
             System.out.println("Generate " + file.getPath());
         }
     }
 
+    protected File getOutputFile(String name) {
+        return new File(inputPath, name + ".txt");
+    }
+
     protected abstract T newStatObject();
+
+    protected void writeExtraFile(String experiment, Map<String, StatObject> map) throws IOException {
+
+    }
 
     protected void extractStatObject(String line, T object) {
         Double total = ProcessorUtil.parseValue(line, "Total finishes in ", " ");
         object.updateTotal(total);
 
+    }
+
+    protected boolean acceptFile(File file) {
+        String fileName = file.getName();
+        return fileName.contains("-") && !fileName.contains(".txt") && file.isFile();
+    }
+
+    protected String[] parseFileName(File file) {
+        String fileName = file.getName();
+        String experiment = fileName.substring(0, fileName.indexOf("-"));
+        String value = fileName.substring(fileName.indexOf("-") + 1);
+        return new String[] { experiment, value };
     }
 
 }

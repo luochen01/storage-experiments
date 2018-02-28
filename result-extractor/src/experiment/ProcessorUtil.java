@@ -4,10 +4,10 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
 public class ProcessorUtil {
-    static NumberFormat formatter = new DecimalFormat("#0");
+    static NumberFormat formatter = new DecimalFormat("#0.00");
 
     public static String format(double d) {
-        return formatter.format(d);
+        return formatter.format(d / 1000);
     }
 
     public static Double parseValue(String line, String prefix, String breakStr) {

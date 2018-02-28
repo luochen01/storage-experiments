@@ -69,9 +69,19 @@ public class TweetGenerator {
     }
 
     public static void main(String[] args) {
-        TweetGenerator gen = new TweetGenerator(FeedMode.Update, 0.0, 10, 20);
-        for (int i = 0; i < 100; i++) {
-            System.out.print(gen.getNextTweet());
+        TweetGenerator gen = new TweetGenerator(FeedMode.Update, 0.0, Long.MIN_VALUE, Long.MAX_VALUE);
+        long count = 0;
+        long totalSize = 0;
+        long begin = System.nanoTime();
+        while (true) {
+            totalSize += gen.getNextTweet().length() * Character.BYTES;
+            count++;
+            if (count % 250000 == 0) {
+                long end = System.nanoTime();
+                System.out.println("Produced " + count + " tweets with total size " + (totalSize / 1024) + " KB"
+                        + " in " + (end - begin) / 1000000 + " ms");
+                begin = end;
+            }
         }
     }
 

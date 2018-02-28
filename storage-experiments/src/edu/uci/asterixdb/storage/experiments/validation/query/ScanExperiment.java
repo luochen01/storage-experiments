@@ -11,7 +11,7 @@ import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
 
 public class ScanExperiment {
 
-    private final String dataverse = "twitter_1";
+    private final String dataverse = "twitter_$v";
 
     private final String dataset = "ds_tweet";
 
@@ -34,8 +34,8 @@ public class ScanExperiment {
     }
 
     public static void main(String[] args) throws Exception {
-        //URI endpoint = new URI("http://localhost:19002/query/service");
-        URI endpoint = new URI("http://sensorium-22.ics.uci.edu:19002/query/service");
+        URI endpoint = new URI("http://localhost:19002/query/service");
+        //URI endpoint = new URI("http://sensorium-22.ics.uci.edu:19002/query/service");
         QueryUtil.init(endpoint);
         ScanExperiment experiment = new ScanExperiment();
         experiment.run();
