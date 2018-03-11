@@ -79,6 +79,7 @@ public class FileFeedDriver {
 
     private void printConf() {
         System.out.println("FeedMode: " + mode);
+        System.out.println("UpdateDistribution: " + distribution);
         System.out.println("UpdateRatio: " + updateRatio);
         System.out.println("Duration: " + duration);
         System.out.println("TotalRecords: " + totalRecords);
