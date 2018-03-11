@@ -38,8 +38,7 @@ class CSVFile {
 
 public class IngestCSVProcessor {
 
-    private final String basePath =
-            "/Users/luochen/Documents/Research/experiments/results/ingest/repair/repair-cmp";
+    private final String basePath = "/Users/luochen/Documents/Research/experiments/results/inplace/ingestion";
 
     private final int recordIndex = 1;
 
@@ -60,20 +59,24 @@ public class IngestCSVProcessor {
 
     private void writeCSV(List<CSVFile> files) throws FileNotFoundException {
         files.sort(new Comparator<CSVFile>() {
+            //            public int compare(CSVFile o1, CSVFile o2) {
+            //                try {
+            //                    String name1 = o1.name.substring(0, o1.name.indexOf('.'));
+            //                    String name2 = o2.name.substring(0, o2.name.indexOf('.'));
+            //                    String[] splits1 = name1.split("_");
+            //                    String[] splits2 = name2.split("_");
+            //
+            //                    String num1 = numericalPrefix(splits1[splits1.length - 1]);
+            //                    String num2 = numericalPrefix(splits2[splits2.length - 1]);
+            //                    return Integer.compare(Integer.valueOf(num1), Integer.valueOf(num2));
+            //                } catch (Exception e) {
+            //                    return 0;
+            //                }
+            //            }
+
             @Override
             public int compare(CSVFile o1, CSVFile o2) {
-                try {
-                    String name1 = o1.name.substring(0, o1.name.indexOf('.'));
-                    String name2 = o2.name.substring(0, o2.name.indexOf('.'));
-                    String[] splits1 = name1.split("_");
-                    String[] splits2 = name2.split("_");
-
-                    String num1 = numericalPrefix(splits1[splits1.length - 1]);
-                    String num2 = numericalPrefix(splits2[splits2.length - 1]);
-                    return Integer.compare(Integer.valueOf(num1), Integer.valueOf(num2));
-                } catch (Exception e) {
-                    return 0;
-                }
+                return o1.name.compareTo(o2.name);
             }
 
             private String numericalPrefix(String value) {
@@ -146,7 +149,7 @@ public class IngestCSVProcessor {
         File[] files = baseDir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
-                return !name.contains("DS_Store") && name.contains("_r") && name.contains(".log");
+                return !name.contains("DS_Store") && name.contains("ingest") && name.contains(".log");
             }
         });
         List<CSVFile> results = new ArrayList<>();

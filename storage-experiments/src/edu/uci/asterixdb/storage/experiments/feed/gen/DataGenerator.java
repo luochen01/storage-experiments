@@ -213,7 +213,7 @@ public class DataGenerator {
 
     public static class Message {
 
-        private final char[] content = new char[500];
+        private final char[] content = new char[1000];
         private List<String> referredTopics;
         private int length;
 
@@ -361,20 +361,28 @@ public class DataGenerator {
         public MessageTemplate(List<String> vendors, List<String> jargon) {
             this.vendors = vendors;
             this.jargon = jargon;
-            buffer = CharBuffer.allocate(2500);
+            buffer = CharBuffer.allocate(5000);
             referredTopics = new ArrayList<String>();
         }
 
         public Message getNextMessage() {
             buffer.position(0);
-            buffer.limit(2500);
+            buffer.limit(5000);
             referredTopics.clear();
+            for (int i = 0; i < 18; i++) {
+                fillBuffer();
+            }
+            buffer.flip();
+            message.reset(buffer.array(), 0, buffer.limit(), referredTopics);
+            return message;
+        }
+
+        private void fillBuffer() {
             boolean isPositive = random.nextBoolean();
             String[] verbArray = isPositive ? positiveVerbs : negativeVerbs;
             String[] adjectiveArray = isPositive ? postiveAdjectives : negativeAdjectives;
             String verb = verbArray[random.nextInt(verbArray.length)];
             String adjective = adjectiveArray[random.nextInt(adjectiveArray.length)];
-
             buffer.put(" ");
             buffer.put(verb);
             buffer.put(" ");
@@ -392,10 +400,6 @@ public class DataGenerator {
             if (random.nextBoolean()) {
                 buffer.append(isPositive ? ":)" : ":(");
             }
-
-            buffer.flip();
-            message.reset(buffer.array(), 0, buffer.limit(), referredTopics);
-            return message;
         }
     }
 

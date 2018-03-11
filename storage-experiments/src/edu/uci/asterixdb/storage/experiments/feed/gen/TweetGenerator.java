@@ -21,29 +21,24 @@ package edu.uci.asterixdb.storage.experiments.feed.gen;
 import java.util.Random;
 
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
+import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
 import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessage;
 
 public class TweetGenerator {
 
     private DataGenerator dataGenerator = null;
-    private final FeedMode mode;
-    private final double updateRatio;
-    private final long startRange;
-    private final long endRange;
+    private final IdGenerator idGenerator;
+    private final int sidRange;
 
     private long nextId;
     private long nextSid;
 
-    private long counter = 0;
-
     private final Random random = new Random(17);
 
-    public TweetGenerator(FeedMode mode, double updateRatio, long startRange, long endRange) {
+    public TweetGenerator(FeedMode mode, UpdateDistribution dist, double updateRatio, long startRange, int sidRange) {
         dataGenerator = new DataGenerator();
-        this.mode = mode;
-        this.updateRatio = updateRatio;
-        this.startRange = startRange;
-        this.endRange = endRange;
+        this.idGenerator = IdGenerator.create(dist, startRange, updateRatio, mode == FeedMode.Random);
+        this.sidRange = sidRange;
     }
 
     public String getNextTweet() {
@@ -53,36 +48,17 @@ public class TweetGenerator {
     }
 
     private void genNextIds() {
-        if (mode == FeedMode.Sequential) {
-            if (random.nextDouble() < updateRatio) {
-                //update
-                nextId = Math.abs(random.nextLong()) % counter;
-            } else {
-                nextId = counter++;
-            }
-            nextSid = nextId;
-        } else {
-            nextId = Math.abs(random.nextLong() % (endRange - startRange)) + startRange;
-            nextSid = Math.abs(random.nextLong()) % (endRange - startRange) + startRange;
-        }
-
+        nextId = idGenerator.next();
+        nextSid = random.nextInt(sidRange);
     }
 
     public static void main(String[] args) {
-        TweetGenerator gen = new TweetGenerator(FeedMode.Update, 0.0, Long.MIN_VALUE, Long.MAX_VALUE);
-        long count = 0;
-        long totalSize = 0;
-        long begin = System.nanoTime();
-        while (true) {
-            totalSize += gen.getNextTweet().length() * Character.BYTES;
-            count++;
-            if (count % 250000 == 0) {
-                long end = System.nanoTime();
-                System.out.println("Produced " + count + " tweets with total size " + (totalSize / 1024) + " KB"
-                        + " in " + (end - begin) / 1000000 + " ms");
-                begin = end;
-            }
+        TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.ZIPF_TIME, 0.0, 0, 1000);
+        for (int i = 0; i < 10; i++) {
+            String tweet = gen.getNextTweet();
+            System.out.println(tweet.getBytes().length);
         }
+
     }
 
 }
