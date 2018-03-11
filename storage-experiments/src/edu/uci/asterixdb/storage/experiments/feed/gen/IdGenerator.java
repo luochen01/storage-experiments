@@ -4,6 +4,7 @@ import java.util.Random;
 
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
 import edu.uci.asterixdb.storage.experiments.util.ScrambledZipfianGenerator;
+import edu.uci.asterixdb.storage.experiments.util.ZipfianGenerator;
 
 public abstract class IdGenerator {
 
@@ -20,14 +21,13 @@ public abstract class IdGenerator {
         this.randomize = randomize;
     }
 
-    public static IdGenerator create(UpdateDistribution dist, long startRange, double updateRatio, boolean randomize) {
+    public static IdGenerator create(UpdateDistribution dist, double theta, long startRange, double updateRatio,
+            boolean randomize) {
         switch (dist) {
             case UNIFORM:
                 return new UniformIdGenerator(startRange, updateRatio, randomize);
-            case ZIPF_ITEM:
-                return new ZipfIdItemGenerator(startRange, updateRatio, randomize);
-            case ZIPF_TIME:
-                return new ZipfIdTimeGenerator(startRange, updateRatio, randomize);
+            case ZIPF:
+                return new ZipfIdTimeGenerator(startRange, updateRatio, randomize, theta);
             default:
                 throw new IllegalArgumentException("Unknown distribution " + dist);
         }
@@ -53,22 +53,17 @@ public abstract class IdGenerator {
     public static void main(String[] agrs) {
         int count = 100;
         double updateRatio = 0.5;
-        IdGenerator gen = IdGenerator.create(UpdateDistribution.UNIFORM, 0, updateRatio, false);
+        IdGenerator gen = IdGenerator.create(UpdateDistribution.UNIFORM, ZipfianGenerator.ZIPFIAN_CONSTANT, 0,
+                updateRatio, false);
         test(gen, count);
 
-        gen = IdGenerator.create(UpdateDistribution.UNIFORM, 0, updateRatio, true);
+        gen = IdGenerator.create(UpdateDistribution.UNIFORM, ZipfianGenerator.ZIPFIAN_CONSTANT, 0, updateRatio, true);
         test(gen, count);
 
-        gen = IdGenerator.create(UpdateDistribution.ZIPF_ITEM, 0, updateRatio, false);
+        gen = IdGenerator.create(UpdateDistribution.ZIPF, ZipfianGenerator.ZIPFIAN_CONSTANT, 0, updateRatio, false);
         test(gen, count);
 
-        gen = IdGenerator.create(UpdateDistribution.ZIPF_ITEM, 0, updateRatio, true);
-        test(gen, count);
-
-        gen = IdGenerator.create(UpdateDistribution.ZIPF_TIME, 0, updateRatio, false);
-        test(gen, count);
-
-        gen = IdGenerator.create(UpdateDistribution.ZIPF_TIME, 0, updateRatio, true);
+        gen = IdGenerator.create(UpdateDistribution.ZIPF, ZipfianGenerator.ZIPFIAN_CONSTANT, 0, updateRatio, true);
         test(gen, count);
     }
 

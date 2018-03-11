@@ -2,6 +2,7 @@ package edu.uci.asterixdb.storage.experiments.feed.gen;
 
 import edu.uci.asterixdb.storage.experiments.util.ScrambledZipfianGenerator;
 
+@Deprecated
 public class ZipfIdItemGenerator extends IdGenerator {
     private static final long MIN_ITEM_COUNT = 2;
 
@@ -15,5 +16,4 @@ public class ZipfIdItemGenerator extends IdGenerator {
     protected long generateUpdate(long itemCount) {
         return gen.nextValue(Math.max(itemCount, MIN_ITEM_COUNT));
     }
-
 }

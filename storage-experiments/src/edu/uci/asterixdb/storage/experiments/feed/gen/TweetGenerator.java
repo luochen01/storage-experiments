@@ -35,9 +35,10 @@ public class TweetGenerator {
 
     private final Random random = new Random(17);
 
-    public TweetGenerator(FeedMode mode, UpdateDistribution dist, double updateRatio, long startRange, int sidRange) {
+    public TweetGenerator(FeedMode mode, UpdateDistribution dist, double theta, double updateRatio, long startRange,
+            int sidRange) {
         dataGenerator = new DataGenerator();
-        this.idGenerator = IdGenerator.create(dist, startRange, updateRatio, mode == FeedMode.Random);
+        this.idGenerator = IdGenerator.create(dist, theta, startRange, updateRatio, mode == FeedMode.Random);
         this.sidRange = sidRange;
     }
 
@@ -53,10 +54,10 @@ public class TweetGenerator {
     }
 
     public static void main(String[] args) {
-        TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.ZIPF_TIME, 0.0, 0, 1000);
-        for (int i = 0; i < 10; i++) {
+        TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.ZIPF, 0.99, 0.1, 0, 100000);
+        for (int i = 0; i < 1000; i++) {
             String tweet = gen.getNextTweet();
-            System.out.println(tweet.getBytes().length);
+            System.out.println(tweet);
         }
 
     }

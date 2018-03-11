@@ -39,8 +39,6 @@ public class FeedReporter extends TimerTask {
             }
         }
         logWriter = new BufferedWriter(new FileWriter(logFile));
-
-        writeLine("counter,records,bytes,total_records,total_bytes\n");
     }
 
     @Override
@@ -59,7 +57,8 @@ public class FeedReporter extends TimerTask {
 
     }
 
-    public void start() {
+    public void start() throws IOException {
+        writeLine("counter,records,bytes,total_records,total_bytes");
         timer.schedule(this, period * 1000, period * 1000);
     }
 
@@ -68,12 +67,13 @@ public class FeedReporter extends TimerTask {
         long bytes = (stat.totalBytes - prevStat.totalBytes);
         long totalRecords = stat.totalRecords;
         long totalBytes = stat.totalBytes;
-        return counter + "," + records + "," + bytes + "," + totalRecords + "," + totalBytes + "\n";
+        return counter + "," + records + "," + bytes + "," + totalRecords + "," + totalBytes;
     }
 
-    protected void writeLine(String line) throws IOException {
-        System.out.print(line);
+    public void writeLine(String line) throws IOException {
+        System.out.println(line);
         logWriter.write(line);
+        logWriter.write('\n');
     }
 
     public void flush() throws IOException {

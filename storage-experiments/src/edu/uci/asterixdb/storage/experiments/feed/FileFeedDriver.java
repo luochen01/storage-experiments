@@ -6,6 +6,7 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import edu.uci.asterixdb.storage.experiments.feed.gen.TweetGenerator;
+import edu.uci.asterixdb.storage.experiments.util.ZipfianGenerator;
 
 public class FileFeedDriver {
 
@@ -16,8 +17,7 @@ public class FileFeedDriver {
 
     public enum UpdateDistribution {
         UNIFORM,
-        ZIPF_TIME,
-        ZIPF_ITEM
+        ZIPF,
     }
 
     @Option(required = true, name = "-u", aliases = "--url", usage = "url of the feed adapter")
@@ -54,6 +54,9 @@ public class FileFeedDriver {
     @Option(name = "-dist", aliases = "--distribution", usage = "the distribution of updates. validate operations: sequential, update")
     public UpdateDistribution distribution = UpdateDistribution.UNIFORM;
 
+    @Option(name = "-theta", aliases = "--theta", usage = "the parameter for the zipfian generator. Default: 0.99")
+    public double theta = ZipfianGenerator.ZIPFIAN_CONSTANT;
+
     private final FeedSocketAdapterClient client;
 
     private final FeedReporter reporter;
@@ -69,23 +72,22 @@ public class FileFeedDriver {
         CmdLineParser parser = new CmdLineParser(this);
         parser.parseArgument(args);
 
-        printConf();
-
-        gen = new TweetGenerator(mode, distribution, updateRatio, startRange, sidRange);
+        gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange);
 
         client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
         reporter = new FeedReporter(this, client, period, logPath);
+        printConf();
     }
 
-    private void printConf() {
-        System.out.println("FeedMode: " + mode);
-        System.out.println("UpdateDistribution: " + distribution);
-        System.out.println("UpdateRatio: " + updateRatio);
-        System.out.println("Duration: " + duration);
-        System.out.println("TotalRecords: " + totalRecords);
-        System.out.println("StartRange: " + startRange);
-        System.out.println("LogPath: " + logPath);
-
+    private void printConf() throws IOException {
+        reporter.writeLine("FeedMode: " + mode);
+        reporter.writeLine("UpdateDistribution: " + distribution);
+        reporter.writeLine("UpdateRatio: " + updateRatio);
+        reporter.writeLine("Duration: " + duration);
+        reporter.writeLine("TotalRecords: " + totalRecords);
+        reporter.writeLine("StartRange: " + startRange);
+        reporter.writeLine("LogPath: " + logPath);
+        reporter.writeLine("Theta: " + theta);
     }
 
     public String getTweet() {
