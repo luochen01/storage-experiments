@@ -94,6 +94,10 @@ public class FileFeedDriver {
         return gen.getNextTweet();
     }
 
+    public boolean isNewTweet() {
+        return gen.isNewTweet();
+    }
+
     public void start() throws InterruptedException, IOException {
         try {
             client.initialize();

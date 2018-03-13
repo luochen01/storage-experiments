@@ -36,12 +36,17 @@ public class FeedSocketAdapterClient {
         }
     }
 
-    public void ingest(String record) throws IOException {
+    public void ingest(String record, boolean newRecord) throws IOException {
         byte[] b = record.replaceAll("\\s+", " ").getBytes();
         out.write(b);
         //out.flush();
         stat.totalRecords++;
         stat.totalBytes += b.length;
+        if (newRecord) {
+            stat.insertRecords++;
+        } else {
+            stat.updateRecords++;
+        }
     }
 
     public int getPort() {

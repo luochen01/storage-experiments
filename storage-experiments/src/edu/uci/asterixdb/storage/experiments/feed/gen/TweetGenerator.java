@@ -53,6 +53,10 @@ public class TweetGenerator {
         nextSid = random.nextInt(sidRange);
     }
 
+    public boolean isNewTweet() {
+        return idGenerator.isNewTweet();
+    }
+
     public static void main(String[] args) {
         TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.ZIPF, 0.99, 0.1, 0, 100000);
         for (int i = 0; i < 1000; i++) {

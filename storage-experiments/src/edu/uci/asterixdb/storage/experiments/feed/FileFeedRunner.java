@@ -16,7 +16,7 @@ public class FileFeedRunner extends Thread {
         String str = null;
         try {
             while ((str = driver.getTweet()) != null) {
-                client.ingest(str);
+                client.ingest(str, driver.isNewTweet());
             }
         } catch (Exception e) {
             e.printStackTrace();

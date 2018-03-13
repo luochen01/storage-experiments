@@ -58,7 +58,7 @@ public class FeedReporter extends TimerTask {
     }
 
     public void start() throws IOException {
-        writeLine("counter,records,bytes,total_records,total_bytes");
+        writeLine("counter,records,bytes,total_records,total_bytes,insert_records,update_records");
         timer.schedule(this, period * 1000, period * 1000);
     }
 
@@ -67,7 +67,8 @@ public class FeedReporter extends TimerTask {
         long bytes = (stat.totalBytes - prevStat.totalBytes);
         long totalRecords = stat.totalRecords;
         long totalBytes = stat.totalBytes;
-        return counter + "," + records + "," + bytes + "," + totalRecords + "," + totalBytes;
+        return counter + "," + records + "," + bytes + "," + totalRecords + "," + totalBytes + "," + stat.insertRecords
+                + "," + stat.updateRecords;
     }
 
     public void writeLine(String line) throws IOException {
