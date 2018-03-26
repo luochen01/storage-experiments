@@ -22,6 +22,8 @@ public class FeedSocketAdapterClient {
 
     public void initialize() throws IOException {
         socket = new Socket(adapterUrl, port);
+        // 512K
+        socket.setSendBufferSize(512 * 1024);
         out = socket.getOutputStream();
     }
 

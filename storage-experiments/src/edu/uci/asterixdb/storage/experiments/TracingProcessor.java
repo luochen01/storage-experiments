@@ -53,7 +53,7 @@ class Experiment {
 
 public class TracingProcessor {
 
-    private final String basePath = "/Users/luochen/Documents/Research/experiments/results/ingest/repair/repair-cmp";
+    private final String basePath = "/Users/luochen/Documents/Research/experiments/results/invertedindex";
 
     private static final String deliminiter = "Read Ahead Limit for Merge";
     private static final String PRIMARY = "#Primary keys during merge repair ";
@@ -62,7 +62,7 @@ public class TracingProcessor {
     private final Predicate<String> isBegin = new Predicate<String>() {
         @Override
         public boolean test(String t) {
-            return t.contains("sid_idx") && t.contains("\"ph\":\"B\"");
+            return t.contains("text_idx") && t.contains("\"ph\":\"B\"");
         }
 
     };
@@ -70,7 +70,14 @@ public class TracingProcessor {
     private final Predicate<String> isEnd = new Predicate<String>() {
         @Override
         public boolean test(String t) {
-            return t.contains("sid_idx") && t.contains("\"ph\":\"E\"");
+            return t.contains("text_idx") && t.contains("\"ph\":\"E\"");
+        }
+    };
+
+    private final FilenameFilter filenameFilter = new FilenameFilter() {
+        @Override
+        public boolean accept(File dir, String name) {
+            return name.endsWith(".log");
         }
     };
 
@@ -112,7 +119,8 @@ public class TracingProcessor {
                 }
                 long end = parseTime(line);
                 long size = parseSize(line);
-                MergeStat stat = new MergeStat(end - begin, size, primaryKeys.poll(), secondaryKeys.poll());
+                MergeStat stat = new MergeStat(end - begin, size, primaryKeys.isEmpty() ? 0 : primaryKeys.poll(),
+                        secondaryKeys.isEmpty() ? 0 : secondaryKeys.poll());
                 stats.add(stat);
             } else {
                 parseKeys(line);
@@ -155,12 +163,7 @@ public class TracingProcessor {
 
     public void run() {
         File dir = new File(basePath);
-        File[] files = dir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.endsWith("ingest_r_alg.log");
-            }
-        });
+        File[] files = dir.listFiles(filenameFilter);
         for (File file : files) {
             try {
                 List<Experiment> exprs = parse(file);

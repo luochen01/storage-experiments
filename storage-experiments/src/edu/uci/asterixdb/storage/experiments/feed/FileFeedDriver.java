@@ -5,6 +5,8 @@ import java.io.IOException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import edu.uci.asterixdb.storage.experiments.feed.gen.IRecordGenerator;
+import edu.uci.asterixdb.storage.experiments.feed.gen.RecordFileReader;
 import edu.uci.asterixdb.storage.experiments.feed.gen.TweetGenerator;
 import edu.uci.asterixdb.storage.experiments.util.ZipfianGenerator;
 
@@ -57,11 +59,14 @@ public class FileFeedDriver {
     @Option(name = "-theta", aliases = "--theta", usage = "the parameter for the zipfian generator. Default: 0.99")
     public double theta = ZipfianGenerator.ZIPFIAN_CONSTANT;
 
+    @Option(name = "-input", aliases = "--input", usage = "the path of the input file")
+    public String inputFile = null;
+
     private final FeedSocketAdapterClient client;
 
     private final FeedReporter reporter;
 
-    private final TweetGenerator gen;
+    private final IRecordGenerator gen;
 
     public static void main(String[] args) throws Exception {
         FileFeedDriver driver = new FileFeedDriver(args);
@@ -72,7 +77,8 @@ public class FileFeedDriver {
         CmdLineParser parser = new CmdLineParser(this);
         parser.parseArgument(args);
 
-        gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange);
+        gen = inputFile != null ? new RecordFileReader(inputFile)
+                : new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange);
 
         client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
         reporter = new FeedReporter(this, client, period, logPath);
@@ -90,12 +96,12 @@ public class FileFeedDriver {
         reporter.writeLine("Theta: " + theta);
     }
 
-    public String getTweet() {
-        return gen.getNextTweet();
+    public String getTweet() throws IOException {
+        return gen.getNext();
     }
 
     public boolean isNewTweet() {
-        return gen.isNewTweet();
+        return gen.isNewRecord();
     }
 
     public void start() throws InterruptedException, IOException {

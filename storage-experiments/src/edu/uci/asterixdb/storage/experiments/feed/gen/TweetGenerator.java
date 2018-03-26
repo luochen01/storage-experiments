@@ -24,7 +24,7 @@ import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
 import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessage;
 
-public class TweetGenerator {
+public class TweetGenerator implements IRecordGenerator {
 
     private DataGenerator dataGenerator = null;
     private final IdGenerator idGenerator;
@@ -42,7 +42,8 @@ public class TweetGenerator {
         this.sidRange = sidRange;
     }
 
-    public String getNextTweet() {
+    @Override
+    public String getNext() {
         genNextIds();
         TweetMessage msg = dataGenerator.getNext(nextId, nextSid);
         return msg.getAdmEquivalent(null) + "\n";
@@ -53,17 +54,17 @@ public class TweetGenerator {
         nextSid = random.nextInt(sidRange);
     }
 
-    public boolean isNewTweet() {
+    @Override
+    public boolean isNewRecord() {
         return idGenerator.isNewTweet();
     }
 
     public static void main(String[] args) {
         TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.ZIPF, 0.99, 0.1, 0, 100000);
-        for (int i = 0; i < 1000; i++) {
-            String tweet = gen.getNextTweet();
+        for (int i = 0; i < 10; i++) {
+            String tweet = gen.getNext();
             System.out.println(tweet);
         }
-
     }
 
 }
