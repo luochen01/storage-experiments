@@ -2,7 +2,6 @@ package edu.uci.asterixdb.storage.experiments;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -15,7 +14,12 @@ import org.apache.commons.io.FileUtils;
 public class FileWriteExperiment {
     private static volatile long totalBytesWriten = 0;
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws Exception {
+        testFileChannel(args);
+        //testFileStream(args);
+    }
+
+    private static void testFileStream(String[] args) throws Exception {
         if (args.length < 4) {
             System.out.println("Usage: File Size (MB), Page Size (KB), ReportFrequency (ms), file1, file2, ...");
             return;
@@ -90,7 +94,7 @@ public class FileWriteExperiment {
         for (int i = 0; i < files.length; i++) {
             files[i] = new File(args[i + 3]);
             FileUtils.deleteQuietly(files[i]);
-            accessFiles[i] = new RandomAccessFile(files[i], "rwd");
+            accessFiles[i] = new RandomAccessFile(files[i], "rw");
             fileChannels[i] = accessFiles[i].getChannel();
             fileChannels[i].position(0);
         }
@@ -128,9 +132,8 @@ public class FileWriteExperiment {
             }
         }
         for (int i = 0; i < files.length; i++) {
-            accessFiles[i].close();
-            fileChannels[i].force(false);
             fileChannels[i].close();
+            channel.force(false);
         }
 
         long end = System.nanoTime();
