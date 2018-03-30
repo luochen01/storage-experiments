@@ -65,9 +65,10 @@ public class FileWriteExperiment {
             Arrays.fill(buffer, (byte) i);
             for (FileChannel channel : fileChannels) {
                 byteBuffer.rewind();
-                channel.write(byteBuffer);
+                while (byteBuffer.hasRemaining()) {
+                    totalBytesWriten += channel.write(byteBuffer);
+                }
                 channel.force(false);
-                totalBytesWriten += pageSize;
             }
         }
         for (int i = 0; i < files.length; i++) {
