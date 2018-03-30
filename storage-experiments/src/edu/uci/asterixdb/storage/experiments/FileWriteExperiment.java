@@ -68,11 +68,11 @@ public class FileWriteExperiment {
                 while (byteBuffer.hasRemaining()) {
                     totalBytesWriten += channel.write(byteBuffer);
                 }
-                channel.force(false);
             }
         }
         for (int i = 0; i < files.length; i++) {
             accessFiles[i].close();
+            fileChannels[i].force(false);
             fileChannels[i].close();
         }
 
