@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -62,7 +61,6 @@ public class FileWriteExperiment {
 
         long begin = System.nanoTime();
         for (int i = 0; i < numPages; i++) {
-            Arrays.fill(buffer, (byte) i);
             for (FileChannel channel : fileChannels) {
                 byteBuffer.rewind();
                 while (byteBuffer.hasRemaining()) {
