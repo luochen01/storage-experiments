@@ -41,7 +41,7 @@ public class QueryUtil {
     }
 
     public static QueryResult executeQuery(String key, String query, URI endpoint) throws Exception {
-        LOGGER.info(query);
+        LOGGER.warn(query);
 
         RequestBuilder builder = RequestBuilder.post(endpoint);
         builder.addParameter("statement", query);

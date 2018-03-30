@@ -3,11 +3,13 @@ package edu.uci.asterixdb.storage.experiments;
 import edu.uci.asterixdb.storage.experiments.index.query.CountyQueryAction;
 import edu.uci.asterixdb.storage.experiments.index.query.QueryGroup;
 import edu.uci.asterixdb.storage.experiments.index.query.StateQueryAction;
-import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
 import edu.uci.asterixdb.storage.experiments.util.QueryGenerator;
+import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
 
 public class SecondaryIndexExperimentBuilder {
     public static final String Twitter = "twitter";
+
+    public static final String ds_tweet = "ds_tweet";
 
     public static final String ds_tweet_b_s = "ds_tweet_s";
 

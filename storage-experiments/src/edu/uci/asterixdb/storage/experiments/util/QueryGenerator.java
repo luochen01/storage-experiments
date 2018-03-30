@@ -3,8 +3,7 @@ package edu.uci.asterixdb.storage.experiments.util;
 public class QueryGenerator {
 
     public static String countQuery(String dataverse, String dataset) {
-        return String.format("select count(*) from %s.%s;", dataverse, dataset);
-
+        return String.format("select count(*) from %s.%s where longitude>80;", dataverse, dataset);
     }
 
     public static String county(String dataverse, String dataset, int countyID) {
