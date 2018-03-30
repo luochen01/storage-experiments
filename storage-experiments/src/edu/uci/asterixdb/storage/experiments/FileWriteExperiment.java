@@ -132,8 +132,8 @@ public class FileWriteExperiment {
             }
         }
         for (int i = 0; i < files.length; i++) {
+            fileChannels[i].force(false);
             fileChannels[i].close();
-            channel.force(false);
         }
 
         long end = System.nanoTime();
