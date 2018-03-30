@@ -27,7 +27,7 @@ public class FileWriteExperiment {
         byte[] buffer = new byte[pageSize];
 
         File[] files = new File[args.length - 3];
-        FileOutputStream[] streams = new FileOutputStream[files.length - 3];
+        FileOutputStream[] streams = new FileOutputStream[files.length];
         for (int i = 0; i < files.length; i++) {
             files[i] = new File(args[i + 3]);
             FileUtils.deleteQuietly(files[i]);
