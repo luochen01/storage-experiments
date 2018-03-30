@@ -1,6 +1,7 @@
 package edu.uci.asterixdb.storage.experiments;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -19,6 +20,61 @@ public class FileWriteExperiment {
             return;
         }
 
+        long fileSize = Long.valueOf(args[0]) * 1024 * 1024;
+        int pageSize = Integer.valueOf(args[1]) * 1024;
+        int period = Integer.valueOf(args[2]);
+
+        byte[] buffer = new byte[pageSize];
+
+        File[] files = new File[args.length - 3];
+        FileOutputStream[] streams = new FileOutputStream[files.length - 3];
+        for (int i = 0; i < files.length; i++) {
+            files[i] = new File(args[i + 3]);
+            FileUtils.deleteQuietly(files[i]);
+            streams[i] = new FileOutputStream(files[i]);
+        }
+
+        int numPages = (int) (fileSize / pageSize);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            int counter = 0;
+            long lastBytesWritten = 0;
+
+            @Override
+            public void run() {
+                StringBuilder sb = new StringBuilder();
+                long totalBytesWrittenLocal = totalBytesWriten;
+                sb.append(counter);
+                sb.append(',');
+                sb.append(totalBytesWrittenLocal - lastBytesWritten);
+                sb.append(',');
+                sb.append(totalBytesWrittenLocal);
+                System.out.println(sb.toString());
+                lastBytesWritten = totalBytesWrittenLocal;
+                counter += period;
+            }
+        }, 0, period);
+
+        long begin = System.nanoTime();
+        for (int i = 0; i < numPages; i++) {
+            for (FileOutputStream stream : streams) {
+                stream.write(buffer);
+                totalBytesWriten += buffer.length;
+            }
+        }
+        for (int i = 0; i < files.length; i++) {
+            streams[i].close();
+        }
+
+        long end = System.nanoTime();
+        System.out.println("Finish write in " + (end - begin) / 1000000 + " ms");
+        timer.cancel();
+        System.exit(0);
+    }
+
+    private static void testFileChannel(String[] args) throws Exception {
         long fileSize = Long.valueOf(args[0]) * 1024 * 1024;
         int pageSize = Integer.valueOf(args[1]) * 1024;
         int period = Integer.valueOf(args[2]);
