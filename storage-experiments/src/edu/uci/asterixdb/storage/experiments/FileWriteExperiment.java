@@ -93,7 +93,6 @@ public class FileWriteExperiment {
         FileChannel[] fileChannels = new FileChannel[args.length - 3];
         for (int i = 0; i < files.length; i++) {
             files[i] = new File(args[i + 3]);
-            FileUtils.deleteQuietly(files[i]);
             accessFiles[i] = new RandomAccessFile(files[i], "rw");
             fileChannels[i] = accessFiles[i].getChannel();
             fileChannels[i].position(0);
@@ -129,10 +128,11 @@ public class FileWriteExperiment {
                 while (byteBuffer.hasRemaining()) {
                     totalBytesWriten += channel.write(byteBuffer);
                 }
+                channel.force(false);
             }
+
         }
         for (int i = 0; i < files.length; i++) {
-            fileChannels[i].force(false);
             fileChannels[i].close();
         }
 
