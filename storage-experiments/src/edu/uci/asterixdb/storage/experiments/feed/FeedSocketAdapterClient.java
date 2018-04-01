@@ -39,7 +39,7 @@ public class FeedSocketAdapterClient {
     }
 
     public void ingest(String record, boolean newRecord) throws IOException {
-        byte[] b = record.replaceAll("\\s+", " ").getBytes();
+        byte[] b = record.getBytes();
         out.write(b);
         //out.flush();
         stat.totalRecords++;

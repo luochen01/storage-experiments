@@ -87,7 +87,7 @@ public class DataGenerator {
         private final Calendar calendar = Calendar.getInstance();
 
         public SequentialDateGenerator(int year, int month, int date) {
-            calendar.set(year, month, date);
+            calendar.set(year, month, date, 0, 0, 0);
         }
 
         public Calendar getNextTime() {
