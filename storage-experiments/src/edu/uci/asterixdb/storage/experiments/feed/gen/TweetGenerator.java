@@ -18,6 +18,7 @@
  */
 package edu.uci.asterixdb.storage.experiments.feed.gen;
 
+import java.util.Calendar;
 import java.util.Random;
 
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
@@ -60,10 +61,14 @@ public class TweetGenerator implements IRecordGenerator {
     }
 
     public static void main(String[] args) {
-        TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.ZIPF, 0.99, 0.1, 0, 100000);
-        for (int i = 0; i < 10; i++) {
-            String tweet = gen.getNext();
-            System.out.println(tweet);
+        int million = 1000000;
+        long total = million * 160;
+        Calendar calendar = Calendar.getInstance();
+        for (long i = 0; i < total; i++) {
+            calendar.add(Calendar.SECOND, 1);
+            if (i % million == 0) {
+                System.out.println(i + ":" + calendar.getTime());
+            }
         }
     }
 
