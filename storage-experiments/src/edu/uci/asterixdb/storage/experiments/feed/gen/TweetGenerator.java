@@ -60,9 +60,9 @@ public class TweetGenerator implements IRecordGenerator {
     }
 
     public static void main(String[] args) {
-        TweetGenerator gen = new TweetGenerator(FeedMode.Sequential, UpdateDistribution.UNIFORM, 0, 0, 0, 10000);
-        for (int i = 0; i < 10; i++) {
-            System.out.println(gen.getNext());
+        TweetGenerator gen = new TweetGenerator(FeedMode.Sequential, UpdateDistribution.UNIFORM, 0, 0.5, 0, 10000);
+        for (int i = 0; i < 100; i++) {
+            System.out.print(gen.getNext());
         }
     }
 

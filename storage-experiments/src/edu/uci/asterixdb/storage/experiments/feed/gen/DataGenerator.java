@@ -464,8 +464,14 @@ public class DataGenerator {
             int day = calendar.get(Calendar.DATE);
             builder.append(day < 10 ? "0" + day : day);
             builder.append("T");
-            builder.append(calendar.get(Calendar.HOUR) + ":" + calendar.get(Calendar.MINUTE) + ":"
-                    + calendar.get(Calendar.SECOND));
+            int hour = calendar.get(Calendar.HOUR);
+            builder.append(hour < 10 ? "0" + hour : hour);
+            builder.append(":");
+            int minute = calendar.get(Calendar.MINUTE);
+            builder.append(minute < 10 ? "0" + minute : minute);
+            builder.append(":");
+            int second = calendar.get(Calendar.SECOND);
+            builder.append(second < 10 ? "0" + second : second);
             builder.append("\"");
             return builder.toString();
         }
