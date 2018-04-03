@@ -20,8 +20,11 @@ package edu.uci.asterixdb.storage.experiments.feed.gen;
 
 import java.util.Random;
 
+import org.joda.time.DateTime;
+
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
+import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.SequentialDateGenerator;
 import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessage;
 
 public class TweetGenerator implements IRecordGenerator {
@@ -60,10 +63,14 @@ public class TweetGenerator implements IRecordGenerator {
     }
 
     public static void main(String[] args) {
-        TweetGenerator gen = new TweetGenerator(FeedMode.Sequential, UpdateDistribution.UNIFORM, 0, 0.5, 0, 10000);
-        for (int i = 0; i < 100; i++) {
-            System.out.print(gen.getNext());
+        SequentialDateGenerator gen = new SequentialDateGenerator(2010, 2, 28);
+        for (int i = 0; i < 100000; i++) {
+            DateTime dateTime = gen.getNextTime();
+            if (i % 3600 == 0) {
+                System.out.println(TweetMessage.getDateTimeString(dateTime));
+            }
         }
+
     }
 
 }

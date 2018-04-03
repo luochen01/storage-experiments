@@ -20,10 +20,11 @@ package edu.uci.asterixdb.storage.experiments.feed.gen;
 
 import java.nio.CharBuffer;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+
+import org.joda.time.DateTime;
 
 public class DataGenerator {
 
@@ -44,7 +45,7 @@ public class DataGenerator {
         getTwitterUser(null);
         Message message = randMessageGen.getNextRandomMessage();
         Point location = randLocationGen.getRandomPoint();
-        Calendar sendTime = randDateGen.getNextTime();
+        DateTime sendTime = randDateGen.getNextTime();
         twMessage.reset(id, sid, twUser, location.getLatitude(), location.getLongitude(), sendTime, message,
                 DEFAULT_COUNTRY);
         return twMessage;
@@ -84,15 +85,15 @@ public class DataGenerator {
 
     public static class SequentialDateGenerator {
 
-        private final Calendar calendar = Calendar.getInstance();
+        private DateTime current;
 
         public SequentialDateGenerator(int year, int month, int date) {
-            calendar.set(year, month, date, 0, 0, 0);
+            current = new DateTime(year, month, date, 0, 0, 0);
         }
 
-        public Calendar getNextTime() {
-            calendar.add(Calendar.SECOND, 1);
-            return calendar;
+        public DateTime getNextTime() {
+            current = current.plusSeconds(1);
+            return current;
         }
 
     }
@@ -359,7 +360,7 @@ public class DataGenerator {
         private TwitterUser user;
         private double latitude;
         private double longitude;
-        private Calendar created_at;
+        private DateTime created_at;
         private Message messageText;
         private String country;
 
@@ -384,7 +385,7 @@ public class DataGenerator {
         }
 
         public void reset(long tweetid, long sid, TwitterUser user, double latitude, double longitude,
-                Calendar created_at, Message messageText, String country) {
+                DateTime created_at, Message messageText, String country) {
             this.id = tweetid;
             this.sid = sid;
             this.user = user;
@@ -453,24 +454,24 @@ public class DataGenerator {
             return builder.toString();
         }
 
-        private String getDateTimeString(Calendar calendar) {
+        public static String getDateTimeString(DateTime calendar) {
             StringBuilder builder = new StringBuilder();
             builder.append("\"");
-            builder.append(calendar.get(Calendar.YEAR));
+            builder.append(calendar.getYear());
             builder.append("-");
-            int month = calendar.get(Calendar.MONTH);
+            int month = calendar.getMonthOfYear();
             builder.append(month < 10 ? "0" + month : month);
             builder.append("-");
-            int day = calendar.get(Calendar.DATE);
+            int day = calendar.getDayOfMonth();
             builder.append(day < 10 ? "0" + day : day);
             builder.append("T");
-            int hour = calendar.get(Calendar.HOUR);
+            int hour = calendar.getHourOfDay();
             builder.append(hour < 10 ? "0" + hour : hour);
             builder.append(":");
-            int minute = calendar.get(Calendar.MINUTE);
+            int minute = calendar.getMinuteOfHour();
             builder.append(minute < 10 ? "0" + minute : minute);
             builder.append(":");
-            int second = calendar.get(Calendar.SECOND);
+            int second = calendar.getSecondOfMinute();
             builder.append(second < 10 ? "0" + second : second);
             builder.append("\"");
             return builder.toString();
@@ -508,7 +509,7 @@ public class DataGenerator {
             return latitude;
         }
 
-        public Calendar getSendTime() {
+        public DateTime getSendTime() {
             return created_at;
         }
 
