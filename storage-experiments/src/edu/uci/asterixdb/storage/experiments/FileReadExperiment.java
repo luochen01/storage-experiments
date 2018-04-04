@@ -1,10 +1,13 @@
 package edu.uci.asterixdb.storage.experiments;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FilenameFilter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -15,122 +18,118 @@ import java.util.Random;
  *
  */
 public class FileReadExperiment {
+    private final byte[] bytes;
 
-    private final int bufferSize;
-
-    private final char[] buffer;
-
-    private final List<FileEntry> files = new ArrayList<>();
+    private final List<File> files;
 
     private final int numPages;
 
-    private class FileEntry {
-        File file;
-        FileReader reader;
-
-        public FileEntry(File file) throws IOException {
-            this.file = file;
-        }
-
-        public void open() throws IOException {
-            reader = new FileReader(file);
-        }
-
-        public void close() throws IOException {
-            if (reader != null) {
-                reader.close();
-                reader = null;
-            }
-        }
-    }
-
-    public FileReadExperiment(String dir, int numFiles, int bufferSize, int numPages) throws IOException {
-        this.bufferSize = bufferSize;
-        this.buffer = new char[bufferSize];
-        this.numPages = numPages;
+    public FileReadExperiment(String dir, int numFiles, int pageSizeKB, int fileSizeMB) throws IOException {
+        this.bytes = new byte[pageSizeKB * 1024];
+        this.numPages = fileSizeMB * 1024 / pageSizeKB;
         File dirFile = new File(dir);
         if (!dirFile.isDirectory()) {
             throw new IllegalArgumentException(dir + " is not directory");
         }
-        File[] files = dirFile.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                // only consider large btrees
-                return name.endsWith("_b");
+        files = generateFiles(numFiles, dirFile);
+    }
+
+    private List<File> generateFiles(int numFiles, File baseDir) throws IOException {
+        List<File> files = new ArrayList<>(numFiles);
+        for (int i = 0; i < numFiles; i++) {
+            File file = new File(baseDir, "test-" + i);
+            BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+            for (int p = 0; p < numPages; p++) {
+                Arrays.fill(bytes, (byte) p);
+                out.write(bytes);
             }
-        });
-        for (int i = 0; i < Math.min(numFiles, files.length); i++) {
-            this.files.add(new FileEntry(files[i]));
-            System.out.println("Collect " + files[i] + " with size " + files[i].length() / (1024 * 1024) + "MB");
+            out.close();
+            files.add(file);
+            System.out.println("Generated file " + file);
         }
-        System.out.println("Collect " + this.files.size() + " for experiments");
+        return files;
     }
 
     public void run() throws IOException {
-        // sequentialRead();
+        sequentialRead();
         randomRead();
+    }
+
+    private List<FileInputStream> readFiles() throws FileNotFoundException {
+        List<FileInputStream> ins = new ArrayList<>();
+        for (File file : files) {
+            ins.add(new FileInputStream(file));
+        }
+        return ins;
+    }
+
+    private void closeStreams(List<FileInputStream> ins) throws IOException {
+        for (FileInputStream in : ins) {
+            in.close();
+        }
     }
 
     private void sequentialRead() throws IOException {
         long begin = System.currentTimeMillis();
-        for (FileEntry entry : files) {
-            entry.open();
-            int pages = 0;
-            while (entry.reader.read(buffer, 0, bufferSize) != -1 && pages < numPages) {
-                pages++;
+        List<FileInputStream> ins = readFiles();
+        for (int i = 0; i < files.size(); i++) {
+            FileInputStream in = ins.get(i);
+            for (int p = 0; p < numPages; p++) {
+                in.read(bytes);
             }
-
-            System.out.println("Finished " + entry.file);
-            entry.close();
+            System.out.println("Finished sequential read file " + i);
+            in.close();
         }
         long end = System.currentTimeMillis();
-        System.out.println("Sequential read finishes in " + (end - begin) + " ms");
+        long time = (end - begin);
+        System.out.println("Sequential read finishes in " + time + " ms");
+        System.out.println("Sequential read throughput " + computeThroughputKB(time) + " KB/s");
+    }
+
+    private long computeThroughputKB(long timeInMs) {
+        long totalSizeKB = (long) numPages * bytes.length * files.size() / 1024;
+        return (long) (totalSizeKB / ((double) timeInMs / 1000));
     }
 
     private void randomRead() throws IOException {
         long begin = System.currentTimeMillis();
         Random rand = new Random(System.currentTimeMillis());
         List<Integer> pages = new ArrayList<>(files.size());
-        for (FileEntry e : files) {
-            e.open();
-            pages.add(0);
-        }
+        files.forEach(f -> pages.add(0));
+        List<FileInputStream> ins = readFiles();
 
-        while (files.size() > 0) {
-            int i = rand.nextInt(files.size());
-            int ret = files.get(i).reader.read(buffer, 0, bufferSize);
+        while (ins.size() > 0) {
+            int i = rand.nextInt(ins.size());
+            int ret = ins.get(i).read(bytes);
             pages.set(i, pages.get(i) + 1);
-
             if (ret == -1 || pages.get(i) >= numPages) {
-                files.get(i).close();
-                System.out.println("Finished " + files.get(i).file);
-                files.remove(i);
+                ins.get(i).close();
+                System.out.println("Finished " + files.get(i));
+                ins.remove(i);
                 pages.remove(i);
             }
         }
         long end = System.currentTimeMillis();
         System.out.println("Random read finishes in " + (end - begin) + " ms");
+        System.out.println("Random read throughput " + computeThroughputKB(end - begin) + " KB/s");
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 3 && args.length != 4) {
-            System.err.println("args: dir numFiles bufferSize(kb) numPages");
+        if (args.length != 4) {
+            System.err.println("args: dir numFiles pageSize(kb) fileSize(mb)");
             return;
         }
 
         String dir = args[0];
         int numFiles = Integer.valueOf(args[1]);
-        int bufferSize = Integer.valueOf(args[2]) * 1024;
-        int numPages = Integer.MAX_VALUE;
-        if (args.length >= 3) {
-            numPages = Integer.valueOf(args[3]);
-        }
+        int pageSizeKB = Integer.valueOf(args[2]);
+        int fileSizeMB = Integer.valueOf(args[3]);
         System.out.println("File Read Experiment ");
         System.out.println("Num Files " + numFiles);
-        System.out.println("Buffer Size " + bufferSize);
-        System.out.println("Num of Pages " + numPages);
+        System.out.println("PageSize (KB) " + pageSizeKB);
+        System.out.println("FileSize (MB) " + fileSizeMB);
 
-        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, bufferSize, numPages);
+        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, pageSizeKB, fileSizeMB);
         expr.run();
     }
 }
