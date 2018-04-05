@@ -25,28 +25,34 @@ public class FileReadExperiment {
 
     private final int numPages;
 
-    public FileReadExperiment(String dir, int numFiles, int pageSizeKB, int fileSizeMB) throws IOException {
+    public FileReadExperiment(String dir, int numFiles, int pageSizeKB, int fileSizeMB, boolean createFiles)
+            throws IOException {
         this.bytes = new byte[pageSizeKB * 1024];
         this.numPages = fileSizeMB * 1024 / pageSizeKB;
         File dirFile = new File(dir);
         if (!dirFile.isDirectory()) {
             throw new IllegalArgumentException(dir + " is not directory");
         }
-        files = generateFiles(numFiles, dirFile);
+        files = generateFiles(numFiles, dirFile, createFiles);
     }
 
-    private List<File> generateFiles(int numFiles, File baseDir) throws IOException {
+    private List<File> generateFiles(int numFiles, File baseDir, boolean createFiles) throws IOException {
         List<File> files = new ArrayList<>(numFiles);
         for (int i = 0; i < numFiles; i++) {
             File file = new File(baseDir, "test-" + i);
-            BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-            for (int p = 0; p < numPages; p++) {
-                Arrays.fill(bytes, (byte) p);
-                out.write(bytes);
+            if (createFiles) {
+                BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+                for (int p = 0; p < numPages; p++) {
+                    Arrays.fill(bytes, (byte) p);
+                    out.write(bytes);
+                }
+                out.close();
+                files.add(file);
+                System.out.println("Generated file " + file);
+            } else {
+                System.out.println("Loaded file " + file);
             }
-            out.close();
-            files.add(file);
-            System.out.println("Generated file " + file);
+
         }
         return files;
     }
@@ -123,8 +129,8 @@ public class FileReadExperiment {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 4) {
-            System.err.println("args: dir numFiles pageSize(kb) fileSize(mb)");
+        if (args.length != 5) {
+            System.err.println("args: dir numFiles pageSize(kb) fileSize(mb) createFiles(boolean)");
             return;
         }
 
@@ -132,12 +138,13 @@ public class FileReadExperiment {
         int numFiles = Integer.valueOf(args[1]);
         int pageSizeKB = Integer.valueOf(args[2]);
         int fileSizeMB = Integer.valueOf(args[3]);
+        boolean createFiles = Boolean.valueOf(args[4]);
         System.out.println("File Read Experiment ");
         System.out.println("Num Files " + numFiles);
         System.out.println("PageSize (KB) " + pageSizeKB);
         System.out.println("FileSize (MB) " + fileSizeMB);
 
-        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, pageSizeKB, fileSizeMB);
+        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, pageSizeKB, fileSizeMB, createFiles);
         expr.run();
     }
 }
