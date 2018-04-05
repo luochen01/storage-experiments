@@ -2,10 +2,11 @@ package edu.uci.asterixdb.storage.experiments;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -55,30 +56,32 @@ public class FileReadExperiment {
         randomRead();
     }
 
-    private List<FileInputStream> readFiles() throws FileNotFoundException {
-        List<FileInputStream> ins = new ArrayList<>();
+    private List<FileChannel> readFiles() throws IOException {
+        List<FileChannel> ins = new ArrayList<>();
         for (File file : files) {
-            ins.add(new FileInputStream(file));
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");
+            FileChannel channel = raf.getChannel();
+            channel.position(0);
+            ins.add(channel);
         }
         return ins;
     }
 
-    private void closeStreams(List<FileInputStream> ins) throws IOException {
-        for (FileInputStream in : ins) {
-            in.close();
-        }
-    }
-
     private void sequentialRead() throws IOException {
+        ByteBuffer dest = ByteBuffer.wrap(bytes);
         long begin = System.currentTimeMillis();
-        List<FileInputStream> ins = readFiles();
+        List<FileChannel> ins = readFiles();
         for (int i = 0; i < files.size(); i++) {
-            FileInputStream in = ins.get(i);
+            FileChannel channel = ins.get(i);
             for (int p = 0; p < numPages; p++) {
-                in.read(bytes);
+                dest.rewind();
+                int bytesRead = channel.read(dest, (long) p * bytes.length);
+                if (bytesRead != bytes.length) {
+                    throw new IllegalStateException("Wrong bytes read " + bytesRead);
+                }
             }
             System.out.println("Finished sequential read file " + i);
-            in.close();
+            channel.close();
         }
         long end = System.currentTimeMillis();
         long time = (end - begin);
@@ -92,17 +95,22 @@ public class FileReadExperiment {
     }
 
     private void randomRead() throws IOException {
+        ByteBuffer dest = ByteBuffer.wrap(bytes);
         long begin = System.currentTimeMillis();
         Random rand = new Random(System.currentTimeMillis());
         List<Integer> pages = new ArrayList<>(files.size());
         files.forEach(f -> pages.add(0));
-        List<FileInputStream> ins = readFiles();
+        List<FileChannel> ins = readFiles();
 
         while (ins.size() > 0) {
             int i = rand.nextInt(ins.size());
-            int ret = ins.get(i).read(bytes);
+            dest.rewind();
+            int ret = ins.get(i).read(dest, (long) pages.get(i) * bytes.length);
+            if (ret != bytes.length) {
+                throw new IllegalStateException("Wrong bytes read " + ret);
+            }
             pages.set(i, pages.get(i) + 1);
-            if (ret == -1 || pages.get(i) >= numPages) {
+            if (pages.get(i) >= numPages) {
                 ins.get(i).close();
                 System.out.println("Finished " + files.get(i));
                 ins.remove(i);
