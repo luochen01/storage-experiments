@@ -47,11 +47,11 @@ public class FileReadExperiment {
                     out.write(bytes);
                 }
                 out.close();
-                files.add(file);
                 System.out.println("Generated file " + file);
             } else {
                 System.out.println("Loaded file " + file);
             }
+            files.add(file);
 
         }
         return files;
