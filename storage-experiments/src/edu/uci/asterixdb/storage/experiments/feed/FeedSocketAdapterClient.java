@@ -42,7 +42,6 @@ public class FeedSocketAdapterClient {
         //System.out.println(record);
         byte[] b = record.getBytes();
         out.write(b);
-        out.flush();
         stat.totalRecords++;
         stat.totalBytes += b.length;
         if (newRecord) {

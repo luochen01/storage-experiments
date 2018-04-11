@@ -18,59 +18,70 @@
  */
 package edu.uci.asterixdb.storage.experiments.feed.gen;
 
+import java.io.IOException;
 import java.util.Random;
 
-import org.joda.time.DateTime;
+import org.apache.asterix.external.input.record.CharArrayRecord;
+import org.apache.asterix.external.parser.ADMDataParser;
+import org.apache.asterix.om.types.ARecordType;
+import org.apache.asterix.om.types.BuiltinType;
+import org.apache.asterix.om.types.IAType;
+import org.apache.hyracks.data.std.util.ArrayBackedValueStorage;
 
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
-import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.SequentialDateGenerator;
 import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessage;
 
-public class TweetGenerator implements IRecordGenerator {
+public class TweetGenerator extends AbstractRecordGenerator {
 
     private DataGenerator dataGenerator = null;
-    private final IdGenerator idGenerator;
     private final int sidRange;
-
-    private long nextId;
-    private long nextSid;
 
     private final Random random = new Random(17);
 
     public TweetGenerator(FeedMode mode, UpdateDistribution dist, double theta, double updateRatio, long startRange,
             int sidRange) {
+        super(mode, dist, theta, updateRatio, startRange);
         dataGenerator = new DataGenerator();
-        this.idGenerator = IdGenerator.create(dist, theta, startRange, updateRatio, mode == FeedMode.Random);
         this.sidRange = sidRange;
     }
 
     @Override
-    public String getNext() {
-        genNextIds();
-        TweetMessage msg = dataGenerator.getNext(nextId, nextSid);
+    protected String doGetNext(long nextId) {
+        TweetMessage msg = dataGenerator.getNext(nextId, random.nextInt(sidRange));
         return msg.getAdmEquivalent(null) + "\n";
     }
 
-    private void genNextIds() {
-        nextId = idGenerator.next();
-        nextSid = random.nextInt(sidRange);
-    }
+    public static void main(String[] args) throws IOException {
+        TweetGenerator gen = new TweetGenerator(FeedMode.Sequential, UpdateDistribution.UNIFORM, 0, 0, 0, 1000000);
+        ARecordType userType = new ARecordType("userType",
+                new String[] { "screen_name", "language", "friends_count", "status_count", "name", "followers_count" },
+                new IAType[] { BuiltinType.ASTRING, BuiltinType.ASTRING, BuiltinType.AINT32, BuiltinType.AINT32,
+                        BuiltinType.ASTRING, BuiltinType.AINT32 },
+                true);
+        ARecordType tweetType = new ARecordType("tweetType",
+                new String[] { "id", "sid", "user", "latitude", "longitude", "created_at", "message_text" },
+                new IAType[] { BuiltinType.AINT64, BuiltinType.AINT64, userType, BuiltinType.ADOUBLE,
+                        BuiltinType.ADOUBLE, BuiltinType.ADATETIME, BuiltinType.ASTRING },
+                true);
+        ADMDataParser parser = new ADMDataParser(tweetType, false);
 
-    @Override
-    public boolean isNewRecord() {
-        return idGenerator.isNewTweet();
-    }
-
-    public static void main(String[] args) {
-        SequentialDateGenerator gen = new SequentialDateGenerator(2010, 2, 28);
-        for (int i = 0; i < 100000; i++) {
-            DateTime dateTime = gen.getNextTime();
-            if (i % 3600 == 0) {
-                System.out.println(TweetMessage.getDateTimeString(dateTime));
+        int total = 1000000;
+        long begin = System.currentTimeMillis();
+        CharArrayRecord record = new CharArrayRecord();
+        ArrayBackedValueStorage result = new ArrayBackedValueStorage();
+        for (int i = 0; i < total; i++) {
+            String tweet = gen.getNext();
+            result.reset();
+            record.reset();
+            //record.set(tweet);
+            parser.parse(record, result.getDataOutput());
+            if (i % 10000 == 0) {
+                System.out.println("Parsed " + i + " records");
             }
         }
-
+        long end = System.currentTimeMillis();
+        System.out.println("Finish parsing in " + (end - begin) + "ms");
     }
 
 }

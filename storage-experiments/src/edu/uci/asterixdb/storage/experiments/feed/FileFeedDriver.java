@@ -6,6 +6,7 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import edu.uci.asterixdb.storage.experiments.feed.gen.IRecordGenerator;
+import edu.uci.asterixdb.storage.experiments.feed.gen.KVGenerator;
 import edu.uci.asterixdb.storage.experiments.feed.gen.RecordFileReader;
 import edu.uci.asterixdb.storage.experiments.feed.gen.TweetGenerator;
 import edu.uci.asterixdb.storage.experiments.util.ZipfianGenerator;
@@ -20,6 +21,11 @@ public class FileFeedDriver {
     public enum UpdateDistribution {
         UNIFORM,
         ZIPF,
+    }
+
+    public enum DataType {
+        TWEET,
+        KV
     }
 
     @Option(required = true, name = "-u", aliases = "--url", usage = "url of the feed adapter")
@@ -62,6 +68,12 @@ public class FileFeedDriver {
     @Option(name = "-input", aliases = "--input", usage = "the path of the input file")
     public String inputFile = null;
 
+    @Option(name = "-type", aliases = "--type", usage = "data type (tweet or kv)")
+    public DataType dataType = DataType.TWEET;
+
+    @Option(name = "-size", aliases = "--size", usage = "record size (in bytes)")
+    public int recordSize = 500;
+
     private final FeedSocketAdapterClient client;
 
     private final FeedReporter reporter;
@@ -77,9 +89,15 @@ public class FileFeedDriver {
         CmdLineParser parser = new CmdLineParser(this);
         parser.parseArgument(args);
 
-        gen = inputFile != null ? new RecordFileReader(inputFile)
-                : new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange);
-
+        if (inputFile != null) {
+            gen = new RecordFileReader(inputFile);
+        } else {
+            if (dataType == DataType.TWEET) {
+                gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange);
+            } else {
+                gen = new KVGenerator(mode, distribution, theta, updateRatio, startRange, recordSize);
+            }
+        }
         client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
         reporter = new FeedReporter(this, client, period, logPath);
         printConf();

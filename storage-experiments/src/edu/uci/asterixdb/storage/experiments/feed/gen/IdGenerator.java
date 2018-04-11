@@ -48,7 +48,7 @@ public abstract class IdGenerator {
         return randomize ? randomize(id) : id;
     }
 
-    public boolean isNewTweet() {
+    public boolean isNewId() {
         return isNewTweet;
     }
 
