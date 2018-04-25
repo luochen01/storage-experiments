@@ -9,6 +9,37 @@ import java.util.Arrays;
 public class FileLatencyExperiment {
 
     public static void main(String args[]) throws Exception {
+        testRename(args);
+    }
+
+    private static void testRename(String[] args) throws Exception {
+        File dir = new File(args[0]);
+        dir.mkdirs();
+        int numThreads = Integer.parseInt(args[1]);
+
+        Thread[] threads = new Thread[numThreads];
+        for (int i = 0; i < numThreads; i++) {
+            threads[i] = new Thread(new FileWriteThread(new File(dir, i + ".write")));
+            threads[i].start();
+        }
+
+        File[] files = new File[1000];
+        for (int i = 0; i < files.length; i++) {
+            files[i] = new File(dir, i + ".new");
+            files[i].createNewFile();
+        }
+        int i = 0;
+        while (true) {
+            long begin = System.currentTimeMillis();
+            files[i].renameTo(new File(dir, i + ".create"));
+            long end = System.currentTimeMillis();
+            System.out.println("Rename " + files[i] + " takes " + (end - begin) + " ms");
+            Thread.sleep(250);
+            i++;
+        }
+    }
+
+    private static void testCreate(String[] args) throws Exception {
         File dir = new File(args[0]);
         dir.mkdirs();
         int numThreads = Integer.parseInt(args[1]);
@@ -29,7 +60,6 @@ public class FileLatencyExperiment {
             Thread.sleep(250);
             i++;
         }
-
     }
 
     private static class FileWriteThread implements Runnable {
