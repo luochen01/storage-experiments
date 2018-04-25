@@ -23,10 +23,10 @@ public class FileLatencyExperiment {
         while (true) {
             long begin = System.currentTimeMillis();
             File newFile = new File(dir, i + ".create");
+            newFile.createNewFile();
             long end = System.currentTimeMillis();
             System.out.println("Create " + newFile + " takes " + (end - begin) + " ms");
-            newFile.createNewFile();
-            Thread.sleep(500);
+            Thread.sleep(250);
             i++;
         }
 
