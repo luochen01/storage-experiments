@@ -9,6 +9,25 @@ total_records_index = 'total_records'
 base_path='/Users/luochen/Documents/Research/experiments/results/lsm/'
 result_base_path='/Users/luochen/Documents/Research/experiments/results/lsm/figure/'
 
+
+antimatter_color = 'red'
+antimatter_linestyle = 'solid'
+
+validation_norepair_color = 'blue'
+validation_norepair_linestyle = 'solid'
+
+validation_color = 'green'
+validation_linestyle = 'solid'
+
+delete_btree_color = 'grey'
+delete_btree_linestyle = 'solid'
+
+inplace_color = 'orange'
+inplace_linestyle = 'solid'
+
+updates = [0, 0.05, 0.1, 0.25, 0.5]
+
+
 if not os.path.exists(result_base_path):
     os.makedirs(result_base_path)
 
@@ -22,7 +41,7 @@ params = {
    'lines.markeredgewidth':1.5,
    'text.usetex': False
 }
-markers=['D','s','o','*','^']
+markers=['D','s','o','^', '*']
 
 #plt.rcParams.update(params)
 
@@ -32,12 +51,13 @@ class ExperimentResult(object):
         self.total_records = csv[total_records_index]/1000000
 
 class PlotOption(object):
-    def __init__(self, data, legend, color='red', linestyle='solid', marker=None):
+    def __init__(self, data, legend, color='red', linestyle='solid', marker=None, markevery = 60):
         self.data = data
         self.linestyle = linestyle
         self.marker = marker
         self.color = color
         self.legend = legend
+        self.markevery = markevery
 
 def open_csv(path):
     try:
@@ -48,13 +68,13 @@ def open_csv(path):
         return None
 
 
-def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total Ingested Records (millions)', ylimit=170):
+def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total Ingested Records (millions)', xlimit=365, ylimit=170):
     # use as global
 
     plt.figure()
     for option in options:
         plt.plot(option.data.time, option.data.total_records, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=60,
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery,
                   linewidth=1.0)
 
     legend_col = 1
@@ -63,11 +83,16 @@ def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total In
     plt.legend(loc=2, ncol=legend_col)
 
     plt.title(title)
-  #  plt.xticks(np.arange(0, 70, 10))
+
+    step = 0
+    if xlimit / 6 <= 60:
+        step = 60
+    else:
+        step = 600
 
     plt.xlabel(xlabel)
-    plt.xticks(np.arange(0, 365, step=60))
-    plt.xlim(0, 365)
+    plt.xticks(np.arange(0, xlimit, step=step))
+    plt.xlim(0, xlimit)
     plt.ylim(0, ylimit)
     plt.ylabel(ylabel)
     plt.gca().yaxis.grid(linestyle='dotted')

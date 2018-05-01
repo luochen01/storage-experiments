@@ -30,7 +30,7 @@ public class FlowNetworkParser {
 
     private final String basePath = "/Users/luochen/Documents/Research/experiments/results/flowcontrol";
 
-    private final String unitPattern = "-storage/partition_0/twitter/ds_tweet/0/ds_tweet";
+    private final String unitPattern = "records/s";
 
     private final FilenameFilter filter = new FilenameFilter() {
         @Override
@@ -102,11 +102,11 @@ public class FlowNetworkParser {
             return null;
         }
 
-        int nameIndex = line.indexOf("ds_tweet-") + "ds_tweet-".length();
-        int nameEndIndex = line.indexOf('(', nameIndex);
-        String name = line.substring(nameIndex, nameEndIndex);
+        int pindex = line.indexOf("(");
+        String[] names = line.substring(0, pindex).split("/");
+        String name = names[names.length - 1];
 
-        int recordIndex = line.indexOf(": ", nameEndIndex) + 2;
+        int recordIndex = line.indexOf(": ", pindex) + 2;
         int recordEndIndex = line.indexOf("records/s", recordIndex);
         double recordSpeed = Double.valueOf(line.substring(recordIndex, recordEndIndex));
 

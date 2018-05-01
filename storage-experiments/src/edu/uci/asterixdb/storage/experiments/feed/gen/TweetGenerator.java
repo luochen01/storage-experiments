@@ -18,8 +18,6 @@
  */
 package edu.uci.asterixdb.storage.experiments.feed.gen;
 
-import java.util.Random;
-
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
 import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessage;
@@ -28,8 +26,7 @@ public class TweetGenerator extends AbstractRecordGenerator {
 
     private DataGenerator dataGenerator = null;
     private final int sidRange;
-
-    private final Random random = new Random(17);
+    private long nextSid = 0;
 
     public TweetGenerator(FeedMode mode, UpdateDistribution dist, double theta, double updateRatio, long startRange,
             int sidRange) {
@@ -40,8 +37,15 @@ public class TweetGenerator extends AbstractRecordGenerator {
 
     @Override
     protected String doGetNext(long nextId) {
-        TweetMessage msg = dataGenerator.getNext(nextId, random.nextInt(sidRange));
+        TweetMessage msg = dataGenerator.getNext(nextId, (nextSid++) % sidRange);
         return msg.getAdmEquivalent(null) + "\n";
+    }
+
+    public static void main(String[] args) {
+        TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.UNIFORM, 0, 0.5, 0, 10);
+        for (int i = 0; i < 100; i++) {
+            System.out.println(gen.getNext());
+        }
     }
 
 }

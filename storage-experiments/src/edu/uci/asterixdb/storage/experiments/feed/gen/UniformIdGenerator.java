@@ -11,7 +11,11 @@ public class UniformIdGenerator extends IdGenerator {
 
     @Override
     protected long generateUpdate(long itemCount) {
-        return Math.abs(random.nextLong()) % itemCount;
+        if (itemCount == 0) {
+            return 0;
+        } else {
+            return Math.abs(random.nextLong()) % itemCount;
+        }
     }
 
     public static void main(String[] args) {

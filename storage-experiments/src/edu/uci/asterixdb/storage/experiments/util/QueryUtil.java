@@ -1,13 +1,9 @@
 package edu.uci.asterixdb.storage.experiments.util;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
-import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -53,7 +49,7 @@ public class QueryUtil {
         HttpResponse response = client.execute(post);
         String queryResult = IOUtils.toString(response.getEntity().getContent(), Charset.defaultCharset());
 
-        LOGGER.info(queryResult);
+        LOGGER.warn(queryResult);
 
         JSONObject obj = new JSONObject(queryResult);
         Object count = null;
@@ -81,18 +77,5 @@ public class QueryUtil {
         }
         return TimeFormatter.format(value);
 
-    }
-
-    public static void outputQueryResults(List<QueryResult> results, String path) {
-        QueryResultFormatter formatter = new QueryResultFormatter();
-        String result = formatter.format(results);
-        LOGGER.info(result);
-        try {
-            FileWriter writer = new FileWriter(new File(path));
-            writer.write(result);
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
