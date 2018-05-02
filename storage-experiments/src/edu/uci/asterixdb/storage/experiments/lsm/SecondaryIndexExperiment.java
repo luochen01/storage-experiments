@@ -97,6 +97,13 @@ public class SecondaryIndexExperiment {
         if (args.length >= 6) {
             cleanCacheDataverse = args[5];
         }
+
+        System.out.println("Dataverse: " + dataverse);
+        System.out.println("Selectivity: : " + selectivity);
+        System.out.println("Num queries: " + numQueries);
+        System.out.println("Skip pk index in validation: " + skipPkIndex);
+        System.out.println("Output path: " + outputPath);
+        System.out.println("Clean cache dataverse: " + cleanCacheDataverse);
         SecondaryIndexExperiment expr = new SecondaryIndexExperiment(dataverse, selectivity, numQueries, skipPkIndex,
                 outputPath, cleanCacheDataverse);
         expr.run();
