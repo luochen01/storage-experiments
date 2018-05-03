@@ -18,6 +18,7 @@ public class ConcurrentFileWriteTest {
     private static String file;
     private static int numThreads;
     private static int forceFrequency;
+    private static long beginTime;
     private static final AtomicLong totalPages = new AtomicLong();
 
     public static void main(String args[]) throws Exception {
@@ -45,6 +46,7 @@ public class ConcurrentFileWriteTest {
         WriterThread[] threads = new WriterThread[numThreads];
         long fileSize = baseFileSize;
         int run = runs;
+        beginTime = System.currentTimeMillis();
         for (int i = 0; i < numThreads; i++) {
             System.out.println(String.format("%d runs * %d bytes for %s", run, fileSize, "writer-" + i));
             threads[i] = new WriterThread("writer-" + i, pageSize, fileSize, run);
@@ -101,7 +103,7 @@ public class ConcurrentFileWriteTest {
                     channel.force(false);
                     raf.close();
                     long end = System.currentTimeMillis();
-                    LOGGER.error("Finished {} pages in {} ms", numPages, (end - begin));
+                    LOGGER.error("{}: Finished {} pages in {} ms", (end - beginTime), numPages, (end - begin));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
