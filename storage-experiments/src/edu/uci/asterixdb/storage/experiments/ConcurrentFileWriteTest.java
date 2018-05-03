@@ -41,6 +41,7 @@ public class ConcurrentFileWriteTest {
         System.out.println("BaseFileSize: " + baseFileSize);
         System.out.println("numThreads: " + numThreads);
         System.out.println("Runs: " + runs);
+        System.out.println("Force frequency: " + forceFrequency);
 
         long begin = System.currentTimeMillis();
         WriterThread[] threads = new WriterThread[numThreads];
@@ -99,6 +100,12 @@ public class ConcurrentFileWriteTest {
                         buffer.clear();
                         channel.write(buffer);
                         totalPages.incrementAndGet();
+                        if (forceFrequency != 0 && (i + 1) % forceFrequency == 0) {
+                            long beginForce = System.currentTimeMillis();
+                            channel.force(false);
+                            long endForce = System.currentTimeMillis();
+                            LOGGER.error("Force {}/{} pages takes {} ms", i, numPages, (endForce - beginForce));
+                        }
                     }
                     channel.force(false);
                     raf.close();
