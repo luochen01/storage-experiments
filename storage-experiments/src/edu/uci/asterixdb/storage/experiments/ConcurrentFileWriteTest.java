@@ -8,6 +8,9 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ConcurrentFileWriteTest {
 
     private static long pageSize;
@@ -57,6 +60,7 @@ public class ConcurrentFileWriteTest {
         private final int runs;
         private final String threadname;
         private final Random random;
+        private final Logger LOGGER;
 
         public WriterThread(String threadname, long pageSize, long totalSize, int runs) {
             this.threadname = threadname;
@@ -65,6 +69,7 @@ public class ConcurrentFileWriteTest {
             this.numPages = totalSize / pageSize;
             this.runs = runs;
             this.random = new Random(threadname.hashCode());
+            this.LOGGER = LogManager.getLogger(threadname);
         }
 
         @Override
@@ -88,8 +93,7 @@ public class ConcurrentFileWriteTest {
                     channel.force(false);
                     raf.close();
                     long end = System.currentTimeMillis();
-                    System.out.println(
-                            String.format("Finished %d pages by %s in %d ms", numPages, threadname, (end - begin)));
+                    LOGGER.error("Finished {} pages in {} ms", numPages, (end - begin));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
