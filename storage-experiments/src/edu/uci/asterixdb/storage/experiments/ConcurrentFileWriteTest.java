@@ -46,7 +46,7 @@ public class ConcurrentFileWriteTest {
         long fileSize = baseFileSize;
         int run = runs;
         for (int i = 0; i < numThreads; i++) {
-            System.out.println(run + " runs for writer-" + i);
+            System.out.println(String.format("%d runs * %d bytes for %s", run, fileSize, "writer-" + i));
             threads[i] = new WriterThread("writer-" + i, pageSize, fileSize, run);
             threads[i].start();
 
