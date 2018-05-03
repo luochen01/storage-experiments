@@ -81,6 +81,7 @@ public class ConcurrentFileWriteTest {
             this.runs = runs;
             this.random = new Random(threadname.hashCode());
             this.LOGGER = LogManager.getLogger(threadname);
+            random.nextBytes(bytes);
         }
 
         @Override
@@ -96,7 +97,6 @@ public class ConcurrentFileWriteTest {
                     channel.position(0);
                     ByteBuffer buffer = ByteBuffer.wrap(bytes);
                     for (long i = 0; i < numPages; i++) {
-                        random.nextBytes(bytes);
                         buffer.clear();
                         channel.write(buffer);
                         totalPages.incrementAndGet();
