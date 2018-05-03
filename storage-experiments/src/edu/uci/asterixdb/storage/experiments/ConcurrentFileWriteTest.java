@@ -5,75 +5,94 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ConcurrentFileWriteTest {
 
+    private static long pageSize;
+    private static long baseFileSize;
+    private static String file;
+    private static int numThreads;
+    private static final AtomicLong totalPages = new AtomicLong();
+
     public static void main(String args[]) throws Exception {
         if (args.length != 5) {
-            System.out.println("Usage: pageSize(KB), smallFileSize(MB), bigFileSize(MB), path, threads");
+            System.out.println("Usage: pageSize(KB), baseFileSize(MB), path, threads, runs");
             return;
         }
 
-        long pageSize = Long.parseLong(args[0]) * 1024;
-        long smallFileSize = Long.parseLong(args[1]) * 1024 * 1024;
-        long bigFileSize = Long.parseLong(args[2]) * 1024 * 1024;
-        String file = args[3];
-        int numThreads = Integer.parseInt(args[4]);
+        pageSize = Long.parseLong(args[0]) * 1024;
+        baseFileSize = Long.parseLong(args[1]) * 1024 * 1024;
+        file = args[2];
+        numThreads = Integer.parseInt(args[3]);
+        int runs = Integer.parseInt(args[4]);
 
         System.out.println("PageSize: " + pageSize);
-        System.out.println("SmallFileSize: " + smallFileSize);
-        System.out.println("BigFileSize: " + bigFileSize);
+        System.out.println("BaseFileSize: " + baseFileSize);
         System.out.println("numThreads: " + numThreads);
+        System.out.println("Runs: " + runs);
 
+        long begin = System.currentTimeMillis();
         WriterThread[] threads = new WriterThread[numThreads];
-
-        for (int i = 1; i < numThreads; i++) {
-            threads[i] = new WriterThread(pageSize, bigFileSize, new File(file + "-" + i));
+        for (int i = 0; i < numThreads; i++) {
+            long fileSize = baseFileSize * (i + 1);
+            int run = (int) Math.ceil((double) runs / (i + 1));
+            System.out.println(run + " runs for writer-" + i);
+            threads[i] = new WriterThread("writer-" + i, pageSize, fileSize, run);
             threads[i].start();
         }
-        threads[0] = new WriterThread(pageSize, smallFileSize, new File(file + "-" + 0));
-        threads[0].start();
 
         for (int i = 0; i < numThreads; i++) {
             threads[i].join();
         }
-
+        long end = System.currentTimeMillis();
+        System.out.println("Writing " + totalPages.get() * pageSize + " bytes takes " + (end - begin) + " ms");
         System.exit(0);
     }
 
     private static class WriterThread extends Thread {
         private final long numPages;
         private final byte[] bytes;
-        private final File file;
+        private final int runs;
+        private final String threadname;
+        private final Random random;
 
-        public WriterThread(long pageSize, long totalSize, File file) {
+        public WriterThread(String threadname, long pageSize, long totalSize, int runs) {
+            this.threadname = threadname;
             this.bytes = new byte[(int) pageSize];
             Arrays.fill(bytes, (byte) 5);
-            this.file = file;
             this.numPages = totalSize / pageSize;
+            this.runs = runs;
+            this.random = new Random(threadname.hashCode());
         }
 
         @Override
         public void run() {
-            try {
-                long begin = System.currentTimeMillis();
-                RandomAccessFile raf = new RandomAccessFile(file, "rw");
-                FileChannel channel = raf.getChannel();
-                channel.position(0);
-                ByteBuffer buffer = ByteBuffer.wrap(bytes);
-                for (long i = 0; i < numPages; i++) {
-                    buffer.clear();
-                    channel.write(buffer);
+            for (int run = 0; run < runs; run++) {
+                try {
+                    File targetFile = new File(file + "-" + threadname + "-" + run);
+                    long begin = System.currentTimeMillis();
+                    targetFile.delete();
+                    targetFile.createNewFile();
+                    RandomAccessFile raf = new RandomAccessFile(targetFile, "rw");
+                    FileChannel channel = raf.getChannel();
+                    channel.position(0);
+                    ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                    for (long i = 0; i < numPages; i++) {
+                        random.nextBytes(bytes);
+                        buffer.clear();
+                        channel.write(buffer);
+                        totalPages.incrementAndGet();
+                    }
+                    channel.force(false);
+                    raf.close();
+                    long end = System.currentTimeMillis();
+                    System.out.println("Finished " + numPages + " pages in " + (end - begin) + " ms");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                channel.force(true);
-                raf.close();
-                long end = System.currentTimeMillis();
-                System.out.println("Finished " + numPages + " pages in " + (end - begin) + " ms");
-                file.delete();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-
         }
 
     }
