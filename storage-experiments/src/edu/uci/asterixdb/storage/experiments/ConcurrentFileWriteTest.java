@@ -88,7 +88,8 @@ public class ConcurrentFileWriteTest {
                     channel.force(false);
                     raf.close();
                     long end = System.currentTimeMillis();
-                    System.out.println("Finished " + numPages + " pages in " + (end - begin) + " ms");
+                    System.out.println(
+                            String.format("Finished %d pages by %s in %d ms", numPages, threadname, (end - begin)));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
