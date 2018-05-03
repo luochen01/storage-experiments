@@ -17,11 +17,12 @@ public class ConcurrentFileWriteTest {
     private static long baseFileSize;
     private static String file;
     private static int numThreads;
+    private static int forceFrequency;
     private static final AtomicLong totalPages = new AtomicLong();
 
     public static void main(String args[]) throws Exception {
-        if (args.length != 5) {
-            System.out.println("Usage: pageSize(KB), baseFileSize(MB), path, threads, runs");
+        if (args.length < 5) {
+            System.out.println("Usage: pageSize(KB), baseFileSize(MB), path, threads, runs, [forceFrequency (pages)]");
             return;
         }
 
@@ -30,6 +31,10 @@ public class ConcurrentFileWriteTest {
         file = args[2];
         numThreads = Integer.parseInt(args[3]);
         int runs = Integer.parseInt(args[4]);
+        forceFrequency = 0;
+        if (args.length > 5) {
+            forceFrequency = Integer.parseInt(args[5]);
+        }
 
         System.out.println("PageSize: " + pageSize);
         System.out.println("BaseFileSize: " + baseFileSize);
@@ -38,12 +43,15 @@ public class ConcurrentFileWriteTest {
 
         long begin = System.currentTimeMillis();
         WriterThread[] threads = new WriterThread[numThreads];
+        long fileSize = baseFileSize;
+        int run = runs;
         for (int i = 0; i < numThreads; i++) {
-            long fileSize = baseFileSize * (i + 1);
-            int run = (int) Math.ceil((double) runs / (i + 1));
             System.out.println(run + " runs for writer-" + i);
             threads[i] = new WriterThread("writer-" + i, pageSize, fileSize, run);
             threads[i].start();
+
+            run = Math.max(1, run / 2);
+            fileSize = fileSize * 2;
         }
 
         for (int i = 0; i < numThreads; i++) {
