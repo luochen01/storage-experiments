@@ -89,28 +89,46 @@ public class ConcurrentFileWriteTest {
             for (int run = 0; run < runs; run++) {
                 try {
                     File targetFile = new File(file + "-" + threadname + "-" + run);
-                    long begin = System.currentTimeMillis();
+                    long fileBegin = System.currentTimeMillis();
                     targetFile.delete();
                     targetFile.createNewFile();
+                    long createEnd = System.currentTimeMillis();
+                    LOGGER.error("Create {} takes {} ms", targetFile.getName(), createEnd - fileBegin);
+
                     RandomAccessFile raf = new RandomAccessFile(targetFile, "rw");
                     FileChannel channel = raf.getChannel();
                     channel.position(0);
                     ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                    long unforcedPages = 0;
+                    long cycleBegin = System.currentTimeMillis();
                     for (long i = 0; i < numPages; i++) {
                         buffer.clear();
                         channel.write(buffer);
                         totalPages.incrementAndGet();
-                        if (forceFrequency != 0 && (i + 1) % forceFrequency == 0) {
+                        unforcedPages++;
+                        if (forceFrequency != 0 && unforcedPages == forceFrequency) {
                             long beginForce = System.currentTimeMillis();
                             channel.force(false);
                             long endForce = System.currentTimeMillis();
-                            LOGGER.error("Force {}/{} pages takes {} ms", i, numPages, (endForce - beginForce));
+                            LOGGER.error("Force {}/{} pages takes {} ms, write to OS cache takes {} ms", i + 1,
+                                    numPages, (endForce - beginForce), (beginForce - cycleBegin));
+                            unforcedPages = 0;
+                            cycleBegin = endForce;
                         }
                     }
-                    channel.force(false);
+                    if (unforcedPages > 0) {
+                        long beginForce = System.currentTimeMillis();
+                        channel.force(false);
+                        long endForce = System.currentTimeMillis();
+                        LOGGER.error("Final force {}/{} pages takes {} ms, write to OS cache takes {} ms", numPages, numPages,
+                                (endForce - beginForce), (beginForce - cycleBegin));
+                        unforcedPages = 0;
+                        cycleBegin = endForce;
+                    }
                     raf.close();
-                    long end = System.currentTimeMillis();
-                    LOGGER.error("{}: Finished {} pages in {} ms", (end - beginTime), numPages, (end - begin));
+                    long fileEnd = System.currentTimeMillis();
+                    LOGGER.error("{}: Finished {} pages in {} ms", (fileEnd - beginTime), numPages,
+                            (fileEnd - fileBegin));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
