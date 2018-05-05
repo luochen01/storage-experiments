@@ -77,7 +77,7 @@ public class FileSkipReadExperiment {
         System.out.println("Start reading " + readPages.size() + " pages");
         long begin = System.currentTimeMillis();
         long totalPages = 0;
-        for (int page : readPages) {
+        for (long page : readPages) {
             channel.position(page * bytes.length);
             buffer.rewind();
             if (channel.read(buffer) != bytes.length) {
