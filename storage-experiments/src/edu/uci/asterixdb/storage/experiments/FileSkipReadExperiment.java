@@ -25,11 +25,14 @@ public class FileSkipReadExperiment {
     private final int numPages;
     private final double selectivity;
     private final Random rand = new Random();
+    private final long sleepTime;
 
-    public FileSkipReadExperiment(String path, int pageSizeKB, int fileSizeMB, double selectivity) throws IOException {
+    public FileSkipReadExperiment(String path, int pageSizeKB, int fileSizeMB, double selectivity, long sleepTime)
+            throws IOException {
         this.bytes = new byte[pageSizeKB * 1024];
         this.numPages = fileSizeMB * 1024 / pageSizeKB;
         this.selectivity = selectivity;
+        this.sleepTime = sleepTime;
         file = generateFile(path, fileSizeMB);
     }
 
@@ -56,7 +59,7 @@ public class FileSkipReadExperiment {
         return file;
     }
 
-    public void run() throws IOException {
+    public void run() throws Exception {
         RandomAccessFile raf = new RandomAccessFile(file, "rw");
         FileChannel channel = raf.getChannel();
         long dummy = 0;
@@ -83,8 +86,8 @@ public class FileSkipReadExperiment {
             if (channel.read(buffer) != bytes.length) {
                 throw new IllegalStateException("Illegal bytes read");
             }
-            for (byte b : bytes) {
-                dummy += b;
+            if (sleepTime > 0) {
+                Thread.sleep(sleepTime);
             }
             totalPages++;
         }
@@ -95,9 +98,9 @@ public class FileSkipReadExperiment {
         System.out.println(dummy);
     }
 
-    public static void main(String[] args) throws IOException {
-        if (args.length != 4) {
-            System.err.println("args: file pageSize(kb) fileSize(mb) selectivity");
+    public static void main(String[] args) throws Exception {
+        if (args.length != 5) {
+            System.err.println("args: file pageSize(kb) fileSize(mb) selectivity sleep");
             return;
         }
 
@@ -105,12 +108,14 @@ public class FileSkipReadExperiment {
         int pageSizeKB = Integer.valueOf(args[1]);
         int fileSizeMB = Integer.valueOf(args[2]);
         double selectivity = Double.valueOf(args[3]);
+        long sleepTime = Long.valueOf(args[4]);
         System.out.println("File Read Experiment ");
         System.out.println("PageSize (KB) " + pageSizeKB);
         System.out.println("FileSize (MB) " + fileSizeMB);
         System.out.println("Selectivity " + selectivity);
+        System.out.println("Sleep time " + sleepTime);
 
-        FileSkipReadExperiment expr = new FileSkipReadExperiment(path, pageSizeKB, fileSizeMB, selectivity);
+        FileSkipReadExperiment expr = new FileSkipReadExperiment(path, pageSizeKB, fileSizeMB, selectivity, sleepTime);
         expr.run();
     }
 }
