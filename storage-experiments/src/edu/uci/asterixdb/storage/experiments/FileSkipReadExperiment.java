@@ -38,7 +38,7 @@ public class FileSkipReadExperiment {
         File file = new File(path);
         if (file.exists()) {
             if (file.length() >= fileSize) {
-                System.out.println("file already exists " + file.length());
+                System.out.println("file already exists " + file.length() + " expected size " + fileSize);
                 return file;
             } else {
                 System.out.println(
