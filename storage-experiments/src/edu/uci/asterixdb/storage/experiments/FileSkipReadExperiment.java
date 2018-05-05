@@ -34,7 +34,7 @@ public class FileSkipReadExperiment {
     }
 
     private File generateFile(String path, int fileSizeMB) throws IOException {
-        long fileSize = fileSizeMB * 1024 * 1024;
+        long fileSize = (long) fileSizeMB * 1024 * 1024;
         File file = new File(path);
         if (file.exists()) {
             if (file.length() >= fileSize) {
