@@ -76,7 +76,7 @@ public class SecondaryIndexExperiment {
     }
 
     private String generateCountQuery(String dataverse) {
-        String query = String.format("set `compiler.readaheadmemory` '4MB'; set `noindexonly` 'true';select count(*) from %s.%s where latitude>0;", dataverse,
+        String query = String.format("set `compiler.readaheadmemory` '4MB';select count(*) from %s.%s where latitude>0;", dataverse,
                 dataset);
         return query;
     }
