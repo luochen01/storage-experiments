@@ -51,6 +51,12 @@ public class SecondaryIndexExperiment {
     @Option(name = "-indexonly", aliases = "--indexonly", usage = "indexonly", required = false)
     public boolean indexOnly = false;
 
+    @Option(name = "-b", aliases = "--batch", usage = "batch size (KB)", required = false)
+    public int batchSizeKB = -1;
+
+    @Option(name = "-nocid", aliases = "--nocid", usage = "no component id", required = false)
+    public boolean noComponentId = false;
+
     private final Random rand = new Random(17);
 
     public SecondaryIndexExperiment(String[] args) throws Exception {
@@ -63,6 +69,9 @@ public class SecondaryIndexExperiment {
         System.out.println("Skip pk index in validation: " + skipPkIndex);
         System.out.println("Output path: " + outputPath);
         System.out.println("Clean cache dataverse: " + cleanCacheDataverse);
+        System.out.println("Batch size: " + batchSizeKB);
+        System.out.println("No Component Id: " + noComponentId);
+
     }
 
     public void run() throws Exception {
@@ -88,13 +97,15 @@ public class SecondaryIndexExperiment {
     private String generateSecondaryIndexQuery(int beginRange, int endRange, boolean skipPkIndex) {
         String skip = String.format("set `compiler.skip.pkindex` '%s';", String.valueOf(skipPkIndex));
         String indexOnly = String.format("set `noindexonly` '%s';", String.valueOf(!this.indexOnly));
+        String batch = batchSizeKB >= 0 ? String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB) : "";
+        String nocid = noComponentId ? "set `nocomponentid` 'true'" : "";
         String query = sortId
                 ? String.format(
                         "select count(*) from (select id from %s.%s where sid>=%d AND sid<=%d order by id) tmp;",
                         dataverseName, dataset, beginRange, endRange)
                 : String.format("select count(*) from %s.%s where sid>=%d AND sid<=%d;", dataverseName, dataset,
                         beginRange, endRange);
-        return skip + indexOnly + query;
+        return skip + indexOnly + nocid + batch + query;
     }
 
     private String generateCountQuery(String dataverse) {
