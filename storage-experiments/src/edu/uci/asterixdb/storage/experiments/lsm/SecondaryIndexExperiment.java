@@ -98,7 +98,7 @@ public class SecondaryIndexExperiment {
         String skip = String.format("set `compiler.skip.pkindex` '%s';", String.valueOf(skipPkIndex));
         String indexOnly = String.format("set `noindexonly` '%s';", String.valueOf(!this.indexOnly));
         String batch = batchSizeKB >= 0 ? String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB) : "";
-        String nocid = noComponentId ? "set `nocomponentid` 'true'" : "";
+        String nocid = noComponentId ? "set `nocomponentid` 'true';" : "";
         String query = sortId
                 ? String.format(
                         "select count(*) from (select id from %s.%s where sid>=%d AND sid<=%d order by id) tmp;",
@@ -110,7 +110,7 @@ public class SecondaryIndexExperiment {
 
     private String generateCountQuery(String dataverse) {
         String query = String.format(
-                "set `nopkindexcount` 'true';set `compiler.readaheadmemory` '4MB';select count(*) from %s.%s",
+                "set `nopkindexcount` 'true';set `compiler.readaheadmemory` '4MB';select count(*) from %s.%s;",
                 dataverse, dataset);
         return query;
     }
