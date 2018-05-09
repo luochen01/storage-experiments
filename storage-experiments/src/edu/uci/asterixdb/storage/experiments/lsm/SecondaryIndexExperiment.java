@@ -5,6 +5,9 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.util.Random;
 
+import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.Option;
+
 import edu.uci.asterixdb.storage.experiments.util.QueryResult;
 import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
 
@@ -24,28 +27,42 @@ public class SecondaryIndexExperiment {
     // 100k
     public static final int sidRange = 100000;
 
-    private final String dataverseName;
+    @Option(name = "-dv", aliases = "--dataverse", usage = "the dataverse name", required = true)
+    public String dataverseName;
 
-    private final String cleanCacheDataverse;
+    @Option(name = "-cdv", aliases = "--cleandataverse", usage = "the dataverse name of clean cache")
+    public String cleanCacheDataverse;
 
-    private final double selectivity;
+    @Option(name = "-s", aliases = "--selectivity", usage = "query selectivity", required = true)
+    public double selectivity;
 
-    private final int numQueries;
+    @Option(name = "-n", aliases = "--num", usage = "the number of queries", required = true)
+    public int numQueries;
 
-    private final String outputPath;
+    @Option(name = "-o", aliases = "--output", usage = "output path", required = true)
+    public String outputPath;
 
-    private final boolean skipPkIndex;
+    @Option(name = "-skippk", aliases = "--skippk", usage = "skip primary key index during validation", required = false)
+    public boolean skipPkIndex = false;
+
+    @Option(name = "-sortid", aliases = "--sortid", usage = "sort id", required = false)
+    public boolean sortId = false;
+
+    @Option(name = "-indexonly", aliases = "--indexonly", usage = "indexonly", required = false)
+    public boolean indexOnly = false;
 
     private final Random rand = new Random(17);
 
-    public SecondaryIndexExperiment(String dataverseName, double selectivity, int numQueries, boolean skipPkIndex,
-            String outputPath, String cleanCacheDataverse) {
-        this.dataverseName = dataverseName;
-        this.selectivity = selectivity;
-        this.numQueries = numQueries;
-        this.skipPkIndex = skipPkIndex;
-        this.outputPath = outputPath;
-        this.cleanCacheDataverse = cleanCacheDataverse;
+    public SecondaryIndexExperiment(String[] args) throws Exception {
+        CmdLineParser parser = new CmdLineParser(this);
+        parser.parseArgument(args);
+
+        System.out.println("Dataverse: " + dataverseName);
+        System.out.println("Selectivity: : " + selectivity);
+        System.out.println("Num queries: " + numQueries);
+        System.out.println("Skip pk index in validation: " + skipPkIndex);
+        System.out.println("Output path: " + outputPath);
+        System.out.println("Clean cache dataverse: " + cleanCacheDataverse);
     }
 
     public void run() throws Exception {
@@ -69,43 +86,27 @@ public class SecondaryIndexExperiment {
     }
 
     private String generateSecondaryIndexQuery(int beginRange, int endRange, boolean skipPkIndex) {
-        String skip = String.format("set `compiler.skip.pkindex` \"%s\";", String.valueOf(skipPkIndex));
-        String query = String.format("set `noindexonly` 'true';select count(*) from %s.%s where sid>=%d AND sid<=%d;",
-                dataverseName, dataset, beginRange, endRange);
-        return skip + query;
+        String skip = String.format("set `compiler.skip.pkindex` '%s';", String.valueOf(skipPkIndex));
+        String indexOnly = String.format("set `noindexonly` '%s';", String.valueOf(!this.indexOnly));
+        String query = sortId
+                ? String.format(
+                        "select count(*) from (select id from %s.%s where sid>=%d AND sid<=%d order by id) tmp;",
+                        dataverseName, dataset, beginRange, endRange)
+                : String.format("select count(*) from %s.%s where sid>=%d AND sid<=%d;", dataverseName, dataset,
+                        beginRange, endRange);
+        return skip + indexOnly + query;
     }
 
     private String generateCountQuery(String dataverse) {
-        String query = String.format("set `compiler.readaheadmemory` '4MB';select count(*) from %s.%s where latitude>0;", dataverse,
-                dataset);
+        String query = String.format(
+                "set `nopkindexcount` 'true';set `compiler.readaheadmemory` '4MB';select count(*) from %s.%s",
+                dataverse, dataset);
         return query;
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 5) {
-            System.err.println(
-                    "Usage: dataverse, selectivity, numQueries, skipPkIndex, outputPath, [clenaCacheDataverse]");
-            return;
-        }
         QueryUtil.init(new URI("http://localhost:19002/query/service"));
-        String dataverse = args[0];
-        double selectivity = Double.parseDouble(args[1]);
-        int numQueries = Integer.parseInt(args[2]);
-        boolean skipPkIndex = Boolean.parseBoolean(args[3]);
-        String outputPath = args[4];
-        String cleanCacheDataverse = null;
-        if (args.length >= 6) {
-            cleanCacheDataverse = args[5];
-        }
-
-        System.out.println("Dataverse: " + dataverse);
-        System.out.println("Selectivity: : " + selectivity);
-        System.out.println("Num queries: " + numQueries);
-        System.out.println("Skip pk index in validation: " + skipPkIndex);
-        System.out.println("Output path: " + outputPath);
-        System.out.println("Clean cache dataverse: " + cleanCacheDataverse);
-        SecondaryIndexExperiment expr = new SecondaryIndexExperiment(dataverse, selectivity, numQueries, skipPkIndex,
-                outputPath, cleanCacheDataverse);
+        SecondaryIndexExperiment expr = new SecondaryIndexExperiment(args);
         expr.run();
     }
 
