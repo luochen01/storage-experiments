@@ -57,7 +57,7 @@ public class SecondaryIndexExperiment {
     @Option(name = "-nocid", aliases = "--nocid", usage = "no component id", required = false)
     public boolean noComponentId = false;
 
-    private final Random rand = new Random(17);
+    private final Random rand = new Random(System.currentTimeMillis());
 
     public SecondaryIndexExperiment(String[] args) throws Exception {
         CmdLineParser parser = new CmdLineParser(this);
@@ -76,7 +76,7 @@ public class SecondaryIndexExperiment {
 
     public void run() throws Exception {
         if (cleanCacheDataverse != null) {
-            String query = generateCountQuery(cleanCacheDataverse);
+            String query = LSMExperimentUtil.generateCountQuery(cleanCacheDataverse, dataset);
             QueryUtil.executeQuery("clean", query);
         }
 
@@ -106,13 +106,6 @@ public class SecondaryIndexExperiment {
                 : String.format("select count(*) from %s.%s where sid>=%d AND sid<=%d;", dataverseName, dataset,
                         beginRange, endRange);
         return skip + indexOnly + nocid + batch + query;
-    }
-
-    private String generateCountQuery(String dataverse) {
-        String query = String.format(
-                "set `nopkindexcount` 'true';set `compiler.readaheadmemory` '4MB';select count(*) from %s.%s;",
-                dataverse, dataset);
-        return query;
     }
 
     public static void main(String[] args) throws Exception {

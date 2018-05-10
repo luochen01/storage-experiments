@@ -10,6 +10,13 @@ from pathlib import PurePath
 query_base_path = base_path + 'query/'
 
 time_index = 'time'
+sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
+sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
+
+indexonly_sel_strs = sel_strs[:]
+#indexonly_sel_strs.append('0.1')
+indexonly_sels = sels[:]
+#indexonly_sels.append(10)
 
 
 class QueryResult(object):
@@ -43,10 +50,10 @@ def toStd(results):
     return stds
 
 
-def parse_experiment(prefix, pattern, skips):
+def parse_experiment(prefix, pattern, skips, values=sel_strs):
     results = []
     i = 0
-    for sel in sel_strs:
+    for sel in values:
         file = prefix + "_" + sel + "_" + pattern + ".csv"
         print("processing file " + file)
         result = parse_csv(query_base_path + file, skips[i])
@@ -110,63 +117,101 @@ def plot_stack_bar(xvalues, options, output, title, xlabel='Query Selectivity (%
     print('output figure to ' + output)
 
 
-# sel_strs = ['0.00001', '0.00005', '0.0002', '0.001', '0.005', '0.02', '0.1']
-# sels = [0.001, 0.005, 0.02, 0.1, 0.5, 2, 10]
-sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
-sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
 antimatter_skips = [2, 2, 2, 2, 2, 2, 2, 2]
+antimatter_indexonly_skips = antimatter_skips[:]
+antimatter_indexonly_skips.append(2)
 
 antimatter_1_prefix = "twitter_antimatter_UNIFORM_1"
 antimatter_5_prefix = "twitter_antimatter_UNIFORM_5"
 antimatter_skip = 2
 antimatter_pattern = "false"
+antimatter_index_only_pattern = "indexonly"
+antimatter_index_only_sort_pattern = "indexonly_sort"
 antimatter_1_results = parse_experiment(antimatter_1_prefix, antimatter_pattern, antimatter_skips)
 antimatter_5_results = parse_experiment(antimatter_5_prefix, antimatter_pattern, antimatter_skips)
+antimatter_1_indexonly_results = parse_experiment(antimatter_1_prefix, antimatter_index_only_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
+antimatter_5_indexonly_results = parse_experiment(antimatter_5_prefix, antimatter_index_only_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
+antimatter_1_indexonly_sort_results = parse_experiment(antimatter_1_prefix, antimatter_index_only_sort_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
+antimatter_5_indexonly_sort_results = parse_experiment(antimatter_5_prefix, antimatter_index_only_sort_pattern, antimatter_indexonly_skips , indexonly_sel_strs)
 
 validation_1_prefix = "twitter_validation_UNIFORM_1"
 validation_5_prefix = "twitter_validation_UNIFORM_5"
 validation_direct_pattern = "true"
 validation_pk_pattern = "false"
+validation_pk_512M_pattern = "false_512MB"
+validation_pk_indexonly_pattern = "indexonly"
 
 direct_validation_skips = [2, 2, 2, 2, 2, 2, 2, 2]
 pk_validation_skips = [100, 50, 25, 10, 5, 5, 2, 2]
+pk_validation_indexonly_skips = pk_validation_skips[:]
+pk_validation_indexonly_skips.append(2)
 
 validation_1_direct_results = parse_experiment(validation_1_prefix, validation_direct_pattern, direct_validation_skips)
 validation_5_direct_results = parse_experiment(validation_5_prefix, validation_direct_pattern, direct_validation_skips)
 
 validation_1_pk_results = parse_experiment(validation_1_prefix, validation_pk_pattern, pk_validation_skips)
+validation_1_pk_512M_results = parse_experiment(validation_1_prefix, validation_pk_512M_pattern, pk_validation_skips)
 validation_5_pk_results = parse_experiment(validation_5_prefix, validation_pk_pattern, pk_validation_skips)
+validation_5_pk_512M_results = parse_experiment(validation_5_prefix, validation_pk_512M_pattern, pk_validation_skips)
+
+validation_1_pk_indexonly_results = parse_experiment(validation_1_prefix, validation_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
+validation_5_pk_indexonly_results = parse_experiment(validation_5_prefix, validation_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
 
 validation_norepair_1_prefix = "twitter_validation_norepair_UNIFORM_1"
 validation_norepair_5_prefix = "twitter_validation_norepair_UNIFORM_5"
 validation_norepair_direct_pattern = "true"
 validation_norepair_pk_pattern = "false"
+validation_norepair_pk_512M_pattern = "false_512MB"
+validation_norepair_pk_indexonly_pattern = "indexonly"
 
 validation_norepair_1_direct_results = parse_experiment(validation_norepair_1_prefix, validation_norepair_direct_pattern, direct_validation_skips)
 validation_norepair_5_direct_results = parse_experiment(validation_norepair_5_prefix, validation_norepair_direct_pattern, direct_validation_skips)
 
 validation_norepair_1_pk_results = parse_experiment(validation_norepair_1_prefix, validation_norepair_pk_pattern, pk_validation_skips)
+validation_norepair_1_pk_512M_results = parse_experiment(validation_norepair_1_prefix, validation_norepair_pk_512M_pattern, pk_validation_skips)
 validation_norepair_5_pk_results = parse_experiment(validation_norepair_5_prefix, validation_norepair_pk_pattern, pk_validation_skips)
+validation_norepair_5_pk_512M_results = parse_experiment(validation_norepair_5_prefix, validation_norepair_pk_512M_pattern, pk_validation_skips)
+
+validation_norepair_1_pk_indexonly_results = parse_experiment(validation_norepair_1_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
+validation_norepair_5_pk_indexonly_results = parse_experiment(validation_norepair_5_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
 
 plot_bar(sels, [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(validation_1_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
+                PlotOption(toTime(validation_1_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+                PlotOption(toTime(validation_1_pk_512M_results), 'pk index validation (small cache)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
                 result_base_path + 'query-dataset-1-validation.pdf', "Query Performance with Validation Index")
 
 plot_bar(sels, [ PlotOption(toTime(antimatter_5_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_5_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(validation_5_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
+                PlotOption(toTime(validation_5_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+                PlotOption(toTime(validation_5_pk_512M_results), 'pk index validation (small cache)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
                 result_base_path + 'query-dataset-5-validation.pdf', "Query Performance with Validation Index")
 
 plot_bar(sels, [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_norepair_1_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(validation_norepair_1_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
+                PlotOption(toTime(validation_norepair_1_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+                PlotOption(toTime(validation_norepair_1_pk_512M_results), 'pk index validation (small cache)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
                 result_base_path + 'query-dataset-1-validation-norepair.pdf', "Query Performance with Validation Index")
 
 plot_bar(sels, [ PlotOption(toTime(antimatter_5_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_norepair_5_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(validation_norepair_5_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
+                PlotOption(toTime(validation_norepair_5_pk_results), 'pk index validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+                PlotOption(toTime(validation_norepair_5_pk_512M_results), 'pk index validation (small cache)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
                 result_base_path + 'query-dataset-5-validation-norepair.pdf', "Query Performance with Validation Index")
+
+# index only
+
+plot_bar(indexonly_sels, [ PlotOption(toTime(antimatter_1_indexonly_results), 'eager index only', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                PlotOption(toTime(antimatter_1_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
+                PlotOption(toTime(validation_1_pk_indexonly_results), 'validation index only', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
+                PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'validation (no repair) index only', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
+                result_base_path + 'query-indexonly-1.pdf', "Query Performance with Index Only Query")
+
+plot_bar(indexonly_sels, [ PlotOption(toTime(antimatter_5_indexonly_results), 'eager index only', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                PlotOption(toTime(antimatter_5_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
+                PlotOption(toTime(validation_5_pk_indexonly_results), 'validation index only', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
+                PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'validation (no repair) index only', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
+                result_base_path + 'query-indexonly-5.pdf', "Query Performance with Index Only Query")
 
 # plot antimatter breakdown
 antimatter_1_breakdown = pandas.read_csv(query_base_path + "twitter_antimatter_breakdown.csv", sep='\t', header=0)
@@ -223,17 +268,13 @@ plot_query([ PlotOption(validation_norepair_1_0_001_pk, 'update ratio 0%', lines
         PlotOption(validation_norepair_5_0_001_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
         result_base_path + 'pk-validation-time-0.001%.pdf', "Selectivity 0.001%")
 
-
 plot_query([ PlotOption(validation_norepair_1_0_005_pk, 'update ratio 0%', linestyle=antimatter_linestyle, color=antimatter_color),
         PlotOption(validation_norepair_5_0_005_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
         result_base_path + 'pk-validation-time-0.005%.pdf', "Selectivity 0.005%")
 
-
-
 plot_query([ PlotOption(validation_norepair_1_0_025_pk, 'update ratio 0%', linestyle=antimatter_linestyle, color=antimatter_color),
         PlotOption(validation_norepair_5_0_025_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
         result_base_path + 'pk-validation-time-0.025%.pdf', "Selectivity 0.025%")
-
 
 plot_query([ PlotOption(validation_norepair_1_0_1_pk, 'update ratio 0%', linestyle=antimatter_linestyle, color=antimatter_color),
         PlotOption(validation_norepair_5_0_1_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
