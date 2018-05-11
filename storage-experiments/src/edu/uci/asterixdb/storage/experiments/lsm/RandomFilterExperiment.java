@@ -28,8 +28,8 @@ public class RandomFilterExperiment {
     @Option(name = "-cdv", aliases = "--cleandataverse", usage = "the dataverse name of clean cache")
     public String cleanCacheDataverse;
 
-    @Option(name = "-d", aliases = "--duration", usage = "duration (hour)")
-    public int duration;
+    @Option(name = "-d", aliases = "--day", usage = "days")
+    public int days;
 
     public long durationMilli;
 
@@ -56,9 +56,9 @@ public class RandomFilterExperiment {
         System.out.println("Output path: " + outputPath);
         System.out.println("Clean cache dataverse: " + cleanCacheDataverse);
         System.out.println("Read ahead memory size (KB): " + readAheadKB);
-        System.out.println("duration (hour): " + duration);
+        System.out.println("days: " + days);
 
-        durationMilli = TimeUnit.HOURS.toMillis(duration);
+        durationMilli = TimeUnit.DAYS.toMillis(days);
 
     }
 
