@@ -81,7 +81,7 @@ public class StaticFilterExperiment {
         writer.println("seq\ttime\tresult");
 
         DateTime maxTime = maxTimes.get(dataverseName);
-        for (int i = 1; i < numQueries; i++) {
+        for (int i = 1; i <= numQueries; i++) {
             if (cleanCacheDataverse != null) {
                 String query = LSMExperimentUtil.generateCountQuery(cleanCacheDataverse, dataset);
                 QueryUtil.executeQuery("clean", query);

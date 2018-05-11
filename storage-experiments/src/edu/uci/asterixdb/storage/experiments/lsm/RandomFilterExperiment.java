@@ -69,7 +69,7 @@ public class RandomFilterExperiment {
         }
         PrintWriter writer = new PrintWriter(new File(outputPath));
         writer.println("seq\ttime\tresult");
-        for (int i = 1; i < numQueries; i++) {
+        for (int i = 1; i <= numQueries; i++) {
             DateTime minValue = generateMinValue();
             DateTime maxValue = minValue.plus(durationMilli);
             String query = generateFilterQuery(minValue, maxValue);
