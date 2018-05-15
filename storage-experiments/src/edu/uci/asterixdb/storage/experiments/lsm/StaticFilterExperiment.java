@@ -23,6 +23,8 @@ public class StaticFilterExperiment {
     public static final String dv_antimatter_5 = "twitter_antimatter_UNIFORM_5";
     public static final String dv_validation_1 = "twitter_validation_UNIFORM_1";
     public static final String dv_validation_5 = "twitter_validation_UNIFORM_5";
+    public static final String dv_inplace_1 = "twitter_inplace_UNIFORM_1";
+    public static final String dv_inplace_5 = "twitter_inplace_UNIFORM_5";
 
     public static final DateTime minTime = new DateTime(2010, 1, 1, 0, 0, 1);
 
@@ -32,6 +34,9 @@ public class StaticFilterExperiment {
         maxTimes.put(dv_antimatter_5, new DateTime(2012, 7, 14, 23, 0, 35));
         maxTimes.put(dv_validation_1, new DateTime(2012, 7, 13, 17, 42, 2));
         maxTimes.put(dv_validation_5, new DateTime(2012, 7, 14, 23, 40, 9));
+        maxTimes.put(dv_inplace_1, new DateTime(2012, 7, 15, 0, 7, 51));
+        maxTimes.put(dv_inplace_5, new DateTime(2012, 7, 15, 0, 3, 1));
+
     }
 
     @Option(name = "-dv", aliases = "--dataverse", usage = "the dataverse name", required = true)
