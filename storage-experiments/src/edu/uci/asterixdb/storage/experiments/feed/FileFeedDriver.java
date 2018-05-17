@@ -11,7 +11,7 @@ import edu.uci.asterixdb.storage.experiments.feed.gen.RecordFileReader;
 import edu.uci.asterixdb.storage.experiments.feed.gen.TweetGenerator;
 import edu.uci.asterixdb.storage.experiments.util.ZipfianGenerator;
 
-public class FileFeedDriver {
+public class FileFeedDriver implements IFeedDriver {
 
     public enum FeedMode {
         Sequential,
@@ -99,7 +99,7 @@ public class FileFeedDriver {
             }
         }
         client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
-        reporter = new FeedReporter(this, client, period, logPath);
+        reporter = new FeedReporter(client, period, logPath);
         printConf();
     }
 
@@ -114,10 +114,12 @@ public class FileFeedDriver {
         reporter.writeLine("Theta: " + theta);
     }
 
-    public String getTweet() throws IOException {
+    @Override
+    public String getNextTweet() throws IOException {
         return gen.getNext();
     }
 
+    @Override
     public boolean isNewTweet() {
         return gen.isNewRecord();
     }

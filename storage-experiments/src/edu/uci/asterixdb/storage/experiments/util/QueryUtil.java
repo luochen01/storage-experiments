@@ -54,10 +54,13 @@ public class QueryUtil {
         JSONObject obj = new JSONObject(queryResult);
         Object count = null;
 
-        JSONArray resultArray = obj.getJSONArray("results");
-        JSONObject resultObj = resultArray.optJSONObject(0);
-        if (resultObj != null) {
-            count = resultObj.opt("$1");
+        JSONArray resultArray = obj.optJSONArray("results");
+
+        if (resultArray != null) {
+            JSONObject resultObj = resultArray.optJSONObject(0);
+            if (resultObj != null) {
+                count = resultObj.opt("$1");
+            }
         }
 
         String time = obj.getJSONObject("metrics").getString("executionTime");

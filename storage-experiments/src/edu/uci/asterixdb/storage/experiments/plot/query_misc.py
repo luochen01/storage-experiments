@@ -56,7 +56,7 @@ def parse_experiment(prefix, pattern, skips, dir=query_base_path):
     return results
 
 
-def plot_bar(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0, legendloc = 2):
+def plot_bar(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0, legendloc=2):
     # use as global
     plt.figure()
     x = np.arange(len(xvalues))
@@ -140,9 +140,9 @@ plot_bar(batch_strs, [ PlotOption(toTime(batch_0_001_results), 'selectivity 0.00
                 PlotOption(toTime(batch_1_results), 'selectivity 1%', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
                 result_base_path + 'query-batch-size.pdf', "Query Performance with Varying Batch Size", legendloc=1)
 
-sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
-sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
-antimatter_skips = [2, 2, 2, 2, 2, 2, 2, 2]
+sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01', '0.1']
+sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1, 10]
+antimatter_skips = [2, 2, 2, 2, 2, 2, 2, 2, 2]
 
 antimatter_1_prefix = "twitter_antimatter_UNIFORM_1"
 antimatter_5_prefix = "twitter_antimatter_UNIFORM_5"

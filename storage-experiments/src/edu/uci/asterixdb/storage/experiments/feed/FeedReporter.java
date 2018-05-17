@@ -15,19 +15,15 @@ public class FeedReporter extends TimerTask {
 
     protected long counter = 0;
 
-    protected FileFeedDriver driver;
-
     protected FeedSocketAdapterClient client;
 
     protected FeedStat prevStat = new FeedStat();
 
     protected BufferedWriter logWriter;
 
-    public FeedReporter(FileFeedDriver driver, FeedSocketAdapterClient client, int period, String logPath)
-            throws IOException {
+    public FeedReporter(FeedSocketAdapterClient client, int period, String logPath) throws IOException {
         this.period = period;
         this.timer = new Timer();
-        this.driver = driver;
 
         this.client = client;
         this.prevStat = new FeedStat();
