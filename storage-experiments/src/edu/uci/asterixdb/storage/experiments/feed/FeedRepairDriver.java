@@ -79,6 +79,9 @@ public class FeedRepairDriver implements IFeedDriver {
     @Option(name = "-theta", aliases = "--theta", usage = "the parameter for the zipfian generator. Default: 0.99")
     public double theta = ZipfianGenerator.ZIPFIAN_CONSTANT;
 
+    @Option(name = "-parallel", aliases = "--parallel", usage = "repair paralleism ")
+    public int parallelism = 1;
+
     private final FeedSocketAdapterClient client;
 
     private final FeedReporter reporter;
@@ -115,17 +118,19 @@ public class FeedRepairDriver implements IFeedDriver {
         reporter.writeLine("RepairFrequency: " + repairFrequency);
         reporter.writeLine("RepairWait (ms): " + repairWait);
         reporter.writeLine("Dataverse: " + dataverse);
+        reporter.writeLine("RepairMethod: " + repairMethod);
     }
 
     public String getRepairQuery() {
         String readAhead = "set `compiler.readaheadmemory` '4MB';";
+        String parallel = "set `compiler.repair.parallelism` '" + parallelism + "';";
         String query = "";
         if (repairMethod == RepairMethod.Dataset) {
             query = String.format("repair dataset %s.ds_tweet %s;", dataverse, compact ? "compact" : "");
         } else {
             query = String.format("repair index %s.ds_tweet.`*` %s;", dataverse, compact ? "compact" : "");
         }
-        return readAhead + query;
+        return readAhead + parallel + query;
     }
 
     @Override
