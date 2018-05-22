@@ -29,9 +29,10 @@ public class TweetGenerator extends AbstractRecordGenerator {
     private long nextSid = 0;
 
     public TweetGenerator(FeedMode mode, UpdateDistribution dist, double theta, double updateRatio, long startRange,
-            int sidRange) {
+            int sidRange, int recordSize) {
         super(mode, dist, theta, updateRatio, startRange);
-        dataGenerator = new DataGenerator();
+        int repeat = (int) Math.ceil((double) (recordSize - 333) / 42);
+        dataGenerator = new DataGenerator(repeat);
         this.sidRange = sidRange;
     }
 
@@ -42,10 +43,13 @@ public class TweetGenerator extends AbstractRecordGenerator {
     }
 
     public static void main(String[] args) {
-        TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.UNIFORM, 0, 0.5, 0, 10);
+        TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.UNIFORM, 0, 0.5, 0, 10, 2000);
+        long total = 0;
         for (int i = 0; i < 100; i++) {
-            System.out.println(gen.getNext());
+            total += gen.getNext().getBytes().length;
         }
+        System.out.println(total / 100);
+
     }
 
 }

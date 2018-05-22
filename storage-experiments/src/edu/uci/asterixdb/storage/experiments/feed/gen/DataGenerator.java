@@ -35,9 +35,11 @@ public class DataGenerator {
     private final Random random = new Random();
     private final TwitterUser twUser = new TwitterUser();
     private final TweetMessage twMessage = new TweetMessage();
+    private final int messageRepeat;
     private static final String DEFAULT_COUNTRY = "US";
 
-    public DataGenerator() {
+    public DataGenerator(int messageRepeat) {
+        this.messageRepeat = messageRepeat;
         initialize(new DefaultInitializationInfo());
     }
 
@@ -67,7 +69,7 @@ public class DataGenerator {
         randDateGen = new SequentialDateGenerator(2010, 1, 1);
         randNameGen = new RandomNameGenerator(info.firstNames, info.lastNames);
         randLocationGen = new RandomLocationGenerator(24, 49, 66, 98);
-        randMessageGen = new RandomMessageGenerator(info.vendors, info.jargon);
+        randMessageGen = new RandomMessageGenerator(info.vendors, info.jargon, messageRepeat);
     }
 
     public void getTwitterUser(String usernameSuffix) {
@@ -100,7 +102,7 @@ public class DataGenerator {
 
     public static class Message {
 
-        private final char[] content = new char[1000];
+        private final char[] content = new char[3000];
         private List<String> referredTopics;
         private int length;
 
@@ -207,7 +209,7 @@ public class DataGenerator {
 
         private final MessageTemplate messageTemplate;
 
-        public RandomMessageGenerator(String[] vendors, String[] jargon) {
+        public RandomMessageGenerator(String[] vendors, String[] jargon, int repeat) {
             List<String> vendorList = new ArrayList<String>();
             for (String v : vendors) {
                 vendorList.add(v);
@@ -216,7 +218,7 @@ public class DataGenerator {
             for (String j : jargon) {
                 jargonList.add(j);
             }
-            this.messageTemplate = new MessageTemplate(vendorList, jargonList);
+            this.messageTemplate = new MessageTemplate(vendorList, jargonList, repeat);
         }
 
         public Message getNextRandomMessage() {
@@ -243,20 +245,22 @@ public class DataGenerator {
         private final List<String> jargon;
         private final CharBuffer buffer;
         private final List<String> referredTopics;
+        private final int repeat;
         private final Message message = new Message();
 
-        public MessageTemplate(List<String> vendors, List<String> jargon) {
+        public MessageTemplate(List<String> vendors, List<String> jargon, int repeat) {
             this.vendors = vendors;
             this.jargon = jargon;
             buffer = CharBuffer.allocate(5000);
             referredTopics = new ArrayList<String>();
+            this.repeat = repeat;
         }
 
         public Message getNextMessage() {
             buffer.position(0);
             buffer.limit(5000);
             referredTopics.clear();
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < repeat; i++) {
                 fillBuffer();
             }
             buffer.flip();

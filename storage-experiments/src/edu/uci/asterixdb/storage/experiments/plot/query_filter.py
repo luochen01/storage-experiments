@@ -160,12 +160,12 @@ inplace_5_dynamic_results = parse_filter_experiments(inplace_5_prefix, dynamic_p
 plot_bar(filter_strs, [ PlotOption(toTime(antimatter_1_recent_results), 'eager method', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_recent_results), 'validation method', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
                 PlotOption(toTime(inplace_1_recent_results), 'delete-bitmap method', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
-                result_base_path + 'query-filter-recent-1.pdf', "Query Performance with 0% Update", legendloc=1)
+                result_base_path + 'query-filter-recent-1.pdf', "Query Performance with 0% Update", legendloc=2)
 
 plot_bar(filter_strs, [ PlotOption(toTime(antimatter_5_recent_results), 'eager method', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_5_recent_results), 'validation method', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
                 PlotOption(toTime(inplace_5_recent_results), 'delete-bitmap method', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
-                result_base_path + 'query-filter-recent-5.pdf', "Query Performance with 50% Update", legendloc=1)
+                result_base_path + 'query-filter-recent-5.pdf', "Query Performance with 50% Update", legendloc=2)
 
 plot_bar(filter_strs, [ PlotOption(toTime(antimatter_1_history_results), 'eager method', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_history_results), 'validation method', marker=markers[1], linestyle=validation_linestyle, color=validation_color),

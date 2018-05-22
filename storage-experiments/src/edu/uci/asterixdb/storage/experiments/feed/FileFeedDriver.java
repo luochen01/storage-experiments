@@ -93,7 +93,7 @@ public class FileFeedDriver implements IFeedDriver {
             gen = new RecordFileReader(inputFile);
         } else {
             if (dataType == DataType.TWEET) {
-                gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange);
+                gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange, 500);
             } else {
                 gen = new KVGenerator(mode, distribution, theta, updateRatio, startRange, recordSize);
             }

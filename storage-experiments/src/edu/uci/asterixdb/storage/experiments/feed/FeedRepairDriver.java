@@ -70,6 +70,9 @@ public class FeedRepairDriver implements IFeedDriver {
     // 100K
     public int sidRange = 100000;
 
+    @Option(name = "-size", aliases = "--size", usage = "the size of the record")
+    public int recordSize = 500;
+
     @Option(name = "-m", aliases = "--mode", usage = "the feed mode. validation options: sequential, random")
     public FeedMode mode = FeedMode.Random;
 
@@ -101,7 +104,7 @@ public class FeedRepairDriver implements IFeedDriver {
 
         this.repairWait = this.repairWait * 1000;
 
-        gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange);
+        gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange, recordSize);
         client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
         reporter = new FeedReporter(client, period, logPath);
         printConf();
