@@ -43,13 +43,17 @@ upsert_delete_btrees = [upsert_delete_btree_1, upsert_delete_btree_2, upsert_del
 
 indexes = [1, 2, 3, 4, 5]
 
-def plot_zipf_update_ratio(i):
+def plot_secondary_index(i):
     plot_basic([
             PlotOption(upsert_antimatters[i], 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
             PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
             PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_delete_btrees[i], 'deleted-key btree', marker=markers[3], linestyle=delete_btree_linestyle, color=delete_btree_color)],
             result_base_path + 'upsert-secondary-index-' + str(indexes[i]) + '.pdf', "Ingestion Performance with #Secondary Indexes " + str(indexes[i]))
+#
+# for i in range(0, 5):
+#     plot_zipf_update_ratio(i)
 
-for i in range(0, 5):
-    plot_zipf_update_ratio(i)
+plot_secondary_index(0)
+plot_secondary_index(2)
+plot_secondary_index(4)

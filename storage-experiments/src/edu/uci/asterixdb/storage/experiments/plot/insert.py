@@ -27,20 +27,33 @@ insert_nopk_seq = open_csv(insert_base_path+'insert-nopk-seq.log')
 insert_linestyle = 'solid'
 
 
-plot_basic([ PlotOption(insert_0, 'pk-index-0', marker=markers[0], linestyle=insert_linestyle, color='green'),
-            PlotOption(insert_005, 'pk-index-0.05', marker=markers[1], linestyle=insert_linestyle,color='green'),
-            PlotOption(insert_01, 'pk-index-0.1', marker=markers[2], linestyle=insert_linestyle,color='green'),
-            PlotOption(insert_025, 'pk-index-0.25', marker=markers[3], linestyle=insert_linestyle,color='green'),
-            PlotOption(insert_05, 'pk-index-0.5', marker=markers[4], linestyle=insert_linestyle,color='green'),
-            PlotOption(insert_nopk_0, '0', marker=markers[0], linestyle=insert_linestyle, color='red'),
-            PlotOption(insert_nopk_005, '0.05', marker=markers[1], linestyle=insert_linestyle, color='red'),
-            PlotOption(insert_nopk_01, '0.1', marker=markers[2], linestyle=insert_linestyle, color='red'),
-            PlotOption(insert_nopk_025, '0.25', marker=markers[3], linestyle=insert_linestyle, color='red'),
-            PlotOption(insert_nopk_05, '0.5', marker=markers[4], linestyle=insert_linestyle, color='red')],
-            result_base_path+'insert.pdf', "Varying Duplicate Ratio")
+# plot_basic([ PlotOption(insert_0, 'pk-index-0', marker=markers[0], linestyle=insert_linestyle, color='green'),
+#             PlotOption(insert_005, 'pk-index-0.05', marker=markers[1], linestyle=insert_linestyle,color='green'),
+#             PlotOption(insert_01, 'pk-index-0.1', marker=markers[2], linestyle=insert_linestyle,color='green'),
+#             PlotOption(insert_025, 'pk-index-0.25', marker=markers[3], linestyle=insert_linestyle,color='green'),
+#             PlotOption(insert_05, 'pk-index-0.5', marker=markers[4], linestyle=insert_linestyle,color='green'),
+#             PlotOption(insert_nopk_0, '0', marker=markers[0], linestyle=insert_linestyle, color='red'),
+#             PlotOption(insert_nopk_005, '0.05', marker=markers[1], linestyle=insert_linestyle, color='red'),
+#             PlotOption(insert_nopk_01, '0.1', marker=markers[2], linestyle=insert_linestyle, color='red'),
+#             PlotOption(insert_nopk_025, '0.25', marker=markers[3], linestyle=insert_linestyle, color='red'),
+#             PlotOption(insert_nopk_05, '0.5', marker=markers[4], linestyle=insert_linestyle, color='red')],
+#             result_base_path+'insert.pdf', "Duplicate Ratio")
+#
+# plot_basic([ PlotOption(insert_0, 'pk-index-random', marker=markers[0], linestyle=insert_linestyle, color='green'),
+#             PlotOption(insert_seq, 'pk-index-sequential', marker=markers[1], linestyle=insert_linestyle, color='green'),
+#             PlotOption(insert_nopk_0, 'random', marker=markers[0], linestyle=insert_linestyle, color='red'),
+#             PlotOption(insert_nopk_seq, 'sequential', marker=markers[1], linestyle=insert_linestyle, color='red')],
+#             result_base_path+'insert-seq.pdf', "Sequential/Random Keys")
+
+
+plot_basic([ PlotOption(insert_0, 'pk-index-0%', marker=markers[0], linestyle=insert_linestyle, color='green'),
+            PlotOption(insert_05, 'pk-index-50%', marker=markers[1], linestyle=insert_linestyle,color='green'),
+            PlotOption(insert_nopk_0, '0%', marker=markers[0], linestyle=insert_linestyle, color='red'),
+            PlotOption(insert_nopk_05, '50%', marker=markers[1], linestyle=insert_linestyle, color='red')],
+            result_base_path+'insert.pdf', "Duplicate Ratio", ylimit=180)
 
 plot_basic([ PlotOption(insert_0, 'pk-index-random', marker=markers[0], linestyle=insert_linestyle, color='green'),
             PlotOption(insert_seq, 'pk-index-sequential', marker=markers[1], linestyle=insert_linestyle, color='green'),
             PlotOption(insert_nopk_0, 'random', marker=markers[0], linestyle=insert_linestyle, color='red'),
             PlotOption(insert_nopk_seq, 'sequential', marker=markers[1], linestyle=insert_linestyle, color='red')],
-            result_base_path+'insert-seq.pdf', "Sequential/Random Keys")
+            result_base_path+'insert-seq.pdf', "Sequential/Random Keys", ylimit=180)

@@ -52,5 +52,6 @@ def plot_zipf_update_ratio(i):
 
 
 
-for i in range(0, 5):
-    plot_zipf_update_ratio(i)
+#for i in range(0, 5):
+#    plot_zipf_update_ratio(i)
+plot_zipf_update_ratio(4)

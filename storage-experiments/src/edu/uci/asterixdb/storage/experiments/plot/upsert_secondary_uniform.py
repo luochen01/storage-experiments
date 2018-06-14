@@ -51,5 +51,8 @@ def plot_uniform_update_ratio(i):
             result_base_path + 'upsert-secondary-UNIFORM-' + str(updates[i]) + '.pdf', "Ingestion Performance with Update Ratio " + str(updates[i]))
 
 
-for i in range(0, 5):
-    plot_uniform_update_ratio(i)
+# for i in range(0, 5):
+#     plot_uniform_update_ratio(i)
+plot_uniform_update_ratio(0)
+plot_uniform_update_ratio(4)
+

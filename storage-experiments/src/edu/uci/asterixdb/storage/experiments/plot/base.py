@@ -7,7 +7,7 @@ import os
 time_index = 'counter'
 total_records_index = 'total_records'
 base_path = '/Users/luochen/Documents/Research/experiments/results/lsm/'
-result_base_path = '/Users/luochen/Documents/Research/experiments/results/lsm/figure/'
+result_base_path = '/Users/luochen/Documents/Research/papers/lsm-paper/expr/'
 
 antimatter_color = 'red'
 antimatter_linestyle = 'solid'
@@ -30,18 +30,23 @@ if not os.path.exists(result_base_path):
     os.makedirs(result_base_path)
 
 params = {
-    'axes.titlesize': 24,
-   'axes.labelsize': 20,
-   'legend.fontsize': 12,
-   'xtick.labelsize': 16,
-   'ytick.labelsize': 16,
+    'axes.titlesize': 11,
+   'axes.labelsize': 11,
+   'legend.fontsize': 11,
+   'xtick.labelsize': 11,
+   'ytick.labelsize': 11,
    'lines.linewidth':1,
-   'lines.markeredgewidth':1.5,
-   'text.usetex': False
+   'lines.markeredgewidth':1,
+   'text.usetex': False,
+   'savefig.bbox':'tight',
+   'figure.figsize':(4, 3),
+   "legend.fancybox":True,
+   "legend.shadow":False,
+   "legend.framealpha":0
 }
 markers = ['D', 's', 'o', '^', '*']
 
-# plt.rcParams.update(params)
+plt.rcParams.update(params)
 
 
 class IngestionResult(object):
@@ -53,23 +58,23 @@ class IngestionResult(object):
 
 class PlotOption(object):
 
-    def __init__(self, data, legend, color='red', linestyle='solid', marker=None, markevery=60):
+    def __init__(self, data, legend, color='red', linestyle='solid', marker=None, markevery=60, alpha=None):
         self.data = data
         self.linestyle = linestyle
         self.marker = marker
         self.color = color
         self.legend = legend
         self.markevery = markevery
+        self.alpha= alpha
 
 
 def open_csv(path):
     try:
         csv = pandas.read_csv(path, sep=',', header=8)
-        return ExperimentResult(csv)
+        return IngestionResult(csv)
     except:
         print('fail to parse ' + path)
         return None
-
 
 
 def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total Ingested Records (millions)', xlimit=365, ylimit=170):
@@ -86,10 +91,10 @@ def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total In
         legend_col = 2
     plt.legend(loc=2, ncol=legend_col)
 
-    plt.title(title)
+    #plt.title(title)
 
     step = 0
-    if xlimit / 6 <= 60:
+    if xlimit / 6 <= 65:
         step = 60
     else:
         step = 600
@@ -115,7 +120,7 @@ def plot_query(options, output, title, xlabel='Query', ylabel='Time (s)'):
 
     legend_col = 1
     plt.legend(loc=2, ncol=legend_col)
-    plt.title(title)
+ #   plt.title(title)
 
     plt.xlabel(xlabel)
     plt.ylim(ymin=0)
@@ -125,36 +130,9 @@ def plot_query(options, output, title, xlabel='Query', ylabel='Time (s)'):
     print('output figure to ' + output)
 
 
-
-def plot_query_bar(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0):
-    # use as global
-    plt.figure()
-    x = np.arange(len(xvalues))
-    numbars = float(len(options))
-    i = 0
-    barwidth = 0.2
-    for option in options:
-        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth)
-        i += 1
-
-    legend_col = 1
-    plt.legend(loc=2, ncol=legend_col)
-
-    # plt.title(title)
-    plt.xticks(x, xvalues)
-
-    # plt.xlim(0, 310)
-    if ylimit > 0:
-        plt.ylim(0, ylimit)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.savefig(output)
-    print('output figure to ' + output)
-
 def toStd(results):
     stds = []
     for result in results:
         stds.append(result.std)
     return stds
-
 

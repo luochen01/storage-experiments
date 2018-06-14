@@ -57,6 +57,15 @@ public class SecondaryIndexExperiment {
     @Option(name = "-nocid", aliases = "--nocid", usage = "no component id", required = false)
     public boolean noComponentId = false;
 
+    @Option(name = "-nobf", aliases = "--nobf", usage = "disable block bloom filter optimization", required = false)
+    public boolean noBloomFilter = false;
+
+    @Option(name = "-nobtree", aliases = "--nobf", usage = "disable btree search optimization", required = false)
+    public boolean noBtree = false;
+
+    @Option(name = "-forceid", aliases = "--nobf", usage = "for use component id in query processing", required = false)
+    public boolean forceId = false;
+
     private final Random rand = new Random(System.currentTimeMillis());
 
     public SecondaryIndexExperiment(String[] args) throws Exception {
@@ -71,6 +80,9 @@ public class SecondaryIndexExperiment {
         System.out.println("Clean cache dataverse: " + cleanCacheDataverse);
         System.out.println("Batch size: " + batchSizeKB);
         System.out.println("No Component Id: " + noComponentId);
+        System.out.println("No Bloom Filter: " + noBloomFilter);
+        System.out.println("No BTree: " + noBtree);
+        System.out.println("Force Component Id: " + forceId);
 
     }
 
@@ -99,13 +111,16 @@ public class SecondaryIndexExperiment {
         String indexOnly = String.format("set `noindexonly` '%s';", String.valueOf(!this.indexOnly));
         String batch = batchSizeKB >= 0 ? String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB) : "";
         String nocid = noComponentId ? "set `nocomponentid` 'true';" : "";
+        String noBTreeStmt = noBtree ? "set `nostatefulbtreesearch` 'true';" : "";
+        String noBloomFilterStmt = noBloomFilter ? "set `noblockbloomfilter` 'true';" : "";
+        String forceIdStmt = forceId ? "set `forcecomponentid` 'true';" : "";
         String query = sortId
                 ? String.format(
                         "select count(*) from (select id from %s.%s where sid>=%d AND sid<=%d order by id) tmp;",
                         dataverseName, dataset, beginRange, endRange)
                 : String.format("select count(*) from %s.%s where sid>=%d AND sid<=%d;", dataverseName, dataset,
                         beginRange, endRange);
-        return skip + indexOnly + nocid + batch + query;
+        return skip + indexOnly + nocid + noBTreeStmt + noBloomFilterStmt + forceIdStmt + batch + query;
     }
 
     public static void main(String[] args) throws Exception {

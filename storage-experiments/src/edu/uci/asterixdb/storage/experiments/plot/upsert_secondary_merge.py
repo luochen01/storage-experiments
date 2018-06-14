@@ -49,5 +49,5 @@ def plot_merge(i):
             result_base_path + 'upsert-secondary-merge-' + str(merges[i]) + '.pdf', "Ingestion Performance with MaxMergeableComponentSize " + str(merges[i]))
 
 
-for i in range(0, 4):
+for i in range(0, 3):
     plot_merge(i)
