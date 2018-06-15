@@ -60,10 +60,10 @@ public class SecondaryIndexExperiment {
     @Option(name = "-nobf", aliases = "--nobf", usage = "disable block bloom filter optimization", required = false)
     public boolean noBloomFilter = false;
 
-    @Option(name = "-nobtree", aliases = "--nobf", usage = "disable btree search optimization", required = false)
+    @Option(name = "-nobtree", aliases = "--nobtree", usage = "disable btree search optimization", required = false)
     public boolean noBtree = false;
 
-    @Option(name = "-forceid", aliases = "--nobf", usage = "for use component id in query processing", required = false)
+    @Option(name = "-forceid", aliases = "--forceid", usage = "for use component id in query processing", required = false)
     public boolean forceId = false;
 
     private final Random rand = new Random(System.currentTimeMillis());
