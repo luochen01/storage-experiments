@@ -114,7 +114,7 @@ public class SecondaryIndexExperiment {
         String batch = batchSizeKB >= 0 ? String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB) : "";
         if (noindex) {
             String readahead = "set `compiler.readaheadmemory` '4MB';";
-            String query = String.format("select count(*) from %s.%s where /* +skip-index */ sid>=%d AND sid<=%d;",
+            String query = String.format("select count(*) from %s.%s where sid /*+ skip-index */ >=%d AND sid /*+ skip-index */ <=%d;",
                     dataverseName, dataset, beginRange, endRange);
             return readahead + query;
         } else {
