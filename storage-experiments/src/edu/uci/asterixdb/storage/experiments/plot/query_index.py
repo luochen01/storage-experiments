@@ -201,7 +201,7 @@ plot_query_bar(sels, [ PlotOption(toTime(antimatter_5_results), 'eager', marker=
 def plot_index_only_query_bar(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0):
 
     # use as global
-    plt.figure(figsize=(5, 3))
+    plt.figure(figsize=(5, 4))
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
@@ -220,7 +220,7 @@ def plot_index_only_query_bar(xvalues, options, output, title, xlabel='Query Sel
     # plt.xlim([-0.5,numbars+0.5])
     if ylimit > 0:
         plt.ylim(0, ylimit)
-    plt.xlabel(xlabel, fontsize='8')
+    plt.xlabel(xlabel, fontsize='10')
     plt.ylabel(ylabel)
     plt.savefig(output)
     print('output figure to ' + output)
@@ -228,13 +228,13 @@ def plot_index_only_query_bar(xvalues, options, output, title, xlabel='Query Sel
 
 
 plot_index_only_query_bar(indexonly_sels, [ PlotOption(toTime(antimatter_1_indexonly_results), 'eager index only', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(antimatter_1_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
+                #PlotOption(toTime(antimatter_1_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
                 PlotOption(toTime(validation_1_pk_indexonly_results), 'validation index only', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
                 PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'validation index only (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
                 result_base_path + 'query-indexonly-1.pdf', "Query Performance with Index Only Query")
 
 plot_index_only_query_bar(indexonly_sels, [ PlotOption(toTime(antimatter_5_indexonly_results), 'eager index only', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(antimatter_5_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
+                #PlotOption(toTime(antimatter_5_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
                 PlotOption(toTime(validation_5_pk_indexonly_results), 'validation index only', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
                 PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'validation index only (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
                 result_base_path + 'query-indexonly-5.pdf', "Query Performance with Index Only Query")
