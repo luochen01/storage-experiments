@@ -29,7 +29,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-benchmark"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-client-helper"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-common"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/asterix-dashboard"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-doc"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-evaluator-generator-maven-plugin"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-external-data"/>
@@ -64,9 +63,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-dist"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-documentation"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-fullstack-license"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-hdfs-1.x"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-hdfs-2.x"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-hdfs-core"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-http"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-integration-tests"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hyracks-ipc"/>

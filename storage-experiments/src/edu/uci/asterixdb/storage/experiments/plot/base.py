@@ -2,12 +2,14 @@
 import numpy as np
 import pandas
 import matplotlib.pyplot as plt
+import matplotlib
 import os
 
 time_index = 'counter'
 total_records_index = 'total_records'
 base_path = '/Users/luochen/Documents/Research/experiments/results/lsm/'
 result_base_path = '/Users/luochen/Documents/Research/papers/lsm-paper/expr/'
+result_base_path = '/Users/luochen/Documents/Research/experiments/results/figure/'
 
 antimatter_color = 'red'
 antimatter_linestyle = 'solid'
@@ -29,12 +31,19 @@ updates = [0, 0.05, 0.1, 0.25, 0.5]
 if not os.path.exists(result_base_path):
     os.makedirs(result_base_path)
 
+# del matplotlib.font_manager.weight_dict['roman']
+# matplotlib.font_manager._rebuild()
+
+font_size = 12
 params = {
-    'axes.titlesize': 11,
-   'axes.labelsize': 11,
-   'legend.fontsize': 11,
-   'xtick.labelsize': 11,
-   'ytick.labelsize': 11,
+    'font.family': 'Times New Roman',
+    'font.weight': 'light',
+    'axes.titlesize': font_size,
+   'axes.labelsize': font_size,
+   'legend.fontsize': font_size,
+   'xtick.labelsize': font_size,
+   'ytick.labelsize': font_size,
+   'font.size': font_size,
    'lines.linewidth':1,
    'lines.markeredgewidth':1,
    'text.usetex': False,
@@ -47,6 +56,23 @@ params = {
 markers = ['D', 's', 'o', '^', '*']
 
 plt.rcParams.update(params)
+
+shared_fig_size = (9, 2.8)
+shared_font_size = 15
+ingestion_xlabel = 'Time (Minutes)'
+ingestion_ylabel = 'Total Records (Millions)'
+
+
+def set_large_fonts(size):
+    params = {
+         'axes.titlesize': size,
+         'axes.labelsize': size,
+         'legend.fontsize': size,
+         'xtick.labelsize': size,
+         'ytick.labelsize': size,
+    }
+    print('using large fonts...')
+    plt.rcParams.update(params)
 
 
 class IngestionResult(object):
@@ -65,7 +91,7 @@ class PlotOption(object):
         self.color = color
         self.legend = legend
         self.markevery = markevery
-        self.alpha= alpha
+        self.alpha = alpha
 
 
 def open_csv(path):
@@ -77,7 +103,7 @@ def open_csv(path):
         return None
 
 
-def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total Ingested Records (millions)', xlimit=365, ylimit=170):
+def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=170):
     # use as global
 
     plt.figure()
@@ -91,7 +117,7 @@ def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total In
         legend_col = 2
     plt.legend(loc=2, ncol=legend_col)
 
-    #plt.title(title)
+    # plt.title(title)
 
     step = 0
     if xlimit / 6 <= 65:
@@ -104,7 +130,6 @@ def plot_basic(options, output, title, xlabel='Time (Minutes)', ylabel='Total In
     plt.xlim(0, xlimit)
     plt.ylim(0, ylimit)
     plt.ylabel(ylabel)
-    plt.gca().yaxis.grid(linestyle='dotted')
     plt.savefig(output)
     print('output figure to ' + output)
 

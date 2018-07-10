@@ -151,93 +151,95 @@ validation_norepair_1_pk_indexonly_results = parse_query_experiment(validation_n
 validation_norepair_5_pk_indexonly_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
 
 
-def plot_query_bar(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0):
-
-    # use as global
-    plt.figure(figsize=(7.5, 3))
+def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0.12, xfontsize=None):
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
-    barwidth = 0.12
+    lines = []
     for option in options:
-        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
+        line = ax.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
         i += 1
+        lines.append(line)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_xticks(x)
+    if xfontsize != None:
+        ax.set_xticklabels(xvalues, fontsize=xfontsize)
+    else:
+        ax.set_xticklabels(xvalues)
+    ax.set_xlim([-0.5, len(x) - 0.5])
+    ax.set_ylim(0, ylimit)
+    return lines
 
-    legend_col = 1
-    plt.legend(loc=2, ncol=legend_col, fontsize='10')
 
-    # plt.title(title)
-    plt.xticks(x, xvalues)
+def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=350):
+    # use as global
+    set_large_fonts(shared_font_size)
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(15, 3))
+    plt.subplots_adjust(wspace=0.03, hspace=0)
+    lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit)
+    plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit)
 
-    # plt.xlim(0, 310)
-    plt.xlim([-0.5, numbars + 0.5])
-    if ylimit > 0:
-        plt.ylim(0, ylimit)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    f.legend(handles=lines, loc='upper left', ncol=2, bbox_to_anchor=(0.06, 1), columnspacing=15)
+
+    ax1.set_ylabel(ylabel)
+
     plt.savefig(output)
     print('output figure to ' + output)
 
 
-plot_query_bar(sels, [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+query_options = []
+query_options.append(
+     [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
                 PlotOption(toTime(validation_1_pk_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.7),
                 PlotOption(toTime(validation_1_pk_512M_results), 'ts validation (small cache)', marker=markers[3], linestyle=inplace_linestyle, color=validation_color, alpha=0.4),
                 PlotOption(toTime(validation_norepair_1_direct_results), 'direct validation (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
                 PlotOption(toTime(validation_norepair_1_pk_results), 'ts validation (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.7),
-                PlotOption(toTime(validation_norepair_1_pk_512M_results), 'ts validation (no repair/small cache)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha=0.4)],
-                result_base_path + 'query-dataset-1-validation.pdf', "Query Performance with Validation Index")
+                PlotOption(toTime(validation_norepair_1_pk_512M_results), 'ts validation (no repair/small cache)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha=0.4)])
 
-plot_query_bar(sels, [ PlotOption(toTime(antimatter_5_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_5_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
                 PlotOption(toTime(validation_5_pk_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.7),
                 PlotOption(toTime(validation_5_pk_512M_results), 'ts validation (small cache)', marker=markers[3], linestyle=inplace_linestyle, color=validation_color, alpha=0.4),
                 PlotOption(toTime(validation_norepair_5_direct_results), 'direct validation (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
                 PlotOption(toTime(validation_norepair_5_pk_results), 'ts validation (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.7),
-                PlotOption(toTime(validation_norepair_5_pk_512M_results), 'ts validation (no repair/small cache)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha=0.4)],
-                result_base_path + 'query-dataset-5-validation.pdf', "Query Performance with Validation Index")
+                PlotOption(toTime(validation_norepair_5_pk_512M_results), 'ts validation (small cache)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha=0.4), ])
+
+plot_shared_query(sels, query_options[0], query_options[1], result_base_path + "query-index.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 
 
-def plot_index_only_query_bar(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0):
-
+def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=22):
     # use as global
-    plt.figure(figsize=(5, 4))
-    x = np.arange(len(xvalues))
-    numbars = float(len(options))
-    i = 0
+    set_large_fonts(shared_font_size)
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(8, 3))
+    plt.subplots_adjust(wspace=0.03, hspace=0)
     barwidth = 0.2
-    for option in options:
-        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
-        i += 1
 
-    legend_col = 1
-    plt.legend(loc=2, ncol=legend_col, fontsize='10')
+    ax1.set_yscale('log', basey=10)
+    ax2.set_yscale('log', basey=10)
+    plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit, barwidth, xfontsize=12)
+    plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit, barwidth, xfontsize=12)
 
-    # plt.title(title)
-    plt.xticks(x, xvalues)
 
-    # plt.xlim(0, 310)
-    # plt.xlim([-0.5,numbars+0.5])
-    if ylimit > 0:
-        plt.ylim(0, ylimit)
-    plt.xlabel(xlabel, fontsize='10')
-    plt.ylabel(ylabel)
+    ax1.legend(loc=2, ncol=1)
+    ax1.set_ylabel(ylabel)
+
     plt.savefig(output)
     print('output figure to ' + output)
-# index only
 
 
-plot_index_only_query_bar(indexonly_sels, [ PlotOption(toTime(antimatter_1_indexonly_results), 'eager index only', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                #PlotOption(toTime(antimatter_1_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
-                PlotOption(toTime(validation_1_pk_indexonly_results), 'validation index only', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
-                PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'validation index only (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
-                result_base_path + 'query-indexonly-1.pdf', "Query Performance with Index Only Query")
+index_only_options = []
 
-plot_index_only_query_bar(indexonly_sels, [ PlotOption(toTime(antimatter_5_indexonly_results), 'eager index only', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                #PlotOption(toTime(antimatter_5_indexonly_sort_results), 'eager index only + sort', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
-                PlotOption(toTime(validation_5_pk_indexonly_results), 'validation index only', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
-                PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'validation index only (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
-                result_base_path + 'query-indexonly-5.pdf', "Query Performance with Index Only Query")
+index_only_options.append([ PlotOption(toTime(antimatter_1_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                PlotOption(toTime(validation_1_pk_indexonly_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
+                PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'ts validation (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)])
+
+index_only_options.append([ PlotOption(toTime(antimatter_5_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                PlotOption(toTime(validation_5_pk_indexonly_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
+                PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts validation (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)])
+
+plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + "query-index-only.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 
 # plot antimatter breakdown
 antimatter_1_breakdown = pandas.read_csv(query_base_path + "twitter_antimatter_breakdown.csv", sep='\t', header=0)

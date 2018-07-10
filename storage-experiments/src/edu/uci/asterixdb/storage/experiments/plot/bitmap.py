@@ -21,7 +21,6 @@ def plot_options(xvalues, options, ax, xlabel, xlimit, ylimit):
     for option in options:
         ax.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth)
         i += 1
-    # ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_xticks(x)
     ax.set_xticklabels(xvalues)

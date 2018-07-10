@@ -43,17 +43,50 @@ upsert_delete_btrees = [upsert_delete_btree_1, upsert_delete_btree_2, upsert_del
 
 indexes = [1, 2, 3, 4, 5]
 
-def plot_secondary_index(i):
-    plot_basic([
-            PlotOption(upsert_antimatters[i], 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-            PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
-            PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-            PlotOption(upsert_delete_btrees[i], 'deleted-key btree', marker=markers[3], linestyle=delete_btree_linestyle, color=delete_btree_color)],
-            result_base_path + 'upsert-secondary-index-' + str(indexes[i]) + '.pdf', "Ingestion Performance with #Secondary Indexes " + str(indexes[i]))
-#
-# for i in range(0, 5):
-#     plot_zipf_update_ratio(i)
 
-plot_secondary_index(0)
-plot_secondary_index(2)
-plot_secondary_index(4)
+
+def plot_options(options, ax, title, xlabel, xlimit, ylimit):
+    lines = []
+    for option in options:
+        line, = ax.plot(option.data.time, option.data.total_records, label=option.legend, color=option.color, linestyle=option.linestyle,
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=60,
+                  linewidth=1.0)
+        lines.append(line)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_xticks(np.arange(0, xlimit, step=60))
+    ax.set_xlim(0, xlimit)
+    ax.set_ylim(0, ylimit)
+    return lines
+
+
+def plot_shared_ingestion(options_1, options_2, options_3, titles, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=370, ylimit=1100):
+    # use as global
+    set_large_fonts(shared_font_size)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=shared_fig_size)
+    plt.subplots_adjust(wspace=0.1, hspace=0)
+    lines = plot_options(options_1, ax1, titles[0] , "", xlimit, ylimit)
+    plot_options(options_2, ax2, titles[1], xlabel, xlimit, ylimit)
+    plot_options(options_3, ax3, titles[2], "", xlimit, ylimit)
+
+    legend_col = 1
+    f.legend(handles=lines, loc='upper left', ncol=2, columnspacing=4.2, bbox_to_anchor=(0.08, 1.03), shadow=False, framealpha=0)
+
+    # ax1.legend(loc=2, ncol=legend_col)
+    ax1.set_ylabel(ylabel)
+
+    plt.savefig(output)
+    print('output figure to ' + output)
+
+
+options = []
+
+for i in [0, 2, 4]:
+    options.append([
+            PlotOption(upsert_antimatters[i], 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+            PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+            PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+            PlotOption(upsert_delete_btrees[i], 'deleted-key B+tree', marker=markers[3], linestyle=delete_btree_linestyle, color=delete_btree_color)])
+
+plot_shared_ingestion(options[0], options[1], options[2], ['1 Index', '3 Indexes', '5 Indexes'], result_base_path + 'upsert-secondary-index.pdf', ylimit=180)
+
