@@ -58,11 +58,11 @@ def parse_experiment(prefix, pattern, skips, dir=query_base_path):
 
 def plot_bar(xvalues, options, output, title, xlabel='Batch Memory Size', ylabel='Query Time (s)', ylimit=0, legendloc=2):
     # use as global
-    plt.figure(figsize=(5, 3))
+    plt.figure(figsize=(4.2, 2.5))
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
-    barwidth = 0.15
+    barwidth = 0.17
     for option in options:
         plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
         i += 1
@@ -100,16 +100,17 @@ def parse_batch_experiment(prefix, pattern, skips):
     return results
 
 
-batch_0_001_results = parse_batch_experiment(batch_prefix, '0.00001', batch_skips)
+# batch_0_001_results = parse_batch_experiment(batch_prefix, '0.00001', batch_skips)
 batch_0_01_results = parse_batch_experiment(batch_prefix, '0.0001', batch_skips)
 batch_0_1_results = parse_batch_experiment(batch_prefix, '0.001', batch_skips)
 batch_1_results = parse_batch_experiment(batch_prefix, '0.01', batch_skips)
 batch_10_results = parse_batch_experiment(batch_prefix, '0.1', batch_skips)
 
+alphas = [1, 0.8, 0.6, 0.4, 0.2]
 color = 'blue'
-plot_bar(batch_strs, [ PlotOption(toTime(batch_0_001_results), 'selectivity 0.001%', marker=markers[0], linestyle=antimatter_linestyle, color=color, alpha=0.2),
-                PlotOption(toTime(batch_0_01_results), 'selectivity 0.01%', marker=markers[1], linestyle=validation_linestyle, color=color, alpha=0.4),
-                PlotOption(toTime(batch_0_1_results), 'selectivity 0.1%', marker=markers[2], linestyle=validation_norepair_linestyle, color=color, alpha=0.6),
-                PlotOption(toTime(batch_1_results), 'selectivity 1%', marker=markers[3], linestyle=inplace_linestyle, color=color, alpha=0.8),
-                PlotOption(toTime(batch_10_results), 'selectivity 10%', marker=markers[4], linestyle=inplace_linestyle, color=color, alpha=1)],
+plot_bar(batch_strs, [
+                PlotOption(toTime(batch_0_01_results), 'selectivity 0.01%', marker=markers[0], linestyle=validation_linestyle, color=color, alpha=alphas[0]),
+                PlotOption(toTime(batch_0_1_results), 'selectivity 0.1%', marker=markers[1], linestyle=validation_norepair_linestyle, color=color, alpha=alphas[1]),
+                PlotOption(toTime(batch_1_results), 'selectivity 1%', marker=markers[2], linestyle=inplace_linestyle, color=color, alpha=alphas[2]),
+                PlotOption(toTime(batch_10_results), 'selectivity 10%', marker=markers[3], linestyle=inplace_linestyle, color=color, alpha=alphas[3])],
                 result_base_path + 'query-batch-size.pdf', "Query Performance with Varying Batch Size", legendloc=1)

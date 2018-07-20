@@ -9,7 +9,7 @@ time_index = 'counter'
 total_records_index = 'total_records'
 base_path = '/Users/luochen/Documents/Research/experiments/results/lsm/'
 result_base_path = '/Users/luochen/Documents/Research/papers/lsm-paper/expr/'
-result_base_path = '/Users/luochen/Documents/Research/experiments/results/figure/'
+# result_base_path = '/Users/luochen/Documents/Research/experiments/results/figure/'
 
 antimatter_color = 'red'
 antimatter_linestyle = 'solid'
@@ -20,7 +20,7 @@ validation_norepair_linestyle = 'solid'
 validation_color = 'green'
 validation_linestyle = 'solid'
 
-delete_btree_color = 'grey'
+delete_btree_color = '#636363'
 delete_btree_linestyle = 'solid'
 
 inplace_color = 'orange'
@@ -34,31 +34,42 @@ if not os.path.exists(result_base_path):
 # del matplotlib.font_manager.weight_dict['roman']
 # matplotlib.font_manager._rebuild()
 
-font_size = 12
+font_size = 13
+font_weight = 100
 params = {
     'font.family': 'Times New Roman',
-    'font.weight': 'light',
+    'font.weight': font_weight,
+    'axes.labelweight': font_weight,
+    'figure.titleweight': font_weight,
     'axes.titlesize': font_size,
    'axes.labelsize': font_size,
    'legend.fontsize': font_size,
    'xtick.labelsize': font_size,
    'ytick.labelsize': font_size,
    'font.size': font_size,
-   'lines.linewidth':1,
-   'lines.markeredgewidth':1,
+   'lines.linewidth':0.75,
+   'lines.markeredgewidth':0.75,
+   'lines.markersize':5,
+   "legend.handletextpad":0.2,
+   "legend.handlelength":1.5,
    'text.usetex': False,
    'savefig.bbox':'tight',
-   'figure.figsize':(4, 3),
+   'figure.figsize':(3.75, 2.5),
    "legend.fancybox":True,
    "legend.shadow":False,
-   "legend.framealpha":0
+   "legend.framealpha":0,
+   "legend.labelspacing":0.2,
+   "legend.borderpad":0,
+   "hatch.color":'white',
+   "hatch.linewidth":'0.5'
 }
 markers = ['D', 's', 'o', '^', '*']
+markers = ['o', '^', 'v', 's', 'D']
 
 plt.rcParams.update(params)
 
-shared_fig_size = (9, 2.8)
-shared_font_size = 15
+# shared_fig_size = (10, 3)
+# shared_font_size = 12
 ingestion_xlabel = 'Time (Minutes)'
 ingestion_ylabel = 'Total Records (Millions)'
 
@@ -84,7 +95,7 @@ class IngestionResult(object):
 
 class PlotOption(object):
 
-    def __init__(self, data, legend, color='red', linestyle='solid', marker=None, markevery=60, alpha=None):
+    def __init__(self, data, legend, color='red', linestyle='solid', marker=None, markevery=60, alpha=None, hatch=None):
         self.data = data
         self.linestyle = linestyle
         self.marker = marker
@@ -92,6 +103,7 @@ class PlotOption(object):
         self.legend = legend
         self.markevery = markevery
         self.alpha = alpha
+        self.hatch = hatch
 
 
 def open_csv(path):
@@ -109,8 +121,7 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     plt.figure()
     for option in options:
         plt.plot(option.data.time, option.data.total_records, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery,
-                  linewidth=1.0)
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery)
 
     legend_col = 1
     if len(options) > 5:
@@ -140,8 +151,7 @@ def plot_query(options, output, title, xlabel='Query', ylabel='Time (s)'):
     for option in options:
         xvalues = np.arange(len(option.data))
         plt.plot(xvalues, option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery,
-                  linewidth=1.0)
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery)
 
     legend_col = 1
     plt.legend(loc=2, ncol=legend_col)
@@ -160,4 +170,30 @@ def toStd(results):
     for result in results:
         stds.append(result.std)
     return stds
+
+
+def get_totals(results):
+    totals = []
+    for result in results:
+        tail = result.total_records.tail(1)
+        totals.append(tail.sum())
+    return totals
+
+
+def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, ylimit=240):
+    # use as global
+    plt.figure()
+    for option in options:
+        plt.plot(xvalues, option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=1)
+    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.025, 1), columnspacing=0.2, handlelength=1.3)
+
+    # plt.title(title)
+
+    plt.xlabel(xlabel)
+    plt.xticks(xvalues)
+    plt.ylim(0, ylimit)
+    plt.ylabel(ylabel)
+    plt.savefig(output)
+    print('output figure to ' + output)
 

@@ -30,7 +30,7 @@ def plot_options(xvalues, options, ax, xlabel, xlimit, ylimit):
 def plot_shared_bitmap(xvalues, options_1, options_2, options_3, output, xlabels, ylabel='Repair Time (s)', xlimit=110, ylimit=1100):
     # use as global
 
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(9, 3))
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(8, 2.2))
     plt.subplots_adjust(wspace=0.05, hspace=0)
     plot_options(xvalues[0], options_1, ax1, xlabels[0], xlimit, ylimit)
     plot_options(xvalues[1], options_2, ax2, xlabels[1], xlimit, ylimit)
@@ -45,7 +45,7 @@ def plot_shared_bitmap(xvalues, options_1, options_2, options_3, output, xlabels
     print('output figure to ' + output)
 
 
-records = (1, 2, 3, 4, 5)
+records = ('1M', '2M', '3M', '4M', '5M')
 none_records = [19.45, 37.74, 57.33, 68.32, 81.64]
 sidefile_records = [20.87, 35.56, 49.83, 69.58, 89]
 lock_records = [42.31, 85.1, 130.83, 174.81, 203.16]
@@ -72,5 +72,5 @@ record_options = [ PlotOption(none_records, 'Baseline', marker=markers[0], lines
 
 plot_shared_bitmap(
     [updates, records, sizes], update_options, record_options, size_options , result_base_path + 'bitmap.pdf',
-                   ['Update Ratio', '#Records (Million)/Component', 'Record Size (Bytes)'], ylimit=280)
+                   ['Update Ratio', '#Records/Component', 'Record Size (Bytes)'], ylimit=280)
 

@@ -11,12 +11,14 @@ from pathlib import PurePath
 query_base_path = base_path + 'query-breakdown/'
 
 time_index = 'time'
-sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01', '0.1', '0.2', '0.5', '0.999']
-sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1, 10, 20, 50, 100]
+#sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01', '0.1', '0.2', '0.5', '0.999']
+#sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1, 10, 20, 50, 100]
+
+sel_strs = ['0.00001', '0.00005', '0.0001', '0.0005', '0.001', '0.01', '0.1', '0.2', '0.5']
+sels = [0.001, 0.005, 0.01, 0.05, 0.1, 1, 10, 20, 50]
 
 
 class QueryResult(object):
-
     def __init__(self, csv):
         self.times = csv[time_index] / 1000
         self.time = np.mean(self.times)
@@ -81,17 +83,16 @@ def plot_bar(xvalues, options,
              line_options,
              output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0, legendloc=2):
     # use as global
-    plt.figure(figsize=(6, 3))
+    plt.figure(figsize=(6, 2.5))
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
-    barwidth = 0.15
+    barwidth = 0.17
     for option in options:
-        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth)
+        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth,  alpha=option.alpha)
         i += 1
 
-    legend_col = 2
-    plt.legend(loc=legendloc, ncol=legend_col)
+    plt.legend(loc=legendloc, ncol=2)
 
     for option in line_options:
         plt.plot(x, option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
@@ -107,19 +108,20 @@ def plot_bar(xvalues, options,
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.xlim([-0.5, len(x) - 0.5])
-    plt.text(3, 650, 'full scan')
-    plt.text(1.8, 450, 'full scan (sequential keys)')
+    plt.text(1, 800, 'full scan')
+    plt.text(0, 450, 'full scan (sequential keys)')
 
     plt.savefig(output)
 
     print('output figure to ' + output)
 
-
-plot_bar(sels, [ PlotOption(toTime(baseline_results), 'naive', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(batch_results), 'batch', marker=markers[1], linestyle=validation_linestyle, color=inplace_color),
-                PlotOption(toTime(batch_btree_results), 'batch+btree', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
-                PlotOption(toTime(batch_btree_bf_results), 'batch+btree+bf', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color),
-                PlotOption(toTime(batch_btree_bf_id_results), 'batch+btree+bf+ID', marker=markers[4], linestyle=delete_btree_linestyle, color=delete_btree_color)],
+color = 'blue'
+alphas = [1, 0.8, 0.6, 0.4, 0.2]
+plot_bar(sels, [ PlotOption(toTime(baseline_results), 'naive', marker=markers[0], linestyle=antimatter_linestyle, color=color, alpha = alphas[0]),
+                PlotOption(toTime(batch_results), 'batch', marker=markers[1], linestyle=validation_linestyle, color=color, alpha=alphas[1]),
+                PlotOption(toTime(batch_btree_results), 'batch+btree', marker=markers[2], linestyle=validation_norepair_linestyle, color=color, alpha=alphas[2]),
+                PlotOption(toTime(batch_btree_bf_results), 'batch+btree+bf', marker=markers[3], linestyle=inplace_linestyle, color=color, alpha=alphas[3]),
+                PlotOption(toTime(batch_btree_bf_id_results), 'batch+btree+bf+ID', marker=markers[4], linestyle=delete_btree_linestyle, color=color, alpha=alphas[4])],
                [ PlotOption(toTime(scan_results), 'scan', marker=None, linestyle='dotted', color='green'),
                 PlotOption(toTime(seq_scan_results), 'scan (seq keys)', marker=None, linestyle='dotted', color='green')],
                 result_base_path + 'query-opt-breakdown.pdf', "", legendloc=2)

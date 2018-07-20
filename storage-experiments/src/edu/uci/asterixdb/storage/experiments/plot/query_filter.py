@@ -113,7 +113,7 @@ inplace_5_history_results = parse_filter_experiments(inplace_5_prefix, history_p
 inplace_5_dynamic_results = parse_filter_experiments(inplace_5_prefix, dynamic_pattern, non_skips)
 
 
-def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth=0.2):
+def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth=0.22):
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
@@ -131,8 +131,7 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth
 
 def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Time Range (Days)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
     # use as global
-    set_large_fonts(shared_font_size)
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(8, 3))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(6, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit)
@@ -147,25 +146,21 @@ def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Tim
 recent_options = [
     [ PlotOption(toTime(antimatter_1_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_1_recent_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color),
-                PlotOption(toTime(inplace_1_recent_results), 'delete-bitmap (no readahead)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
+                PlotOption(toTime(inplace_1_recent_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
 
     [ PlotOption(toTime(antimatter_5_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_5_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_recent_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color),
-                PlotOption(toTime(inplace_5_recent_results), 'delete-bitmap (no readahead)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)]
+                PlotOption(toTime(inplace_5_recent_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]
     ]
 
 history_options = [
    [ PlotOption(toTime(antimatter_1_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_1_history_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color),
-                PlotOption(toTime(inplace_1_history_results), 'delete-bitmap (no readahead)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)],
+                PlotOption(toTime(inplace_1_history_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
 
    [ PlotOption(toTime(antimatter_5_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_history_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color),
-                PlotOption(toTime(inplace_5_history_results), 'delete-bitmap (no readahead)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)]]
+                PlotOption(toTime(inplace_5_history_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
 
 plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)

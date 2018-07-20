@@ -11,14 +11,14 @@ from pathlib import PurePath
 query_base_path = base_path + 'query/'
 
 time_index = 'time'
-sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
-sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
+#sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
+#sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
 
-indexonly_sel_strs = sel_strs[:]
-# indexonly_sel_strs.append('0.1')
-indexonly_sels = sels[:]
-# indexonly_sels.append(10)
+sel_strs = ['0.00001', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
+sels = [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
 
+indexonly_sel_strs = ['0.00001', '0.00005', '0.0001', '0.0005', '0.001', '0.01']
+indexonly_sels = [0.001, 0.005, 0.01, 0.05, 0.1, 1]
 
 class QueryResult(object):
 
@@ -117,7 +117,7 @@ validation_pk_512M_pattern = "false_512MB"
 validation_pk_indexonly_pattern = "indexonly"
 
 direct_validation_skips = [2, 2, 2, 2, 2, 2, 2, 2]
-pk_validation_skips = [100, 50, 25, 10, 5, 5, 2, 2]
+pk_validation_skips = [100, 25, 10, 5, 5, 2, 2]
 pk_validation_indexonly_skips = pk_validation_skips[:]
 pk_validation_indexonly_skips.append(2)
 
@@ -172,22 +172,22 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0
     return lines
 
 
-def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=350):
+def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=360):
     # use as global
-    set_large_fonts(shared_font_size)
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(15, 3))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(11, 2.5))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit)
 
-    f.legend(handles=lines, loc='upper left', ncol=2, bbox_to_anchor=(0.06, 1), columnspacing=15)
+    f.legend(handles=lines, loc='upper left', ncol=2, bbox_to_anchor=(0.065, 1.02), columnspacing=11.8)
 
     ax1.set_ylabel(ylabel)
 
     plt.savefig(output)
     print('output figure to ' + output)
 
-
+color = 'blue'
+alphas = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
 query_options = []
 query_options.append(
      [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
@@ -209,17 +209,16 @@ query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=
 plot_shared_query(sels, query_options[0], query_options[1], result_base_path + "query-index.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 
 
-def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=22):
+def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=50):
     # use as global
-    set_large_fonts(shared_font_size)
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(8, 3))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(6, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     barwidth = 0.2
 
     ax1.set_yscale('log', basey=10)
     ax2.set_yscale('log', basey=10)
-    plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit, barwidth, xfontsize=12)
-    plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit, barwidth, xfontsize=12)
+    plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit, barwidth)
+    plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit, barwidth)
 
 
     ax1.legend(loc=2, ncol=1)
@@ -240,41 +239,3 @@ index_only_options.append([ PlotOption(toTime(antimatter_5_indexonly_results), '
                 PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts validation (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)])
 
 plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + "query-index-only.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
-
-# plot antimatter breakdown
-antimatter_1_breakdown = pandas.read_csv(query_base_path + "twitter_antimatter_breakdown.csv", sep='\t', header=0)
-secondary_time = antimatter_1_breakdown["secondary"] / 1000
-primary_time = antimatter_1_breakdown["primary"] / 1000
-plot_stack_bar(sels, [ PlotOption(secondary_time, 'secondary index search', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(primary_time, 'primary index lookup', marker=markers[1], linestyle=validation_linestyle, color=validation_color)],
-                result_base_path + 'query-antimatter-breakdown.pdf', "Query Time Breakdown Analysis")
-
-# plot convergence
-validation_norepair_1_0_001_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_1_0.00001_false.csv", sep='\t', header=0)[time_index] / 1000
-validation_norepair_5_0_001_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_5_0.00001_false.csv", sep='\t', header=0)[time_index] / 1000
-
-validation_norepair_1_0_005_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_1_0.00005_false.csv", sep='\t', header=0)[time_index] / 1000
-validation_norepair_5_0_005_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_5_0.00005_false.csv", sep='\t', header=0)[time_index] / 1000
-
-validation_norepair_1_0_025_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_1_0.00025_false.csv", sep='\t', header=0)[time_index] / 1000
-validation_norepair_5_0_025_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_5_0.00025_false.csv", sep='\t', header=0)[time_index] / 1000
-
-validation_norepair_1_0_1_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_1_0.001_false.csv", sep='\t', header=0)[time_index] / 1000
-validation_norepair_5_0_1_pk = pandas.read_csv(query_base_path + "twitter_validation_UNIFORM_5_0.001_false.csv", sep='\t', header=0)[time_index] / 1000
-
-# plot_query([ PlotOption(validation_norepair_1_0_001_pk, 'update ratio 0%', linestyle=antimatter_linestyle, color=antimatter_color),
-#         PlotOption(validation_norepair_5_0_001_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
-#         result_base_path + 'pk-validation-time-0.001%.pdf', "Selectivity 0.001%")
-#
-# plot_query([ PlotOption(validation_norepair_1_0_005_pk, 'update ratio 0%', linestyle=antimatter_linestyle, color=antimatter_color),
-#         PlotOption(validation_norepair_5_0_005_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
-#         result_base_path + 'pk-validation-time-0.005%.pdf', "Selectivity 0.005%")
-#
-# plot_query([ PlotOption(validation_norepair_1_0_025_pk, 'update ratio 0%', linestyle=antimatter_linestyle, color=antimatter_color),
-#         PlotOption(validation_norepair_5_0_025_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
-#         result_base_path + 'pk-validation-time-0.025%.pdf', "Selectivity 0.025%")
-#
-# plot_query([ PlotOption(validation_norepair_1_0_1_pk, 'update ratio 0%', linestyle=antimatter_linestyle, color=antimatter_color),
-#         PlotOption(validation_norepair_5_0_1_pk, 'update ratio 50%', linestyle=validation_norepair_linestyle, color=validation_norepair_color)],
-#         result_base_path + 'pk-validation-time-0.1%.pdf', "Selectivity 0.1%")
-
