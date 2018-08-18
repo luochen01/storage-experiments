@@ -87,7 +87,7 @@ for i in [0, 2, 4]:
             PlotOption(upsert_antimatters[i], 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
             PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
-            PlotOption(upsert_delete_btrees[i], 'deleted-key B+tree', marker=markers[3], linestyle=delete_btree_linestyle, color=delete_btree_color)])
+            PlotOption(upsert_delete_btrees[i], 'deleted-key B+tree', marker=markers[4], linestyle=delete_btree_linestyle, color=delete_btree_color)])
 
 # plot_shared_ingestion(options[0], options[1], options[2], ['1 Index', '3 Indexes', '5 Indexes'], result_base_path + 'upsert-secondary-index.pdf', ylimit=180)
 
@@ -95,6 +95,6 @@ xvalues = [1, 2, 3, 4, 5]
 plot_totals([PlotOption(upsert_antimatters_totals, 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
             PlotOption(upsert_validations_totals, 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_validation_norepairs_totals, 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
-            PlotOption(upsert_delete_btrees_totals, 'deleted-key B+tree', marker=markers[3], linestyle=delete_btree_linestyle, color=delete_btree_color)]
+            PlotOption(upsert_delete_btrees_totals, 'deleted-key B+tree', marker=markers[4], linestyle=delete_btree_linestyle, color=delete_btree_color)]
             , xvalues, result_base_path + 'upsert-secondary-index-total.pdf', 'Number of Secondary Indexes')
 

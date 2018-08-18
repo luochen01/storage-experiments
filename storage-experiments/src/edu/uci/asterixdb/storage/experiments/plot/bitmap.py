@@ -17,7 +17,7 @@ def plot_options(xvalues, options, ax, xlabel, xlimit, ylimit):
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
-    barwidth = 0.2
+    barwidth = 0.25
     for option in options:
         ax.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth)
         i += 1
@@ -30,8 +30,8 @@ def plot_options(xvalues, options, ax, xlabel, xlimit, ylimit):
 def plot_shared_bitmap(xvalues, options_1, options_2, options_3, output, xlabels, ylabel='Repair Time (s)', xlimit=110, ylimit=1100):
     # use as global
 
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(8, 2.2))
-    plt.subplots_adjust(wspace=0.05, hspace=0)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(7.5, 2))
+    plt.subplots_adjust(wspace=0.02, hspace=0)
     plot_options(xvalues[0], options_1, ax1, xlabels[0], xlimit, ylimit)
     plot_options(xvalues[1], options_2, ax2, xlabels[1], xlimit, ylimit)
     plot_options(xvalues[2], options_3, ax3, xlabels[2], xlimit, ylimit)
@@ -73,4 +73,45 @@ record_options = [ PlotOption(none_records, 'Baseline', marker=markers[0], lines
 plot_shared_bitmap(
     [updates, records, sizes], update_options, record_options, size_options , result_base_path + 'bitmap.pdf',
                    ['Update Ratio', '#Records/Component', 'Record Size (Bytes)'], ylimit=280)
+
+
+def plot_bar(xvalues, options, output, title, xlabel='Time Range (Days)', ylabel='Query Time (s)', ylimit=0, legendloc=2, legendcol=1):
+    # use as global
+    plt.figure()
+    x = np.arange(len(xvalues))
+    numbars = float(len(options))
+    i = 0
+    barwidth = 0.2
+    for option in options:
+        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth)
+        i += 1
+
+    legend_col = 1
+    plt.legend(loc=legendloc, ncol=legendcol)
+
+    # plt.title(title)
+    plt.xticks(x, xvalues)
+
+    # plt.xlim(0, 310)
+    if ylimit > 0:
+        plt.ylim(0, ylimit)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.savefig(output)
+    print('output figure to ' + output)
+
+plot_bar(records, [ PlotOption(none_records, 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                PlotOption(sidefile_records, 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+                PlotOption(lock_records, 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
+                result_base_path + 'bitmap-records.pdf', "", xlabel='#Records (Million)', legendloc=2)
+
+plot_bar(updates, [ PlotOption(none_updates, 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                PlotOption(sidefile_updates, 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+                PlotOption(lock_updates, 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
+                result_base_path + 'bitmap-updates.pdf', "", xlabel='Update Ratio', legendloc=1, ylimit=180, legendcol=1)
+
+plot_bar(sizes, [ PlotOption(none_sizes, 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                PlotOption(sidefile_sizes, 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+                PlotOption(lock_sizes, 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
+                result_base_path + 'bitmap-sizes.pdf', "", xlabel='Record Size (Bytes)', legendloc=2)
 

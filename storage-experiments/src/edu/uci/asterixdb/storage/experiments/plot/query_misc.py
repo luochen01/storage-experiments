@@ -58,7 +58,7 @@ def parse_experiment(prefix, pattern, skips, dir=query_base_path):
 
 def plot_bar(xvalues, options, output, title, xlabel='Batch Memory Size', ylabel='Query Time (s)', ylimit=0, legendloc=2):
     # use as global
-    plt.figure(figsize=(4.2, 2.5))
+    plt.figure(figsize=(4, 2.5))
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0

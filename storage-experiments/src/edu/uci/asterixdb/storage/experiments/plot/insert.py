@@ -46,11 +46,11 @@ insert_linestyle = 'solid'
 
 set_large_fonts(14)
 no_pk_linestyle = 'dashed'
-plot_basic([ PlotOption(insert_0, 'pk-index-0%', marker=markers[0], linestyle=insert_linestyle, color=antimatter_color),
-            PlotOption(insert_05, 'pk-index-50%', marker=markers[1], linestyle=insert_linestyle, color=antimatter_color),
-            PlotOption(insert_nopk_0, '0%', marker=markers[0], linestyle=no_pk_linestyle, color=validation_color),
-            PlotOption(insert_nopk_05, '50%', marker=markers[1], linestyle=no_pk_linestyle, color=validation_color)],
-            result_base_path + 'insert.pdf', "Duplicate Ratio", ylimit=180)
+plot_basic([ PlotOption(insert_0, 'pk-idx 0% dup', marker=markers[0], linestyle=insert_linestyle, color=antimatter_color),
+            PlotOption(insert_05, 'pk-idx 50% dup', marker=markers[1], linestyle=insert_linestyle, color=antimatter_color),
+            PlotOption(insert_nopk_0, 'no-pk-idx 0% dup', marker=markers[0], linestyle=no_pk_linestyle, color=validation_color),
+            PlotOption(insert_nopk_05, 'no-pk-idx 50% dup', marker=markers[1], linestyle=no_pk_linestyle, color=validation_color)],
+            result_base_path + 'insert.pdf', "Duplicate Ratio", ylimit=180, framealpha = 0.5)
 
 plot_basic([ PlotOption(insert_0, 'pk-index-random', marker=markers[0], linestyle=insert_linestyle, color='green'),
             PlotOption(insert_seq, 'pk-index-sequential', marker=markers[1], linestyle=insert_linestyle, color='green'),

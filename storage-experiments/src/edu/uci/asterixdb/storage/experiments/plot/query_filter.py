@@ -139,6 +139,44 @@ def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Tim
     ax1.legend(loc=2, ncol=1, framealpha=framealpha)
     ax1.set_ylabel(ylabel)
 
+    #ax1.set_ylim(0, 1000)
+    #ax2.set_ylim(0, 1000)
+
+    ax1.set_yscale('log', basey=10)
+    ax2.set_yscale('log', basey=10)
+
+    ax1.set_ylim(ymin=1)
+    ax2.set_ylim(ymin=1)
+
+    plt.savefig(output)
+    print('output figure to ' + output)
+
+
+
+def plot_query(xvalues, options, output, title, xlabel='Time Range (Days)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
+    # use as global
+    plt.figure()
+    x = np.arange(len(xvalues))
+    numbars = float(len(options))
+    i = 0
+    barwidth=0.22
+    for option in options:
+        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
+        i += 1
+    #plt.set_title(title)
+    plt.xlabel(xlabel)
+    plt.xticks(x, xvalues)
+    plt.xlim([-0.5, len(x) - 0.5])
+    plt.legend(loc=2, ncol=1, framealpha=framealpha)
+    plt.ylabel(ylabel)
+
+    #ax1.set_ylim(0, 1000)
+    #ax2.set_ylim(0, 1000)
+
+    plt.yscale('log', basey=10)
+
+    plt.ylim(ymin=1)
+
     plt.savefig(output)
     print('output figure to ' + output)
 
@@ -162,6 +200,9 @@ history_options = [
                 PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
                 PlotOption(toTime(inplace_5_history_4M_results), 'delete-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
 
-plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
-plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)
+#plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
+#plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)
+plot_query(filter_strs, recent_options[1], result_base_path + "query-filter-recent-50.pdf", 'Update Ratio 50%')
+plot_query(filter_strs, history_options[0], result_base_path + "query-filter-history-0.pdf", 'Update Ratio 0%', framealpha = 0.8)
+plot_query(filter_strs, history_options[1], result_base_path + "query-filter-history-50.pdf", 'Update Ratio 50%', framealpha = 0.8)
 

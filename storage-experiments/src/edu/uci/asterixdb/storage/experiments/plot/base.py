@@ -47,13 +47,14 @@ params = {
    'xtick.labelsize': font_size,
    'ytick.labelsize': font_size,
    'font.size': font_size,
-   'lines.linewidth':0.75,
-   'lines.markeredgewidth':0.75,
-   'lines.markersize':5,
+   'lines.linewidth':1,
+   'lines.markeredgewidth': 1,
+   'lines.markersize':6,
    "legend.handletextpad":0.2,
    "legend.handlelength":1.5,
    'text.usetex': False,
    'savefig.bbox':'tight',
+   'savefig.pad_inches':0,
    'figure.figsize':(3.75, 2.5),
    "legend.fancybox":True,
    "legend.shadow":False,
@@ -64,7 +65,7 @@ params = {
    "hatch.linewidth":'0.5'
 }
 markers = ['D', 's', 'o', '^', '*']
-markers = ['o', '^', 'v', 's', 'D']
+markers = ['o', '^', 'v', 'x', '*']
 
 plt.rcParams.update(params)
 
@@ -115,7 +116,7 @@ def open_csv(path):
         return None
 
 
-def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=170):
+def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=170, framealpha=0):
     # use as global
 
     plt.figure()
@@ -126,7 +127,7 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     legend_col = 1
     if len(options) > 5:
         legend_col = 2
-    plt.legend(loc=2, ncol=legend_col)
+    plt.legend(loc=2, ncol=legend_col, framealpha=framealpha)
 
     # plt.title(title)
 
