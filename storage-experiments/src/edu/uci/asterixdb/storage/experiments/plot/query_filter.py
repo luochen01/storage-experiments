@@ -29,7 +29,6 @@ def parse_csv(path, skip=0):
         print('fail to parse ' + path + sys.exc_info()[0])
         return None
 
-
 def toTime(results):
     times = []
     for result in results:
@@ -175,7 +174,7 @@ def plot_query(xvalues, options, output, title, xlabel='Time Range (Days)', ylab
 
     plt.yscale('log', basey=10)
 
-    plt.ylim(ymin=1)
+    plt.ylim(ymin=1, ymax=800)
 
     plt.savefig(output)
     print('output figure to ' + output)

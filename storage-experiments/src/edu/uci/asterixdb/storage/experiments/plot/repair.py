@@ -80,7 +80,7 @@ def plot_repair(options, output, xlabel='Total Ingested Records (millions)', yla
     plt.figure()
     for option in options:
         plt.plot(option.data.total_records, option.data.time, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=(1, 2))
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=(1, 1), markersize=5)
 
     legend_col = 1
     plt.legend(loc=2, ncol=legend_col)
@@ -98,8 +98,8 @@ def plot_options(options, ax, title, xlabel, xlimit, ylimit):
     lines = []
     for option in options:
         line, = ax.plot(option.data.total_records, option.data.time, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=(1, 2),
-                  linewidth=1.0)
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=(1, 1),
+                  linewidth=1.0, markersize=5)
         lines.append(line)
     ax.set_title(title)
     ax.set_xlabel(xlabel)
