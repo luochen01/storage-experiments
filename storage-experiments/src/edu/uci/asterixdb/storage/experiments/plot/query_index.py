@@ -174,14 +174,15 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0
 
 def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=310):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(11, 2.2))
-    plt.subplots_adjust(wspace=0.03, hspace=0)
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=False, figsize=(13, 2.2))
+    plt.subplots_adjust(wspace=0.15, hspace=0)
     lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit)
     #f.legend(handles=lines, loc='upper left', ncol=2, bbox_to_anchor=(0.065, 1.02), columnspacing=11.8)
     ax1.legend(framealpha=0.5)
     ax1.set_ylabel(ylabel)
     ax2.legend(framealpha=0.5)
+    ax2.set_ylabel(ylabel)
 
     plt.savefig(output)
     print('output figure to ' + output)
@@ -209,8 +210,8 @@ plot_shared_query(sels, query_options[0], query_options[1], result_base_path + "
 
 def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=50):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(6, 2.2))
-    plt.subplots_adjust(wspace=0.03, hspace=0)
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=False, figsize=(10, 2.2))
+    plt.subplots_adjust(wspace=0.2, hspace=0)
     barwidth = 0.2
 
     plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit, barwidth)
@@ -225,6 +226,7 @@ def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, 
     ax1.set_ylabel(ylabel)
 
     ax2.legend(loc=2, ncol=1)
+    ax2.set_ylabel(ylabel)
 
 
     plt.savefig(output)

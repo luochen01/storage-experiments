@@ -251,8 +251,9 @@ public class LSMOperationParser {
                 + "                initialFlushCapacity, initialFlushFinalizedPages,\n"
                 + "                initialFlushSubOperationElapsedTime, initialComponents, \n"
                 + "                initialMergedComponents, initialMergeFinalizedPages, initialMergeSubOperationElapsedTimes,\n"
-                + "                componentRatios, estimator,\n"
-                + "                MergePolicyType.TIER, recordsPerPage * subOperationPages, subOperationPages, baseLevelCapacity);");
+                + "                componentRatios, estimator,\n" + "                MergePolicyType."
+                + policy.toString().toUpperCase()
+                + ", recordsPerPage * subOperationPages, subOperationPages, baseLevelCapacity);");
 
         out.println("solver.solveMaxSpeedProbSampling();");
         out.println("}");
