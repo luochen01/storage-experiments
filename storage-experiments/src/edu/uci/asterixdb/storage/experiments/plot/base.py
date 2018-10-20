@@ -62,7 +62,9 @@ params = {
    "legend.labelspacing":0.2,
    "legend.borderpad":0,
    "hatch.color":'white',
-   "hatch.linewidth":'0.5'
+   "hatch.linewidth":'0.5',
+    "xtick.direction": 'out',
+    "ytick.direction": 'out',
 }
 markers = ['D', 's', 'o', '^', '*']
 markers = ['o', '^', 'v', 'x', '*']
@@ -116,9 +118,8 @@ def open_csv(path):
         return None
 
 
-def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=170, framealpha=0):
+def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=170, framealpha=0, ystep=50):
     # use as global
-
     plt.figure()
     for option in options:
         plt.plot(option.data.time, option.data.total_records, label=option.legend, color=option.color, linestyle=option.linestyle,
@@ -127,7 +128,7 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     legend_col = 1
     if len(options) > 5:
         legend_col = 2
-    plt.legend(loc=2, ncol=legend_col, framealpha=framealpha)
+    plt.legend(loc=2, ncol=legend_col, framealpha=framealpha, numpoints = 1)
 
     # plt.title(title)
 
@@ -142,6 +143,8 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     plt.xlim(0, xlimit)
     plt.ylim(0, ylimit)
     plt.ylabel(ylabel)
+    plt.yticks(np.arange(0, ylimit, step=ystep))
+
     plt.savefig(output)
     print('output figure to ' + output)
 
@@ -181,20 +184,22 @@ def get_totals(results):
     return totals
 
 
-def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, ylimit=240):
-    # use as global
+def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, ylimit=240, ystep = 50):
     plt.figure()
     for option in options:
-        plt.plot(xvalues, option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
+        plt.plot(np.arange(len(xvalues)), option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
                   markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=1)
-    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.025, 1), columnspacing=0.2, handlelength=1.3)
-
+    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.04, 1), columnspacing=0.2, numpoints = 1, framealpha=0, handlelength=1.3)
+    plt.grid(False)
     # plt.title(title)
-
     plt.xlabel(xlabel)
-    plt.xticks(xvalues)
+    plt.xlim([-0.1, len(xvalues)-0.9])
+    plt.xticks(np.arange(len(xvalues)), xvalues)
     plt.ylim(0, ylimit)
     plt.ylabel(ylabel)
+    
     plt.savefig(output)
+    
+    
     print('output figure to ' + output)
 

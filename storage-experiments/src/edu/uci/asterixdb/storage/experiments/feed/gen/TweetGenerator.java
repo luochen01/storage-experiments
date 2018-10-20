@@ -44,11 +44,7 @@ public class TweetGenerator extends AbstractRecordGenerator {
 
     public static void main(String[] args) {
         TweetGenerator gen = new TweetGenerator(FeedMode.Random, UpdateDistribution.UNIFORM, 0, 0.5, 0, 10, 2000);
-        long total = 0;
-        for (int i = 0; i < 100; i++) {
-            total += gen.getNext().getBytes().length;
-        }
-        System.out.println(total / 100);
+        System.out.println(gen.getNext());
 
     }
 

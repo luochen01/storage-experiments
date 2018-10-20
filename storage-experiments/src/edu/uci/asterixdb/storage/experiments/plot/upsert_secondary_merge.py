@@ -98,6 +98,6 @@ def plot_merge(i):
 plot_totals([PlotOption(upsert_antimatters_totals, 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
             PlotOption(upsert_validations_totals, 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_validation_norepairs_totals, 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
-            PlotOption(upsert_inplaces_totals, 'delete-bitmap', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)]
-            , merges, result_base_path + 'upsert-secondary-merge-total.pdf', 'Maximum Mergeable Component Size')
+            PlotOption(upsert_inplaces_totals, 'mutable-bitmap', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
+             merges, result_base_path + 'upsert-secondary-merge-total.pdf', 'Maximum Mergeable Component Size')
 
