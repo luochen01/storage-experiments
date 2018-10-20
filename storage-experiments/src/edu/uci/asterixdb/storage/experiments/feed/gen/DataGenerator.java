@@ -456,6 +456,12 @@ public class DataGenerator {
             return builder.toString();
         }
 
+        public static String getDateTimeString(DateTime calendar) {
+            StringBuilder sb = new StringBuilder();
+            getDateTimeString(calendar, sb);
+            return sb.toString();
+        }
+
         public static void getDateTimeString(DateTime calendar, StringBuilder builder) {
             builder.append("\"");
             builder.append(calendar.getYear());
