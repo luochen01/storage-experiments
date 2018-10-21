@@ -23,19 +23,17 @@ import java.util.Random;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
 
-public class KVGenerator extends AbstractRecordGenerator {
+public class KVGenerator implements IRecordGenerator {
     private static final String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
     private final Random random = new Random(17);
     private final int recordLength;
 
-    public KVGenerator(FeedMode mode, UpdateDistribution dist, double theta, double updateRatio, long startRange,
-            int recordSize) {
-        super(mode, dist, theta, updateRatio, startRange);
+    public KVGenerator(int recordSize) {
         recordLength = (recordSize) / 2;
     }
 
     @Override
-    protected String doGetNext(long nextId) {
+    public String getRecord(long nextId) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"key\":int64(\"");
         sb.append(nextId);
@@ -53,10 +51,4 @@ public class KVGenerator extends AbstractRecordGenerator {
         }
     }
 
-    public static void main(String[] args) {
-        KVGenerator gen = new KVGenerator(FeedMode.Sequential, UpdateDistribution.UNIFORM, 0, 0, 0, 100);
-        for (int i = 0; i < 10; i++) {
-            System.out.println(gen.getNext());
-        }
-    }
 }

@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.kohsuke.args4j.CmdLineParser;
@@ -13,6 +14,7 @@ import org.kohsuke.args4j.Option;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.FeedMode;
 import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribution;
 import edu.uci.asterixdb.storage.experiments.feed.gen.IRecordGenerator;
+import edu.uci.asterixdb.storage.experiments.feed.gen.IdGenerator;
 import edu.uci.asterixdb.storage.experiments.feed.gen.TweetGenerator;
 import edu.uci.asterixdb.storage.experiments.util.QueryResult;
 import edu.uci.asterixdb.storage.experiments.util.QueryUtil;
@@ -90,6 +92,7 @@ public class FeedRepairDriver implements IFeedDriver {
     private final FeedReporter reporter;
 
     private final IRecordGenerator gen;
+    private final IdGenerator idGen;
 
     public static void main(String[] args) throws Exception {
         QueryUtil.init(new URI("http://localhost:19002/query/service"));
@@ -104,9 +107,10 @@ public class FeedRepairDriver implements IFeedDriver {
 
         this.repairWait = this.repairWait * 1000;
 
-        gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange, recordSize);
-        client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
-        reporter = new FeedReporter(client, period, logPath);
+        idGen = IdGenerator.create(distribution, theta, startRange, updateRatio, mode.equals(FeedMode.Random));
+        gen = new TweetGenerator(sidRange, recordSize);
+        client = new FeedSocketAdapterClient(url, Integer.valueOf(ports), gen);
+        reporter = new FeedReporter(new FeedSocketAdapterClient[] { client }, period, logPath);
         printConf();
     }
 
@@ -137,13 +141,10 @@ public class FeedRepairDriver implements IFeedDriver {
     }
 
     @Override
-    public String getNextTweet() throws IOException {
-        return gen.getNext();
-    }
-
-    @Override
-    public boolean isNewTweet() {
-        return gen.isNewRecord();
+    public long getNextId(MutableBoolean isNew) throws IOException {
+        long id = idGen.next();
+        isNew.setValue(idGen.isNewId());
+        return id;
     }
 
     public void start() throws InterruptedException, IOException {
@@ -152,9 +153,10 @@ public class FeedRepairDriver implements IFeedDriver {
             reporter.start();
             BufferedWriter repairLogWritter = new BufferedWriter(new FileWriter(repairLogPath));
             long ingestedRecords = 0;
+            MutableBoolean isNew = new MutableBoolean();
             while (ingestedRecords < totalRecords) {
-                String line = getNextTweet();
-                client.ingest(line, isNewTweet());
+                long id = getNextId(isNew);
+                client.ingest(id, isNew.isTrue());
                 ingestedRecords++;
                 if (ingestedRecords % repairFrequency == 0) {
                     LOGGER.error("Prepare to start repair, sleep for {} ms...", repairWait);

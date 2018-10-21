@@ -2,12 +2,13 @@ package edu.uci.asterixdb.storage.experiments.feed;
 
 import java.io.IOException;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import edu.uci.asterixdb.storage.experiments.feed.gen.IRecordGenerator;
+import edu.uci.asterixdb.storage.experiments.feed.gen.IdGenerator;
 import edu.uci.asterixdb.storage.experiments.feed.gen.KVGenerator;
-import edu.uci.asterixdb.storage.experiments.feed.gen.RecordFileReader;
 import edu.uci.asterixdb.storage.experiments.feed.gen.TweetGenerator;
 import edu.uci.asterixdb.storage.experiments.util.ZipfianGenerator;
 
@@ -28,10 +29,10 @@ public class FileFeedDriver implements IFeedDriver {
         KV
     }
 
-    @Option(required = true, name = "-u", aliases = "--url", usage = "url of the feed adapter")
-    public String url;
+    @Option(required = true, name = "-u", aliases = "--urls", usage = "urls of the feed adapter")
+    public String urls;
 
-    @Option(required = true, name = "-p", aliases = "--port", usage = "port of the feed socket")
+    @Option(required = true, name = "-p", aliases = "--ports", usage = "ports of the feed socket")
     public String ports;
 
     @Option(name = "-l", aliases = "--log-path", usage = "path of the log file")
@@ -74,11 +75,11 @@ public class FileFeedDriver implements IFeedDriver {
     @Option(name = "-size", aliases = "--size", usage = "record size (in bytes)")
     public int recordSize = 500;
 
-    private final FeedSocketAdapterClient client;
+    private final FeedSocketAdapterClient[] clients;
 
     private final FeedReporter reporter;
 
-    private final IRecordGenerator gen;
+    private final IdGenerator idGen;
 
     public static void main(String[] args) throws Exception {
         FileFeedDriver driver = new FileFeedDriver(args);
@@ -89,17 +90,20 @@ public class FileFeedDriver implements IFeedDriver {
         CmdLineParser parser = new CmdLineParser(this);
         parser.parseArgument(args);
 
-        if (inputFile != null) {
-            gen = new RecordFileReader(inputFile);
-        } else {
-            if (dataType == DataType.TWEET) {
-                gen = new TweetGenerator(mode, distribution, theta, updateRatio, startRange, sidRange, 500);
-            } else {
-                gen = new KVGenerator(mode, distribution, theta, updateRatio, startRange, recordSize);
-            }
+        idGen = IdGenerator.create(distribution, theta, startRange, updateRatio, mode.equals(FeedMode.Random));
+
+        String[] urlArray = urls.split(",");
+        String[] portArray = ports.split(",");
+        if (urlArray.length != portArray.length) {
+            throw new IllegalStateException("urls do not match ports");
         }
-        client = new FeedSocketAdapterClient(url, Integer.valueOf(ports));
-        reporter = new FeedReporter(client, period, logPath);
+        clients = new FeedSocketAdapterClient[urlArray.length];
+        for (int i = 0; i < clients.length; i++) {
+            IRecordGenerator recordGen =
+                    dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator(recordSize);
+            clients[i] = new FeedSocketAdapterClient(urlArray[i], Integer.valueOf(portArray[i]), recordGen);
+        }
+        reporter = new FeedReporter(clients, period, logPath);
         printConf();
     }
 
@@ -114,29 +118,31 @@ public class FileFeedDriver implements IFeedDriver {
         reporter.writeLine("Theta: " + theta);
     }
 
-    @Override
-    public String getNextTweet() throws IOException {
-        return gen.getNext();
-    }
-
-    @Override
-    public boolean isNewTweet() {
-        return gen.isNewRecord();
+    public long getNextId(MutableBoolean isNewTweet) throws IOException {
+        synchronized (idGen) {
+            long id = idGen.next();
+            isNewTweet.setValue(idGen.isNewId());
+            return id;
+        }
     }
 
     public void start() throws InterruptedException, IOException {
         try {
-            client.initialize();
-            Thread thread = new FileFeedRunner(client, this);
-            thread.start();
+            for (FeedSocketAdapterClient client : clients) {
+                client.initialize();
+            }
+            Thread[] threads = new Thread[clients.length];
+            for (int i = 0; i < threads.length; i++) {
+                threads[i] = new FileFeedRunner(clients[i], this);
+            }
+            for (int i = 0; i < threads.length; i++) {
+                threads[i].start();
+            }
             reporter.start();
-
             long startTime = System.currentTimeMillis();
-
             while (!stop(startTime)) {
                 Thread.sleep(1000);
             }
-
             reporter.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,7 +155,8 @@ public class FileFeedDriver implements IFeedDriver {
         if (duration > 0 && (System.currentTimeMillis() - startTime) >= duration * 1000) {
             return true;
         }
-        if (client.stat.totalRecords >= totalRecords) {
+        FeedStat totalStat = FeedStat.sum(clients);
+        if (totalStat.totalRecords >= totalRecords) {
             return true;
         }
         return false;

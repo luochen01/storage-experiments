@@ -1,5 +1,7 @@
 package edu.uci.asterixdb.storage.experiments.feed;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 public class FileFeedRunner extends Thread {
 
     private final FeedSocketAdapterClient client;
@@ -13,10 +15,12 @@ public class FileFeedRunner extends Thread {
 
     @Override
     public void run() {
-        String str = null;
+        long id = 0;
         try {
-            while ((str = driver.getNextTweet()) != null) {
-                client.ingest(str, driver.isNewTweet());
+            MutableBoolean isNew = new MutableBoolean();
+            while (true) {
+                id = driver.getNextId(isNew);
+                client.ingest(id, isNew.isTrue());
             }
         } catch (Exception e) {
             e.printStackTrace();
