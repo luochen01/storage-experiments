@@ -74,24 +74,22 @@ repair_index_bf_index_5 = open_csv(repair_base_path + 'repair-index-index-bf-5.c
 repair_index_bf_indexes = [repair_index_bf_index_1, repair_index_bf_index_3, repair_index_bf_index_5]
 
 
-def plot_repair(options, output, xlabel='Total Ingested Records (millions)', ylabel='Repair Time (s)', xlimit=110, ylimit=1100):
+def plot_repair(options, output, xlabel='Total Ingested Records (millions)', ylabel='Repair Time (s)', xlimit=105, ylimit=1100):
     # use as global
 
     plt.figure()
     for option in options:
         plt.plot(option.data.total_records, option.data.time, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=1,
-                  linewidth=1.0)
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=(1, 1), markersize=5)
 
     legend_col = 1
     plt.legend(loc=2, ncol=legend_col)
 
     plt.xlabel(xlabel)
-    plt.xticks(np.arange(0, xlimit, step=10))
-    plt.xlim(0, xlimit)
+    plt.xticks(np.arange(0, xlimit, step=20))
+    plt.xlim(5, xlimit)
     plt.ylim(0, ylimit)
     plt.ylabel(ylabel)
-    plt.gca().yaxis.grid(linestyle='dotted')
     plt.savefig(output)
     print('output figure to ' + output)
 
@@ -100,55 +98,75 @@ def plot_options(options, ax, title, xlabel, xlimit, ylimit):
     lines = []
     for option in options:
         line, = ax.plot(option.data.total_records, option.data.time, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=1,
-                  linewidth=1.0)
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=(1, 1),
+                  linewidth=1.0, markersize=5)
         lines.append(line)
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_xticks(np.arange(0, xlimit, step=20))
-    ax.set_xlim(0, xlimit)
-    ax.set_ylim(0, ylimit)
-    ax.yaxis.grid(linestyle='dotted')
+    ax.set_xlim(5, xlimit)
+    if ylimit > 0:
+        ax.set_ylim(0, ylimit)
+        ax.set_yticks(np.arange(0, ylimit, step=250))
     return lines
 
-def plot_shared_repair(options_1, options_2, options_3, titles, output, xlabel='Total Ingested Records (millions)', ylabel='Repair Time (s)', xlimit=110, ylimit=1100):
+
+def plot_shared_repair(options, titles, output, xlabel='Total Records (Millions)', ylabel='Repair Time (s)', xlimit=105, ylimit=0,
+                       figsize=(0, 0), bbox_to_anchor=(0, 0), colspace=None, ncols=2):
     # use as global
-
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(9, 3))
+    num = len(options)
+    f, axes = plt.subplots(1, num, sharey=True, figsize=figsize)
     plt.subplots_adjust(wspace=0.05, hspace=0)
-    lines = plot_options(options_1, ax1, titles[0] , "", xlimit, ylimit)
-    plot_options(options_2, ax2, titles[1], xlabel, xlimit, ylimit)
-    plot_options(options_3, ax3, titles[2], "", xlimit, ylimit)
+    for i in range(0, num):
+        ax_xlabel = xlabel
+        if i % 2 != 1 & num % 2 == 1:
+            ax_xlabel = ""
+        lines = plot_options(options[i], axes[i], titles[i], ax_xlabel, xlimit, ylimit)
 
-    legend_col = 1
-    f.legend(handles = lines, loc='upper left', ncol=2, bbox_to_anchor=(0.08,0.95), shadow=False, framealpha=0)
+    axes[0].legend(framealpha=0.5)
+    axes[1].legend(framealpha=0.5)
 
-    #ax1.legend(loc=2, ncol=legend_col)
-    ax1.set_ylabel(ylabel)
+    axes[0].set_ylabel(ylabel)
 
     plt.savefig(output)
     print('output figure to ' + output)
 
 
 updates = [0, 0.5]
-for i in range(0, 2):
-    plot_repair([PlotOption(repair_datasets[i], 'primary repair (scan)', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                 PlotOption(repair_dataset_compacts[i], 'primary repair (merge)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
-                 PlotOption(repair_indexes[i], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                 PlotOption(repair_index_bfs[i], 'secondary repair (bloom filter)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
-                result_base_path + 'repair-' + str(updates[i]) + '.pdf')
+update_options = [
+    [PlotOption(repair_datasets[0], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                 PlotOption(repair_dataset_compacts[0], 'primary repair (merge)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+                 PlotOption(repair_indexes[0], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+                 PlotOption(repair_index_bfs[0], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
+    [PlotOption(repair_datasets[1], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                 PlotOption(repair_dataset_compacts[1], 'primary repair (merge)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+                 PlotOption(repair_indexes[1], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+                 PlotOption(repair_index_bfs[1], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)]
+    ]
 
 record_sizes = [500, 1000, 2000]
 indexes = [1, 3, 5]
 index_options = []
 record_options = []
 for i in range (0, 3):
-    record_options.append([PlotOption(repair_dataset_records[i], 'primary repair (scan)', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+    record_options.append([PlotOption(repair_dataset_records[i], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                  PlotOption(repair_index_records[i], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                 PlotOption(repair_index_bf_records[i], 'secondary repair (bloom filter)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
-    index_options.append([PlotOption(repair_dataset_indexes[i], 'primary repair (scan)', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                 PlotOption(repair_index_bf_records[i], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
+    index_options.append([PlotOption(repair_dataset_indexes[i], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                     PlotOption(repair_index_indexes[i], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                    PlotOption(repair_index_bf_indexes[i], 'secondary repair (bloom filter)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
+                    PlotOption(repair_index_bf_indexes[i], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
 
-plot_shared_repair(record_options[0], record_options[1], record_options[2], ['500 Bytes', '1KB', '2KB'], result_base_path + 'repair-record-size.pdf', ylimit=3000)
-plot_shared_repair(index_options[0], index_options[1], index_options[2], ['1 Index', '3 Indexes', '5 Indexes'], result_base_path + 'repair-index.pdf', ylimit=850)
+plot_shared_repair(update_options, ['Update Ratio 0%', 'Update Ratio 50%'], result_base_path + 'repair-update.pdf', figsize=(6, 2.2), ylimit=1200)
+# plot_shared_repair(record_options, ['500 Bytes', '1KB', '2KB'], result_base_path + 'repair-record-size.pdf', ncols=1)
+# plot_shared_repair(index_options, ['1 Index', '3 Indexes', '5 Indexes'], result_base_path + 'repair-index.pdf', bbox_to_anchor=(0.075, 1), colspace=0.75)
+
+plot_repair([PlotOption(repair_dataset_records[1], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                 PlotOption(repair_index_records[1], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+                 PlotOption(repair_index_bf_records[1], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
+                 result_base_path + 'repair-record-size.pdf', ylimit=1600)
+
+plot_repair([PlotOption(repair_dataset_indexes[2], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                    PlotOption(repair_index_indexes[2], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+                    PlotOption(repair_index_bf_indexes[2], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
+                 result_base_path + 'repair-index.pdf', ylimit = 1200)
+

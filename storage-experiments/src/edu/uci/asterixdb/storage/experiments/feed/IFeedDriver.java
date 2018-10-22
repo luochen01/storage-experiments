@@ -2,8 +2,9 @@ package edu.uci.asterixdb.storage.experiments.feed;
 
 import java.io.IOException;
 
-public interface IFeedDriver {
-    public String getNextTweet() throws IOException;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
-    public boolean isNewTweet();
+public interface IFeedDriver {
+    public long getNextId(MutableBoolean isNew) throws IOException;
+
 }

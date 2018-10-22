@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import edu.uci.asterixdb.storage.experiments.feed.gen.IRecordGenerator;
+
 public class FeedSocketAdapterClient {
     private OutputStream out = null;
 
@@ -15,9 +17,12 @@ public class FeedSocketAdapterClient {
 
     public final FeedStat stat = new FeedStat();
 
-    public FeedSocketAdapterClient(String adapterUrl, int port) {
+    public final IRecordGenerator recordGen;
+
+    public FeedSocketAdapterClient(String adapterUrl, int port, IRecordGenerator recordGen) {
         this.adapterUrl = adapterUrl;
         this.port = port;
+        this.recordGen = recordGen;
     }
 
     public void initialize() throws IOException {
@@ -38,8 +43,9 @@ public class FeedSocketAdapterClient {
         }
     }
 
-    public void ingest(String record, boolean newRecord) throws IOException {
+    public void ingest(long id, boolean newRecord) throws IOException {
         //System.out.println(record);
+        String record = recordGen.getRecord(id);
         byte[] b = record.getBytes();
         out.write(b);
         stat.totalRecords++;

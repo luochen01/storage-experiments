@@ -411,11 +411,11 @@ public class DataGenerator {
                 switch (field) {
                     case Datatypes.Tweet.ID:
                         appendFieldName(builder, Datatypes.Tweet.ID);
-                        builder.append("int64(\"" + id + "\")");
+                        builder.append(id);
                         break;
                     case Datatypes.Tweet.SID:
                         appendFieldName(builder, Datatypes.Tweet.SID);
-                        builder.append("int64(\"" + sid + "\")");
+                        builder.append(sid);
                         break;
                     case Datatypes.Tweet.USER:
                         appendFieldName(builder, Datatypes.Tweet.USER);
@@ -432,20 +432,18 @@ public class DataGenerator {
                     case Datatypes.Tweet.MESSAGE:
                         appendFieldName(builder, Datatypes.Tweet.MESSAGE);
                         builder.append("\"");
-                        for (int i = 0; i < messageText.getLength(); i++) {
-                            builder.append(messageText.charAt(i));
-                        }
+                        builder.append(messageText.content, 0, messageText.length);
                         builder.append("\"");
                         break;
                     case Datatypes.Tweet.CREATED_AT:
                         appendFieldName(builder, Datatypes.Tweet.CREATED_AT);
-                        builder.append("datetime(");
-                        builder.append(getDateTimeString(created_at));
-                        builder.append(")");
+                        getDateTimeString(created_at, builder);
                         break;
                     case Datatypes.Tweet.COUNTRY:
                         appendFieldName(builder, Datatypes.Tweet.COUNTRY);
-                        builder.append("\"" + country + "\"");
+                        builder.append("\"");
+                        builder.append(country);
+                        builder.append("\"");
                         break;
                     default:
                         // no possible
@@ -459,7 +457,12 @@ public class DataGenerator {
         }
 
         public static String getDateTimeString(DateTime calendar) {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
+            getDateTimeString(calendar, sb);
+            return sb.toString();
+        }
+
+        public static void getDateTimeString(DateTime calendar, StringBuilder builder) {
             builder.append("\"");
             builder.append(calendar.getYear());
             builder.append("-");
@@ -478,7 +481,6 @@ public class DataGenerator {
             int second = calendar.getSecondOfMinute();
             builder.append(second < 10 ? "0" + second : second);
             builder.append("\"");
-            return builder.toString();
         }
 
         private void appendFieldName(StringBuilder builder, String fieldName) {

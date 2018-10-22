@@ -15,17 +15,17 @@ public class FeedReporter extends TimerTask {
 
     protected long counter = 0;
 
-    protected FeedSocketAdapterClient client;
+    protected FeedSocketAdapterClient[] clients;
 
     protected FeedStat prevStat = new FeedStat();
 
     protected BufferedWriter logWriter;
 
-    public FeedReporter(FeedSocketAdapterClient client, int period, String logPath) throws IOException {
+    public FeedReporter(FeedSocketAdapterClient[] clients, int period, String logPath) throws IOException {
         this.period = period;
         this.timer = new Timer();
 
-        this.client = client;
+        this.clients = clients;
         this.prevStat = new FeedStat();
 
         File logFile = new File(logPath);
@@ -40,17 +40,15 @@ public class FeedReporter extends TimerTask {
     @Override
     public void run() {
         StringBuilder sb = new StringBuilder();
-        FeedStat clientStat = client.stat;
-        sb.append(getLine(clientStat, prevStat));
-        prevStat.update(clientStat);
-
+        FeedStat totalStat = FeedStat.sum(clients);
+        sb.append(getLine(totalStat, prevStat));
+        prevStat.update(totalStat);
         try {
             writeLine(sb.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
         counter += (period);
-
     }
 
     public void start() throws IOException {

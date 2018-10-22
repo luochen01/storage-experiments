@@ -1,7 +1,5 @@
 package edu.uci.asterixdb.storage.experiments.feed;
 
-import java.util.List;
-
 public class FeedStat {
 
     public volatile long totalBytes = 0;
@@ -12,7 +10,7 @@ public class FeedStat {
 
     public volatile long updateRecords = 0;
 
-    public static FeedStat sum(List<FeedSocketAdapterClient> clients) {
+    public static FeedStat sum(FeedSocketAdapterClient[] clients) {
         FeedStat result = new FeedStat();
         for (FeedSocketAdapterClient client : clients) {
             result.totalBytes += client.stat.totalBytes;
