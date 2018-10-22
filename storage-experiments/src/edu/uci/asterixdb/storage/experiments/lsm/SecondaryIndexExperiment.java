@@ -69,6 +69,9 @@ public class SecondaryIndexExperiment {
     @Option(name = "-noindex", aliases = "--noindex", usage = "skip index", required = false)
     public boolean noindex = false;
 
+    @Option(name = "-sortrecord", aliases = "--sortrecord", usage = "sort record", required = false)
+    public boolean sortRecord = false;
+
     private final Random rand = new Random(System.currentTimeMillis());
 
     public SecondaryIndexExperiment(String[] args) throws Exception {
@@ -102,7 +105,8 @@ public class SecondaryIndexExperiment {
         for (int i = 1; i <= numQueries; i++) {
             int beginRange = rand.nextInt(sidRange - queryRange);
             int endRange = beginRange + queryRange - 1;
-            String query = generateSecondaryIndexQuery(beginRange, endRange, skipPkIndex);
+            String query = sortRecord ? genearteSecondaryIndexSortQuery(beginRange, endRange)
+                    : generateSecondaryIndexQuery(beginRange, endRange, skipPkIndex);
             QueryResult result = QueryUtil.executeQuery("default", query);
             writer.println(i + "\t" + result.time + "\t" + result.result);
         }
@@ -114,7 +118,8 @@ public class SecondaryIndexExperiment {
         String batch = batchSizeKB >= 0 ? String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB) : "";
         if (noindex) {
             String readahead = "set `compiler.readaheadmemory` '4MB';";
-            String query = String.format("select count(*) from %s.%s where sid /*+ skip-index */ >=%d AND sid /*+ skip-index */ <=%d;",
+            String query = String.format(
+                    "select count(*) from %s.%s where sid /*+ skip-index */ >=%d AND sid /*+ skip-index */ <=%d;",
                     dataverseName, dataset, beginRange, endRange);
             return readahead + query;
         } else {
@@ -134,8 +139,18 @@ public class SecondaryIndexExperiment {
         }
     }
 
+    private String genearteSecondaryIndexSortQuery(int beginRange, int endRange) {
+        String batch = String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB);
+        String skipPkIndex = "set `compiler.skip.pkindex` 'true';";
+        String noIndexOnly = "set `noindexonly` 'true';";
+        String query =
+                String.format("select count(tmp) from (select * from %s.%s where sid>=%d AND sid<=%d order by id) tmp;",
+                        dataverseName, dataset, beginRange, endRange);
+        return batch + skipPkIndex + noIndexOnly + query;
+    }
+
     public static void main(String[] args) throws Exception {
-        QueryUtil.init(new URI("http://localhost:19002/query/service"));
+        QueryUtil.init(new URI("http://sensorium-23.ics.uci.edu:19002/query/service"));
         SecondaryIndexExperiment expr = new SecondaryIndexExperiment(args);
         expr.run();
     }
