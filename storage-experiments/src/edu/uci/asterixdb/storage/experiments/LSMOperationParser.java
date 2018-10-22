@@ -6,7 +6,20 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.RandomVariable;
+class RandomVariable {
+    public final double mean;
+    public final double std;
+    public final double min;
+    public final double max;
+
+    public RandomVariable(double mean, double std, double min, double max) {
+        this.mean = mean;
+        this.std = std;
+        this.min = min;
+        this.max = max;
+    }
+
+}
 
 public class LSMOperationParser {
 
@@ -31,8 +44,9 @@ public class LSMOperationParser {
     }
 
     private File getOutputFile(MergePolicy policy, String suffix) {
-        String path = "/Users/luochen/Documents/Research/projects/asterixdb/hyracks-fullstack/hyracks/hyracks-tests/hyracks-storage-am-lsm-common-test/src/test/java/org/apache/hyracks/storage/am/lsm/common/test/"
-                + policy + "FlowControlSpeedSolver" + suffix + ".java";
+        String path =
+                "/Users/luochen/Documents/Research/projects/asterixdb/hyracks-fullstack/hyracks/hyracks-tests/hyracks-storage-am-lsm-common-test/src/test/java/org/apache/hyracks/storage/am/lsm/common/test/"
+                        + policy + "FlowControlSpeedSolver" + suffix + ".java";
         File file = new File(path);
         return file;
     }
@@ -293,7 +307,7 @@ public class LSMOperationParser {
         String[] ranges = parts[2].substring(1, parts[2].length() - 1).split(",");
         double min = Double.valueOf(ranges[0]);
         double max = Double.valueOf(ranges[1]);
-        return RandomVariable.of(mean, std, min, max);
+        return new RandomVariable(mean, std, min, max);
     }
 
     private String toString(RandomVariable v) {
