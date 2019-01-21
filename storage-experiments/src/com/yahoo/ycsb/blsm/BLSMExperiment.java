@@ -38,7 +38,7 @@ public class BLSMExperiment {
     public int limitSpeed = -1;
 
     @Option(name = "-shutdown", usage = "speed limit")
-    public boolean shutdown = true;
+    public boolean shutdown = false;
 
     public BLSMExperiment(String[] args) throws Exception {
         CmdLineParser parser = new CmdLineParser(this);
