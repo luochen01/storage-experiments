@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.apache.hyracks.storage.common.buffercache.GoogleRateLimiter;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;

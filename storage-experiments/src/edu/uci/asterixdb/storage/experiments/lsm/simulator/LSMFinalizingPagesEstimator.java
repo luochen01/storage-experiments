@@ -18,9 +18,6 @@
  */
 package edu.uci.asterixdb.storage.experiments.lsm.simulator;
 
-import org.apache.hyracks.storage.am.bloomfilter.impls.BloomCalculations;
-import org.apache.hyracks.storage.am.bloomfilter.impls.BloomFilterSpecification;
-
 public class LSMFinalizingPagesEstimator implements ILSMFinalizingPagesEstimator {
 
     private final double numRecordsPerBTreePage;
@@ -34,22 +31,24 @@ public class LSMFinalizingPagesEstimator implements ILSMFinalizingPagesEstimator
         this.numKeysPerBTreePage = numKeysPerPage;
         this.pageSize = pageSize;
 
-        BloomFilterSpecification spec = BloomCalculations.computeBloomSpec(BloomCalculations.maxBucketsPerElement(1),
-                bloomFilterFalsePositiveRate);
-        this.numBitsPerKey = spec.getNumBucketsPerElements();
+        //        BloomFilterSpecification spec = BloomCalculations.computeBloomSpec(BloomCalculations.maxBucketsPerElement(1),
+        //                bloomFilterFalsePositiveRate);
+        //this.numBitsPerKey = spec.getNumBucketsPerElements();
+        this.numBitsPerKey = 0;
     }
 
     @Override
     public double estiamtePages(double records) {
         // btree frontier pages
-        double btreeLeafPages = records / numRecordsPerBTreePage;
-        int height = (int) Math.ceil(Math.log(btreeLeafPages) / Math.log(numKeysPerBTreePage));
-
-        int btreePages = height + 1;
-
-        double totalBloomFilterBits = numBitsPerKey * records;
-        int bloomFilterPages = (int) Math.ceil(totalBloomFilterBits / pageSize / Byte.SIZE) + 1;
-        return btreePages + bloomFilterPages;
+        //double btreeLeafPages = records / numRecordsPerBTreePage;
+        //        int height = (int) Math.ceil(Math.log(btreeLeafPages) / Math.log(numKeysPerBTreePage));
+        //
+        //        int btreePages = height + 1;
+        //
+        //        double totalBloomFilterBits = numBitsPerKey * records;
+        //        int bloomFilterPages = (int) Math.ceil(totalBloomFilterBits / pageSize / Byte.SIZE) + 1;
+        //        return btreePages + bloomFilterPages;
+        return 0;
     }
 
     @Override
