@@ -36,16 +36,17 @@ if not os.path.exists(result_base_path):
 
 font_size = 13
 font_weight = 100
+label_size = 12
 params = {
     'font.family': 'Times New Roman',
     'font.weight': font_weight,
     'axes.labelweight': font_weight,
     'figure.titleweight': font_weight,
     'axes.titlesize': font_size,
-   'axes.labelsize': font_size,
+   'axes.labelsize': label_size,
    'legend.fontsize': font_size,
-   'xtick.labelsize': font_size,
-   'ytick.labelsize': font_size,
+   'xtick.labelsize': label_size,
+   'ytick.labelsize': label_size,
    'font.size': font_size,
    'lines.linewidth':1,
    'lines.markeredgewidth': 1,
@@ -74,7 +75,7 @@ plt.rcParams.update(params)
 # shared_fig_size = (10, 3)
 # shared_font_size = 12
 ingestion_xlabel = 'Time (Minutes)'
-ingestion_ylabel = 'Total Records (Millions)'
+ingestion_ylabel = 'Total Records (100 Millions)'
 
 
 def set_large_fonts(size):
@@ -118,9 +119,9 @@ def open_csv(path):
         return None
 
 
-def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=170, framealpha=0, ystep=50):
+def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=200, framealpha=0, ystep=50, figsize=(3.75, 2.5)):
     # use as global
-    plt.figure()
+    plt.figure(figsize=figsize)
     for option in options:
         plt.plot(option.data.time, option.data.total_records, label=option.legend, color=option.color, linestyle=option.linestyle,
                   markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery)
@@ -128,7 +129,7 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     legend_col = 1
     if len(options) > 5:
         legend_col = 2
-    plt.legend(loc=2, ncol=legend_col, framealpha=framealpha, numpoints = 1)
+    plt.legend(loc=2, ncol=legend_col, framealpha=0, numpoints=1)
 
     # plt.title(title)
 
@@ -136,15 +137,18 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     if xlimit / 6 <= 65:
         step = 60
     else:
-        step = 600
+        step = 120
 
     plt.xlabel(xlabel)
     plt.xticks(np.arange(0, xlimit, step=step))
     plt.xlim(0, xlimit)
     plt.ylim(0, ylimit)
-    plt.ylabel(ylabel)
-    plt.yticks(np.arange(0, ylimit, step=ystep))
-
+    if ylabel != None:
+        plt.ylabel(ylabel)
+        plt.yticks(np.arange(0, ylimit, step=ystep))
+    else:
+        plt.ylabel(None)
+        plt.yticks(np.arange(0, ylimit, step=ystep), [])
     plt.savefig(output)
     print('output figure to ' + output)
 
@@ -184,22 +188,23 @@ def get_totals(results):
     return totals
 
 
-def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, ylimit=240, ystep = 50):
-    plt.figure()
+def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, ylimit=200, ystep=50, figsize=(3.75, 2.5)):
+    plt.figure(figsize=figsize)
     for option in options:
         plt.plot(np.arange(len(xvalues)), option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
                   markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=1)
-    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.04, 1), columnspacing=0.2, numpoints = 1, framealpha=0, handlelength=1.3)
+    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.04, 1.02), columnspacing=0.2, numpoints=1, framealpha=0, handlelength=1, fontsize=12)
     plt.grid(False)
     # plt.title(title)
     plt.xlabel(xlabel)
-    plt.xlim([-0.1, len(xvalues)-0.9])
+    plt.xlim([-0.1, len(xvalues) - 0.9])
     plt.xticks(np.arange(len(xvalues)), xvalues)
     plt.ylim(0, ylimit)
-    plt.ylabel(ylabel)
-    
+    if ylabel != None:
+        plt.ylabel(ylabel)
+    else:
+        plt.yticks(np.arange(0, ylimit, step=ystep), [])
     plt.savefig(output)
-    
     
     print('output figure to ' + output)
 

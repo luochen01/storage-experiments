@@ -1,0 +1,122 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue;
+
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.DoubleUtil;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.ILSMFinalizingPagesEstimator;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.FlushUnit;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.ISpeedProvider;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.MergeOperation;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.MergeUnit;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.RandomVariable;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.Unit;
+
+public class QueueTierMergeScheduler extends QueueAbstractOperationScheduler {
+
+    private final RandomVariable[][] mergeComponentRatios;
+
+    @Override
+    public int getMaxNumComponentsPerLevel() {
+        return sizeRatio + toleratedComponentsPerLevel;
+    }
+
+    public QueueTierMergeScheduler(int toleratedComponentsPerLevel, int numLevels,
+            RandomVariable memoryComponentCapacity, int totalMemoryComponents, int sizeRatio, ISpeedProvider flushSpeed,
+            ISpeedProvider[] mergeSpeeds, ILSMFinalizingPagesEstimator pageEstimator,
+            double subOperationProcessingRecords, double subOperationPages, double baseLevelCapacity,
+            RandomVariable[][] mergeComponentRatios, double dataArrivalPeriod, DataArrivalProcess dataArrivalProcess,
+            int latencyPrecision) {
+        super(toleratedComponentsPerLevel, numLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio,
+                flushSpeed, mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
+                baseLevelCapacity, dataArrivalPeriod, dataArrivalProcess, latencyPrecision);
+        this.mergeComponentRatios = mergeComponentRatios;
+    }
+
+    @Override
+    public boolean isMergeable(MergeUnit mergeUnit) {
+        return !mergeUnit.blocked && mergeUnit.numComponents >= sizeRatio && mergeUnit.operation == null;
+    }
+
+    protected void completeMergeOperation(MergeUnit mergeUnit) {
+        MergeOperation op = mergeUnit.getOperation();
+        if (op.isCompleted) {
+            return;
+        }
+        op.setCompleted();
+        operationCompleted();
+        assert numRunningOperations >= 0;
+        double resultCapacity = op.totalCapacity * getMergeResultRatio(mergeUnit.level);
+        // move components to the next level
+        if (mergeUnit.level + 1 < numLevels) {
+            MergeUnit nextUnit = mergeUnits[mergeUnit.level + 1];
+            if (addToMergeUnit(nextUnit, resultCapacity, mergeUnit)) {
+                finalizeMergeOperation(mergeUnit, true);
+            }
+        } else {
+            finalizeMergeOperation(mergeUnit, true);
+        }
+    }
+
+    private void finalizeMergeOperation(MergeUnit mergeUnit, boolean removeOldComponents) {
+        if (removeOldComponents) {
+            for (int i = 0; i < toleratedComponentsPerLevel; i++) {
+                mergeUnit.components[i] = mergeUnit.components[i + sizeRatio];
+                mergeUnit.components[i + sizeRatio] = 0;
+            }
+            mergeUnit.numComponents -= sizeRatio;
+            assert mergeUnit.numComponents >= 0;
+        }
+        if (mergeUnit.blockedUnit != null) {
+            Unit blockedUnit = mergeUnit.blockedUnit;
+            mergeUnit.unsetBlockedUnit();
+            double resultCapacity = blockedUnit.operation.totalCapacity;
+            addToMergeUnit(mergeUnit, resultCapacity, blockedUnit);
+            if (mergeUnit.level == 0) {
+                finalizeFlushOperation((FlushUnit) blockedUnit);
+            } else {
+                finalizeMergeOperation((MergeUnit) blockedUnit, true);
+            }
+        }
+        mergeUnit.operation = null;
+        if (isMergeable(mergeUnit)) {
+            scheduleMergeOperation(mergeUnit);
+        }
+    }
+
+    protected MergeOperation initializeMergeOperation(int level, double[] capacities) {
+        MergeOperation op = mergeOperations[level];
+        double resultRatio = getMergeResultRatio(level);
+        assert resultRatio > 0 && resultRatio <= 1;
+        double total = 0;
+        for (int i = 0; i < sizeRatio; i++) {
+            total += capacities[i];
+        }
+        op.reset(total * resultRatio, pageEstimator.estiamtePages(total * resultRatio));
+        return op;
+    }
+
+    private double getMergeResultRatio(int level) {
+        if (mergeComponentRatios == null) {
+            return 1;
+        }
+        double ratio = mergeComponentRatios[level][0].mean;
+        return DoubleUtil.equals(ratio, 0) ? 1 : ratio;
+    }
+
+}

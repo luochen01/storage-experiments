@@ -74,10 +74,10 @@ repair_index_bf_index_5 = open_csv(repair_base_path + 'repair-index-index-bf-5.c
 repair_index_bf_indexes = [repair_index_bf_index_1, repair_index_bf_index_3, repair_index_bf_index_5]
 
 
-def plot_repair(options, output, xlabel='Total Ingested Records (millions)', ylabel='Repair Time (s)', xlimit=105, ylimit=1100):
+def plot_repair(options, output, xlabel='Total Ingested Records (Millions)', ylabel='Repair Time (s)', xlimit=105, ylimit=1100, figsize=(3.75, 2.5)):
     # use as global
 
-    plt.figure()
+    plt.figure(figsize = figsize)
     for option in options:
         plt.plot(option.data.total_records, option.data.time, label=option.legend, color=option.color, linestyle=option.linestyle,
                   markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=(1, 1), markersize=5)
@@ -168,5 +168,5 @@ plot_repair([PlotOption(repair_dataset_records[1], 'primary repair', marker=mark
 plot_repair([PlotOption(repair_dataset_indexes[2], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                     PlotOption(repair_index_indexes[2], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
                     PlotOption(repair_index_bf_indexes[2], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
-                 result_base_path + 'repair-index.pdf', ylimit = 1200)
+                 result_base_path + 'repair-index.pdf', ylimit = 1200, figsize=(3.2, 2.25))
 

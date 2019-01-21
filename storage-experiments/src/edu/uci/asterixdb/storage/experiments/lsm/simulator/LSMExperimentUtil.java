@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.experiments.lsm;
+package edu.uci.asterixdb.storage.experiments.lsm.simulator;
 
 public class LSMExperimentUtil {
 

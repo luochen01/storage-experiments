@@ -46,23 +46,27 @@ def plot_options(options, ax, title, xlabel, xlimit, ylimit):
     ax.set_xticks(np.arange(0, xlimit, step=120))
     ax.set_xlim(0, xlimit)
     ax.set_ylim(0, ylimit)
+    ax.set_yticklabels(['0','0.5','1','1.5'])
+    
+    ax.legend(loc=2, ncol=1, handlelength=1, bbox_to_anchor=(-0.03, 1.05), labelspacing=0, framealpha=0)
+
     return lines
 
 
-def plot_shared_ingestion(options_1, options_2, options_3, titles, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=370, ylimit=1100):
+def plot_shared_ingestion(options_1, options_2, options_3, titles, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=380, ylimit=1100):
     # use as global
-    set_large_fonts(shared_font_size)
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=shared_fig_size)
-    plt.subplots_adjust(wspace=0.1, hspace=0)
-    lines = plot_options(options_1, ax1, titles[0] , "", xlimit, ylimit)
+    #set_large_fonts(shared_font_size)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(8,2.2))
+    plt.subplots_adjust(wspace=0.05, hspace=0)
+    lines = plot_options(options_1, ax1, titles[0] , xlabel, xlimit, ylimit)
     plot_options(options_2, ax2, titles[1], xlabel, xlimit, ylimit)
-    plot_options(options_3, ax3, titles[2], "", xlimit, ylimit)
+    plot_options(options_3, ax3, titles[2], xlabel, xlimit, ylimit)
 
     legend_col = 1
-    f.legend(handles=lines, loc='upper left', ncol=2, columnspacing=4.2, bbox_to_anchor=(0.08, 1.03), shadow=False, framealpha=0)
+    #f.legend(handles=lines, loc='upper left', ncol=2, columnspacing=4.2, bbox_to_anchor=(0.08, 1.03), shadow=False, framealpha=0)
 
     # ax1.legend(loc=2, ncol=legend_col)
-    ax1.set_ylabel(ylabel)
+    #ax1.set_ylabel(ylabel)
 
     plt.savefig(output)
     print('output figure to ' + output)
@@ -76,11 +80,11 @@ for i in [0, 1, 2]:
             PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_inplaces[i], 'mutable-bitmap', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
 
-#plot_shared_ingestion(options[0], options[1], options[2], ['No Update', '50% Uniform Updates', '50% Zipf Updates'], result_base_path + 'upsert-secondary-update.pdf', ylimit=180)
+plot_shared_ingestion(options[0], options[1], options[2], ['No Update', '50% Uniform Updates', '50% Zipf Updates'], result_base_path + 'upsert-secondary-update.pdf', ylimit=190)
 
-plot_basic(options[0], result_base_path+'upsert-secondary-update-0.pdf', '')
-plot_basic(options[1], result_base_path+'upsert-secondary-update-uniform-50.pdf', '')
-plot_basic(options[2], result_base_path+'upsert-secondary-update-zipf-50.pdf', '')
+#plot_basic(options[0], result_base_path+'upsert-secondary-update-0.pdf', '')
+#plot_basic(options[1], result_base_path+'upsert-secondary-update-uniform-50.pdf', '')
+#plot_basic(options[2], result_base_path+'upsert-secondary-update-zipf-50.pdf', '')
 
 
 

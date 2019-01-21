@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.experiments.lsm;
+package edu.uci.asterixdb.storage.experiments.lsm.simulator;
 
 import java.io.File;
 import java.io.PrintWriter;

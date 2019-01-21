@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.experiments.lsm;
+package edu.uci.asterixdb.storage.experiments.lsm.simulator;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -90,7 +90,6 @@ public class SecondaryIndexExperiment {
         System.out.println("No BTree: " + noBtree);
         System.out.println("Force Component Id: " + forceId);
         System.out.println("No Index: " + noindex);
-
     }
 
     public void run() throws Exception {
@@ -143,9 +142,10 @@ public class SecondaryIndexExperiment {
         String batch = String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB);
         String skipPkIndex = "set `compiler.skip.pkindex` 'true';";
         String noIndexOnly = "set `noindexonly` 'true';";
-        String query =
-                String.format("select count(tmp) from (select * from %s.%s where sid>=%d AND sid<=%d order by id) tmp;",
-                        dataverseName, dataset, beginRange, endRange);
+        String queryTemplate = batchSizeKB > 0
+                ? "select count(tmp) from (select * from %s.%s where sid>=%d AND sid<=%d order by id) tmp;"
+                : "select count(tmp) from (select * from %s.%s where sid>=%d AND sid<=%d) tmp;";
+        String query = String.format(queryTemplate, dataverseName, dataset, beginRange, endRange);
         return batch + skipPkIndex + noIndexOnly + query;
     }
 

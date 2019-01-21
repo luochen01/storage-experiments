@@ -1,0 +1,162 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue;
+
+import java.util.Arrays;
+
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.DoubleUtil;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.ILSMFinalizingPagesEstimator;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.LSMFlowControlManager;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.FlowControlSpeedSolver;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.IOperationScheduler;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.ISpeedProvider;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.RandomVariable;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.SpeedProvider;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.FlowControlSpeedSolver.MergePolicyType;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue.QueueAbstractOperationScheduler.DataArrivalProcess;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+public class QueueFlowControlSimulator {
+
+    private static final Logger LOGGER = LogManager.getLogger(QueueFlowControlSimulator.class);
+
+    protected final double maxIoSpeed;
+    protected final IOperationScheduler scheduler;
+
+    protected final double[] initialMemoryComponentCapacities;
+    protected final double initialCurrentMemoryComponentCapacity;
+
+    protected final double initialFlushedCapacity;
+    protected final double initialFlushFinalizedPages;
+    protected final double initialFlushSubOperationElapsedTime;
+
+    protected final double[][] initialComponentsCapacities;
+    protected final double[] initialMergedCapacities;
+    protected final double[] initialMergeFinalizedPages;
+    protected final double[] initialMergeSubOperationElapsedTimes;
+
+    public QueueFlowControlSimulator(int toleratedComponentsPerLevel, int numLevels,
+            RandomVariable memoryComponentCapacity, int totalMemoryComponents, int sizeRatio, double maxIoSpeed,
+            RandomVariable[] flushProcessingSpeeds, RandomVariable[] flushFinalizeSpeeds,
+            RandomVariable[][] mergeProcessingSpeeds, RandomVariable[][] mergeFinalizeSpeeds,
+            double[] memoryComponentCapacities, double currentMemoryComponentCapacity, double flushedCapacity,
+            double flushFinalizedPages, double flushSubOperationElapsedTime, double[][] usedComponentsCapacities,
+            double[] mergedCapacities, double[] mergeFinalizedPages, double[] mergeSubOperationElapsedTimes,
+            RandomVariable[][] mergeComponentRatios, ILSMFinalizingPagesEstimator pageEstimator, MergePolicyType type,
+            double subOperationProcessingRecords, double subOperationPages, double baseLevelCapacity,
+            double dataArrivalPeriod, DataArrivalProcess dataArrivalProcess, int latencyPrecision) {
+        int numEffectiveLevels = getNumEffectiveLevels(numLevels, mergeProcessingSpeeds, mergeFinalizeSpeeds);
+        this.maxIoSpeed = maxIoSpeed;
+        ISpeedProvider flushSpeed = new SpeedProvider(flushProcessingSpeeds, flushFinalizeSpeeds);
+        ISpeedProvider[] mergeSpeeds = new SpeedProvider[numEffectiveLevels];
+        for (int i = 0; i < numEffectiveLevels; i++) {
+            mergeSpeeds[i] = new SpeedProvider(mergeProcessingSpeeds[i], mergeFinalizeSpeeds[i]);
+        }
+        this.scheduler = type == MergePolicyType.LEVEL
+                ? new QueueLevelMergeScheduler(toleratedComponentsPerLevel, numEffectiveLevels, memoryComponentCapacity,
+                        totalMemoryComponents, sizeRatio, flushSpeed, mergeSpeeds, pageEstimator,
+                        subOperationProcessingRecords, subOperationPages, baseLevelCapacity, mergeComponentRatios,
+                        dataArrivalPeriod, dataArrivalProcess, latencyPrecision)
+                : new QueueTierMergeScheduler(toleratedComponentsPerLevel, numEffectiveLevels, memoryComponentCapacity,
+                        totalMemoryComponents, sizeRatio, flushSpeed, mergeSpeeds, pageEstimator,
+                        subOperationProcessingRecords, subOperationPages, baseLevelCapacity, mergeComponentRatios,
+                        dataArrivalPeriod, dataArrivalProcess, latencyPrecision);
+        this.initialMemoryComponentCapacities = memoryComponentCapacities;
+        this.initialCurrentMemoryComponentCapacity = currentMemoryComponentCapacity;
+        this.initialFlushedCapacity = flushedCapacity;
+        this.initialFlushFinalizedPages = flushFinalizedPages;
+        this.initialFlushSubOperationElapsedTime = flushSubOperationElapsedTime;
+
+        this.initialComponentsCapacities = usedComponentsCapacities;
+        this.initialMergedCapacities = mergedCapacities;
+        this.initialMergeFinalizedPages = mergeFinalizedPages;
+        this.initialMergeSubOperationElapsedTimes = mergeSubOperationElapsedTimes;
+
+        if (LSMFlowControlManager.VERBOSE) {
+            LOGGER.error("size ratio: {}", sizeRatio);
+            LOGGER.error("tolerated components per level: {}", toleratedComponentsPerLevel);
+            LOGGER.error("max io speed: {}", maxIoSpeed);
+            LOGGER.error("memory component capacity: {}", memoryComponentCapacity);
+            LOGGER.error("num memory components: {}", totalMemoryComponents);
+            LOGGER.error("flush processing times: {}", Arrays.toString(flushProcessingSpeeds));
+            LOGGER.error("flush finalize times: {}", Arrays.toString(flushFinalizeSpeeds));
+            LOGGER.error("merge processing times: \n {}", toString(mergeProcessingSpeeds));
+            LOGGER.error("merge finalize times: \n {}", toString(mergeFinalizeSpeeds));
+            LOGGER.error("merge component ratios: {}", toString(mergeComponentRatios));
+
+            LOGGER.error("inital used memory: {}", Arrays.toString(initialMemoryComponentCapacities));
+            LOGGER.error("initial current used memory: {}", initialCurrentMemoryComponentCapacity);
+            LOGGER.error("initial flush capacity: {}", initialFlushedCapacity);
+            LOGGER.error("initial flush finalized pages: {}", initialFlushFinalizedPages);
+            LOGGER.error("initial flush sub operation elapsed time: {}", initialFlushSubOperationElapsedTime);
+
+            LOGGER.error("initial merge components: {}", toString(initialComponentsCapacities));
+            LOGGER.error("initial merged components: {}", initialMergedCapacities);
+            LOGGER.error("initial merge finalized pages: {}", initialMergeFinalizedPages);
+            LOGGER.error("initial merge sub operation elapsed times: {}", initialMergeSubOperationElapsedTimes);
+            LOGGER.error("sub operation pages: {}", subOperationPages);
+            LOGGER.error("base level capacity: {}", baseLevelCapacity);
+            LOGGER.error("page estimator: {}", pageEstimator);
+        }
+    }
+
+    private String toString(RandomVariable[][] values) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < values.length - 1; i++) {
+            sb.append(Arrays.toString(values[i]));
+            sb.append(",\n");
+        }
+        sb.append(Arrays.toString(values[values.length - 1]));
+        sb.append("]");
+        return sb.toString();
+    }
+
+    private String toString(double[][] values) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < values.length - 1; i++) {
+            sb.append(Arrays.toString(values[i]));
+            sb.append(",\n");
+        }
+        sb.append(Arrays.toString(values[values.length - 1]));
+        sb.append("]");
+        return sb.toString();
+    }
+
+    private int getNumEffectiveLevels(int numLevels, RandomVariable[][] mergeProcessingSpeeds,
+            RandomVariable[][] mergeFinalizeSpeeds) {
+        for (int i = 0; i < numLevels; i++) {
+            if (mergeFinalizeSpeeds[i][1] == null || DoubleUtil.equals(mergeFinalizeSpeeds[i][1].mean, 0.0)) {
+                return i;
+            }
+        }
+        return numLevels;
+    }
+
+    public boolean simulate(double speed, double maxTime) {
+        scheduler.initialize(speed, initialMemoryComponentCapacities, initialCurrentMemoryComponentCapacity,
+                initialFlushedCapacity, initialFlushFinalizedPages, initialFlushSubOperationElapsedTime,
+                initialComponentsCapacities, initialMergedCapacities, initialMergeFinalizedPages,
+                initialMergeSubOperationElapsedTimes);
+        return scheduler.simulate(speed, maxTime);
+    }
+
+}

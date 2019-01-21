@@ -18,6 +18,8 @@
  */
 package edu.uci.asterixdb.storage.experiments.feed.gen;
 
+import java.util.Arrays;
+
 import edu.uci.asterixdb.storage.experiments.feed.gen.DataGenerator.TweetMessage;
 
 public class TweetGenerator implements IRecordGenerator {
@@ -36,6 +38,18 @@ public class TweetGenerator implements IRecordGenerator {
     public String getRecord(long nextId) {
         TweetMessage msg = dataGenerator.getNext(nextId, (nextSid++) % sidRange);
         return msg.getAdmEquivalent(null) + "\n";
+    }
+
+    public static void main(String[] args) {
+        TweetGenerator gen = new TweetGenerator(100000, 500);
+        int[] list = new int[10000];
+        for (int i = 0; i < 10000; i++) {
+            list[i] = gen.getRecord(i).getBytes().length;
+        }
+        Arrays.sort(list);
+        for (int i = 0; i < 10000; i++) {
+            System.out.println(list[i]);
+        }
     }
 
 }

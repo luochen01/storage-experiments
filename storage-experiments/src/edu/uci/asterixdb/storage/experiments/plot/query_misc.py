@@ -58,7 +58,7 @@ def parse_experiment(prefix, pattern, skips, dir=query_base_path):
 
 def plot_bar(xvalues, options, output, title, xlabel='Batch Memory Size', ylabel='Query Time (s)', ylimit=0, legendloc=2):
     # use as global
-    plt.figure(figsize=(4, 2.5))
+    plt.figure(figsize=(2.7, 2.5))
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
@@ -71,19 +71,19 @@ def plot_bar(xvalues, options, output, title, xlabel='Batch Memory Size', ylabel
     plt.legend(loc=legendloc, ncol=legend_col)
 
     # plt.title(title)
-    plt.xticks(x, xvalues)
+    plt.xticks(x, xvalues, fontsize=12)
 
     plt.xlim([-0.5, len(x) - 0.5])
     if ylimit > 0:
         plt.ylim(0, ylimit)
     plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    #plt.ylabel(ylabel)
     plt.savefig(output)
     print('output figure to ' + output)
 
 
-batch_sizes = [0, 128, 512, 1024, 4096, 16184]
-batch_strs = ['0', '128KB', '512KB', '1MB', '4MB', '16MB']
+batch_sizes = [0, 128, 1024, 4096, 16184]
+batch_strs = ['0', '128KB', '1MB', '4MB', '16MB']
 batch_skips = [2, 2, 2, 2, 2, 2, 2 ]
 batch_prefix = "twitter_validation_norepair_UNIFORM_1"
 
@@ -105,6 +105,8 @@ batch_0_01_results = parse_batch_experiment(batch_prefix, '0.0001', batch_skips)
 batch_0_1_results = parse_batch_experiment(batch_prefix, '0.001', batch_skips)
 batch_1_results = parse_batch_experiment(batch_prefix, '0.01', batch_skips)
 batch_10_results = parse_batch_experiment(batch_prefix, '0.1', batch_skips)
+
+
 
 alphas = [1, 0.8, 0.6, 0.4, 0.2]
 color = 'blue'

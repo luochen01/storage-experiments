@@ -1,0 +1,554 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.apache.hyracks.storage.am.lsm.common.test;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Random;
+import java.util.function.Function;
+
+import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.ILSMFinalizingPagesEstimator;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.LSMFinalizingPagesEstimator;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.FlowControlSpeedSolver.MergePolicyType;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue.QueueAbstractOperationScheduler;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue.QueueFlowControlSimulator;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue.QueueAbstractOperationScheduler.DataArrivalProcess;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue.QueueAbstractOperationScheduler.SimulateResult;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.RandomVariable;
+import org.junit.Test;
+
+class ConstantArrivalProcess implements DataArrivalProcess {
+    private final double rate;
+
+    public ConstantArrivalProcess(double rate) {
+        this.rate = rate;
+    }
+
+    @Override
+    public double arrive(double period, double time) {
+        return period * rate;
+    }
+
+    @Override
+    public void reset() {
+
+    }
+}
+
+class ConstantBustyProcess implements DataArrivalProcess {
+    private final Random random = new Random(17);
+
+    private final double rate;
+    private final double bustyRate;
+    private final double bustyProb;
+    private final double bustyLength;
+
+    private boolean bursting = false;
+    private double burstyStart = 0;
+
+    public ConstantBustyProcess(double rate, double bustyRate, double bustyProb, double bustyLength) {
+        this.rate = rate;
+        this.bustyRate = bustyRate;
+        this.bustyProb = bustyProb;
+        this.bustyLength = bustyLength;
+    }
+
+    @Override
+    public double arrive(double period, double time) {
+        if (bursting) {
+            if (time - burstyStart >= bustyLength) {
+                bursting = false;
+            }
+            return bustyRate * period;
+        } else {
+            double prob = random.nextDouble();
+            if (prob <= bustyProb) {
+                bursting = true;
+                burstyStart = time;
+            }
+            return rate * period;
+        }
+    }
+
+    @Override
+    public void reset() {
+        bursting = false;
+        burstyStart = 0;
+    }
+}
+
+class UniformArrivalProcess implements DataArrivalProcess {
+    private final Random random = new Random(17);
+
+    private final double minRate;
+    private final double maxRate;
+
+    public UniformArrivalProcess(double minRate, double maxRate) {
+        this.minRate = minRate;
+        this.maxRate = maxRate;
+    }
+
+    @Override
+    public double arrive(double period, double time) {
+        double rate = random.nextDouble() * (maxRate - minRate) + minRate;
+        return rate * period;
+    }
+
+    @Override
+    public void reset() {
+
+    }
+
+}
+
+class PoissonArrivalProcess implements DataArrivalProcess {
+
+    private final PoissonDistribution dist;
+
+    public PoissonArrivalProcess(double rate) {
+        this.dist = new PoissonDistribution(rate);
+    }
+
+    @Override
+    public double arrive(double period, double time) {
+        return dist.sample() * period;
+    }
+
+    @Override
+    public void reset() {
+
+    }
+}
+
+class PoissonBurstyArrivalProcess implements DataArrivalProcess {
+    private final PoissonDistribution dist;
+    private final PoissonDistribution burstyDist;
+
+    private final double burstyInterval;
+    private final double burstyLength;
+
+    private boolean bursting = false;
+    private double burstyStart = 0;
+
+    public PoissonBurstyArrivalProcess(double rate, double burstyRate, double burstyInterval, double burstyLength) {
+        this.dist = new PoissonDistribution(rate);
+        this.burstyDist = new PoissonDistribution(burstyRate);
+        this.burstyInterval = burstyInterval;
+        this.burstyLength = burstyLength;
+    }
+
+    @Override
+    public double arrive(double period, double time) {
+        if (bursting) {
+            if (time - burstyStart >= burstyLength) {
+                bursting = false;
+            }
+            return burstyDist.sample() * period;
+        } else {
+            if (burstyStart + burstyInterval <= time) {
+                bursting = true;
+                burstyStart = time;
+            }
+            return dist.sample() * period;
+        }
+    }
+
+    @Override
+    public void reset() {
+        this.bursting = false;
+        this.burstyStart = 0;
+    }
+}
+
+public class QueueFlowControlTest {
+
+    private double arrivalPeriod = 1.0;
+    private int latencyPrecision = 2;
+
+    private double maxTime = 12 * 3600;
+
+    private double maxIngestSpeed = 30000;
+
+    public void testLevelPoisson() {
+        double rate = 4000;
+        DataArrivalProcess process = new PoissonArrivalProcess(rate);
+        QueueFlowControlSimulator sim = createLevelSimulator(1, process);
+        QueueAbstractOperationScheduler.VERBOSE = true;
+        sim.simulate(maxIngestSpeed, maxTime);
+        //sim.simulate(3600, maxTime);
+    }
+
+    public void testLevelPoissonBursty() {
+        double rate = 3000;
+        double burstyRate = 5000;
+        double burstyInterval = 3600;
+        double busrtyLength = 1000;
+        DataArrivalProcess process = new PoissonBurstyArrivalProcess(rate, burstyRate, burstyInterval, busrtyLength);
+        QueueFlowControlSimulator sim = createLevelSimulator(1, process);
+        QueueAbstractOperationScheduler.VERBOSE = true;
+        sim.simulate(maxIngestSpeed, maxTime);
+        //sim.simulate(3600, maxTime);
+    }
+
+    public void testTierPoissonBursty() {
+        double rate = 7500;
+        double burstyRate = 10000;
+        double burstyInterval = 3600;
+        double busrtyLength = 1000;
+        DataArrivalProcess process = new PoissonBurstyArrivalProcess(rate, burstyRate, burstyInterval, busrtyLength);
+        QueueAbstractOperationScheduler.VERBOSE = true;
+        QueueFlowControlSimulator sim = createTierSimulator(3, process);
+        sim.simulate(maxIngestSpeed, maxTime);
+        //sim.simulate(8200, maxTime);
+    }
+
+    public void experimentTierPoisson() throws IOException {
+        Double[] rates = new Double[] { 7000.0, 7500.0, 8000.0, 8100.0, 8150.0, 8200.0, 8300.0 };
+        DataArrivalProcess[] processes = new DataArrivalProcess[rates.length];
+        for (int i = 0; i < processes.length; i++) {
+            processes[i] = new PoissonArrivalProcess(rates[i]);
+        }
+        experiment(rates, processes, p -> createTierSimulator(0, p), new File(
+                "/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/tier-no-tolerate-poisson"),
+                maxIngestSpeed);
+
+        experiment(rates, processes, p -> createTierSimulator(3, p),
+                new File("/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/tier-poisson"),
+                maxIngestSpeed);
+
+        experiment(rates, processes, p -> createTierSimulator(3, p),
+                new File("/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/tier-limit-poisson"),
+                8200);
+    }
+
+    public void experimentLevelThroughput() throws IOException {
+        Double[] rates = new Double[] { 3500.0, 3600.0, 3700.0, 3800.0, 3900.0, 4000.0, 4100.0, 4200.0 };
+        DataArrivalProcess[] processes = new DataArrivalProcess[rates.length];
+        for (int i = 0; i < processes.length; i++) {
+            processes[i] = new PoissonArrivalProcess(rates[i]);
+        }
+        experiment(rates, processes, p -> createLevelSimulator(1, p), new File(
+                "/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/level-poisson-throughput"),
+                maxIngestSpeed);
+    }
+
+    public void experimentLevelPoisson() throws IOException {
+        Double[] rates = new Double[] { 3300.0, 3400.0, 3500.0, 3550.0, 3600.0, 3610.0, 3650.0 };
+        DataArrivalProcess[] processes = new DataArrivalProcess[rates.length];
+        for (int i = 0; i < processes.length; i++) {
+            processes[i] = new PoissonArrivalProcess(rates[i]);
+        }
+        experiment(rates, processes, p -> createLevelSimulator(1, p),
+                new File("/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/level-poisson"),
+                maxIngestSpeed);
+
+        experiment(rates, processes, p -> createLevelSimulator(1, p),
+                new File("/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/level-limit-poisson"),
+                3600);
+    }
+
+    public void experimentTierBursty() throws IOException {
+        double rate = 7500;
+        double burstyRate = 10000;
+        double burstyInterval = 3600;
+        Double[] lengths = new Double[] { 100.0, 250.0, 500.0, 750.0, 900.0, 950.0, 1000.0 };
+        DataArrivalProcess[] processes = new DataArrivalProcess[lengths.length];
+        for (int i = 0; i < processes.length; i++) {
+            processes[i] = new PoissonBurstyArrivalProcess(rate, burstyRate, burstyInterval, lengths[i]);
+        }
+        experiment(lengths, processes, p -> createTierSimulator(0, p), new File(
+                "/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/tier-burtsy-no-tolerate-poisson"),
+                maxIngestSpeed);
+
+        experiment(lengths, processes, p -> createTierSimulator(3, p),
+                new File("/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/tier-bursty-poisson"),
+                maxIngestSpeed);
+
+        experiment(lengths, processes, p -> createTierSimulator(3, p), new File(
+                "/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/tier-bursty-limit-poisson"),
+                8200);
+    }
+
+    @Test
+    public void experimentLevelBursty() throws IOException {
+        double rate = 3000;
+        double burstyRate = 6000;
+        double burstyInterval = 3600;
+        Double[] lengths = new Double[] { 100.0, 250.0, 500.0, 750.0, 900.0, 950.0, 1000.0 };
+        DataArrivalProcess[] processes = new DataArrivalProcess[lengths.length];
+        for (int i = 0; i < processes.length; i++) {
+            processes[i] = new PoissonBurstyArrivalProcess(rate, burstyRate, burstyInterval, lengths[i]);
+        }
+
+        experiment(lengths, processes, p -> createTierSimulator(3, p),
+                new File(
+                        "/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/level-bursty-poisson"),
+                maxIngestSpeed);
+
+        experiment(lengths, processes, p -> createTierSimulator(3, p), new File(
+                "/Users/luochen/Documents/Research/experiments/results/flowcontrol/queue/level-bursty-limit-poisson"),
+                3600);
+    }
+
+    private void experiment(Object[] parameters, DataArrivalProcess[] processes,
+            Function<DataArrivalProcess, QueueFlowControlSimulator> func, File outFile, double maxSpeed)
+            throws IOException {
+        PrintStream out = new PrintStream(outFile);
+        out.println("param\tingest data\tproduced data\tmean latency\tmax latency\tmax queue length");
+        for (int i = 0; i < parameters.length; i++) {
+            QueueFlowControlSimulator sim = func.apply(processes[i]);
+            sim.simulate(maxSpeed, maxTime);
+            SimulateResult result = QueueAbstractOperationScheduler.Result;
+            String line = String.format("%s\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f", parameters[i], result.totalIngestedRecords,
+                    result.totalProducedRecords, result.meanLatency, result.maxLatency, result.maxQueueLength);
+            out.println(line);
+            System.out.println(line);
+
+        }
+        out.close();
+
+    }
+
+    private QueueFlowControlSimulator createLevelSimulator(int toleratedComponents, DataArrivalProcess arrivalProcess) {
+        // non-blocking speed: 3600
+        int numMemoryComponents = 4;
+        RandomVariable memoryComponentCapacity = RandomVariable.of(78007.680000, 2949.969000, 72384.000000,
+                83578.000000);
+        double maxIoSpeed = 102879.837629;
+        RandomVariable[] flushProcessingTimes = { null, RandomVariable.of(0.293000, 0.048000, 0.257000, 0.535000),
+                RandomVariable.of(0.378000, 0.077000, 0.286000, 0.683000),
+                RandomVariable.of(0.528000, 0.182000, 0.277000, 0.977000),
+                RandomVariable.of(0.704000, 0.182000, 0.370000, 1.303000) };
+        RandomVariable[] flushFinalizeTimes = { null, RandomVariable.of(2.940000, 0.126000, 2.673000, 3.207000),
+                RandomVariable.of(4.871000, 2.569000, 2.944000, 9.877000),
+                RandomVariable.of(7.246000, 4.693000, 3.209000, 18.414000),
+                RandomVariable.of(9.662000, 4.693000, 4.278000, 24.552000) };
+        RandomVariable[][] mergeProcessingTimes = {
+                { null, RandomVariable.of(0.333000, 0.029000, 0.299000, 0.425000),
+                        RandomVariable.of(0.761000, 0.192000, 0.367000, 1.406000),
+                        RandomVariable.of(1.217000, 0.450000, 0.401000, 2.484000),
+                        RandomVariable.of(1.623000, 0.450000, 0.535000, 3.312000) },
+                { null, RandomVariable.of(0.433000, 0.104000, 0.350000, 1.018000),
+                        RandomVariable.of(0.772000, 0.169000, 0.393000, 1.150000),
+                        RandomVariable.of(1.201000, 0.333000, 0.767000, 2.139000),
+                        RandomVariable.of(1.602000, 0.333000, 1.023000, 2.853000) },
+                { null, RandomVariable.of(0.457000, 0.026000, 0.408000, 0.517000),
+                        RandomVariable.of(0.862000, 0.199000, 0.467000, 1.276000),
+                        RandomVariable.of(1.453000, 0.439000, 0.950000, 2.385000),
+                        RandomVariable.of(1.937000, 0.439000, 1.267000, 3.180000) } };
+        RandomVariable[][] mergeFinalizeTimes = {
+                { null, RandomVariable.of(1.696000, 0.581000, 1.137000, 2.849000),
+                        RandomVariable.of(3.271000, 1.395000, 1.738000, 6.051000),
+                        RandomVariable.of(5.498000, 2.995000, 2.780000, 10.541000),
+                        RandomVariable.of(7.331000, 2.995000, 3.707000, 14.055000) },
+                { null, RandomVariable.of(0.673000, 0.274000, 0.301000, 1.191000),
+                        RandomVariable.of(0.827000, 0.321000, 0.492000, 1.383000),
+                        RandomVariable.of(1.240000, 0.321000, 0.737000, 2.074000),
+                        RandomVariable.of(1.653000, 0.321000, 0.983000, 2.765000) },
+                { RandomVariable.of(0.951000, 1.191000, 0.109000, 1.793000),
+                        RandomVariable.of(0.951000, 1.191000, 0.109000, 1.793000),
+                        RandomVariable.of(0.951000, 1.191000, 0.109000, 1.793000),
+                        RandomVariable.of(0.951000, 1.191000, 0.109000, 1.793000),
+                        RandomVariable.of(0.951000, 1.191000, 0.109000, 1.793000) } };
+        RandomVariable[][] componentRatios = {
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) },
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) },
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000),
+                        RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) } };
+        double[] initialUsedMemory = {};
+        double initialCurrentUsedMemory = 0;
+        double initialFlushCapacity = 0.000000;
+        double initialFlushFinalizedPages = 0.000000;
+        double initialFlushSubOperationElapsedTime = 0.000000;
+        double[][] initialComponents = { {}, {}, {} };
+        double[] initialMergedComponents = { 0.0, 0.0, 0.0 };
+        double[] initialMergeFinalizedPages = { 0.0, 0.0, 0.0 };
+        double[] initialMergeSubOperationElapsedTimes = { 0.0, 0.0, 0.0 };
+        double subOperationPages = 128.000000;
+        double baseLevelCapacity = 68962.000000;
+        double recordsPerPage = 235.628538;
+        ILSMFinalizingPagesEstimator estimator = new LSMFinalizingPagesEstimator(235.628538, 7272.001590, 0.010000,
+                131072);
+        return new QueueFlowControlSimulator(toleratedComponents, 3, memoryComponentCapacity, numMemoryComponents, 10,
+                maxIoSpeed, flushProcessingTimes, flushFinalizeTimes, mergeProcessingTimes, mergeFinalizeTimes,
+                initialUsedMemory, initialCurrentUsedMemory, initialFlushCapacity, initialFlushFinalizedPages,
+                initialFlushSubOperationElapsedTime, initialComponents, initialMergedComponents,
+                initialMergeFinalizedPages, initialMergeSubOperationElapsedTimes, componentRatios, estimator,
+                MergePolicyType.LEVEL, recordsPerPage * subOperationPages, subOperationPages, baseLevelCapacity,
+                arrivalPeriod, arrivalProcess, latencyPrecision);
+    }
+
+    private QueueFlowControlSimulator createTierSimulator(int toleratedComponents, DataArrivalProcess arrivalProcess) {
+        // max non-blocking speed 8200
+        int numMemoryComponents = 4;
+        RandomVariable memoryComponentCapacity = RandomVariable.of(75797.880000, 2474.115000, 71456.000000,
+                82302.000000);
+        double maxIoSpeed = 81844.995181;
+        RandomVariable[] flushProcessingTimes = { null, RandomVariable.of(0.369000, 0.070000, 0.299000, 0.516000),
+                RandomVariable.of(0.558000, 0.224000, 0.329000, 1.804000),
+                RandomVariable.of(0.505000, 0.147000, 0.343000, 0.989000),
+                RandomVariable.of(0.647000, 0.293000, 0.367000, 2.242000),
+                RandomVariable.of(0.782000, 0.340000, 0.483000, 2.149000),
+                RandomVariable.of(1.056000, 0.323000, 0.562000, 2.190000),
+                RandomVariable.of(1.232000, 0.323000, 0.656000, 2.555000) };
+        RandomVariable[] flushFinalizeTimes = { null, RandomVariable.of(3.552000, 1.600000, 2.361000, 6.668000),
+                RandomVariable.of(7.746000, 3.752000, 3.204000, 15.187000),
+                RandomVariable.of(5.837000, 2.741000, 4.008000, 13.079000),
+                RandomVariable.of(14.010000, 9.582000, 4.008000, 38.095000),
+                RandomVariable.of(14.045000, 5.860000, 6.945000, 22.952000),
+                RandomVariable.of(17.964000, 13.037000, 8.810000, 53.393000),
+                RandomVariable.of(20.958000, 13.037000, 10.278000, 62.292000) };
+        RandomVariable[][] mergeProcessingTimes = {
+                { null, RandomVariable.of(0.519000, 0.393000, 0.333000, 2.222000),
+                        RandomVariable.of(0.615000, 0.299000, 0.384000, 2.317000),
+                        RandomVariable.of(1.650000, 1.051000, 0.542000, 6.969000),
+                        RandomVariable.of(2.029000, 0.987000, 0.458000, 6.345000),
+                        RandomVariable.of(2.356000, 0.928000, 0.805000, 4.494000),
+                        RandomVariable.of(2.658000, 1.183000, 0.676000, 5.561000),
+                        RandomVariable.of(3.101000, 1.183000, 0.788000, 6.488000) },
+                { null, RandomVariable.of(0.429000, 0.111000, 0.333000, 0.675000),
+                        RandomVariable.of(1.106000, 0.568000, 0.442000, 3.685000),
+                        RandomVariable.of(2.101000, 0.816000, 0.992000, 4.710000),
+                        RandomVariable.of(2.704000, 0.979000, 0.825000, 4.668000),
+                        RandomVariable.of(3.427000, 0.975000, 1.471000, 6.603000),
+                        RandomVariable.of(3.672000, 0.815000, 1.941000, 5.971000),
+                        RandomVariable.of(3.101000, 1.183000, 0.788000, 6.488000) },
+                { null, RandomVariable.of(0.579000, 0.172000, 0.467000, 0.992000),
+                        RandomVariable.of(1.187000, 0.359000, 0.667000, 2.152000),
+                        RandomVariable.of(2.731000, 0.969000, 1.233000, 5.927000),
+                        RandomVariable.of(3.344000, 0.733000, 2.009000, 4.754000),
+                        RandomVariable.of(3.806000, 1.031000, 1.951000, 6.012000),
+                        RandomVariable.of(4.270000, 0.864000, 2.592000, 5.978000),
+                        RandomVariable.of(3.101000, 1.183000, 0.788000, 6.488000) },
+                { null, RandomVariable.of(0.594000, 0.032000, 0.571000, 0.617000),
+                        RandomVariable.of(1.270000, 0.304000, 0.712000, 2.084000),
+                        RandomVariable.of(2.617000, 0.755000, 1.084000, 4.251000),
+                        RandomVariable.of(3.478000, 0.904000, 2.142000, 6.653000),
+                        RandomVariable.of(3.811000, 0.847000, 2.123000, 5.447000),
+                        RandomVariable.of(4.281000, 0.887000, 2.951000, 6.325000),
+                        RandomVariable.of(3.101000, 1.183000, 0.788000, 6.488000) },
+                { null, RandomVariable.of(0.535000, 0.031000, 0.492000, 0.658000),
+                        RandomVariable.of(1.154000, 0.341000, 0.667000, 2.493000),
+                        RandomVariable.of(2.767000, 0.781000, 1.217000, 4.751000),
+                        RandomVariable.of(3.417000, 0.706000, 2.174000, 4.522000),
+                        RandomVariable.of(4.113000, 0.990000, 1.643000, 6.536000),
+                        RandomVariable.of(4.393000, 0.821000, 2.570000, 5.978000),
+                        RandomVariable.of(3.101000, 1.183000, 0.788000, 6.488000) },
+                { null, null, null, null, null, null, null, null } };
+        RandomVariable[][] mergeFinalizeTimes = {
+                { null, RandomVariable.of(2.995000, 1.337000, 1.780000, 4.453000),
+                        RandomVariable.of(3.330000, 0.811000, 2.133000, 3.917000),
+                        RandomVariable.of(4.699000, 1.565000, 2.319000, 7.295000),
+                        RandomVariable.of(7.032000, 2.944000, 3.563000, 11.301000),
+                        RandomVariable.of(9.267000, 3.375000, 5.339000, 13.881000),
+                        RandomVariable.of(15.455000, 11.940000, 4.633000, 47.503000),
+                        RandomVariable.of(18.030000, 11.940000, 5.405000, 55.420000) },
+                { null, RandomVariable.of(2.995000, 1.337000, 1.780000, 4.453000),
+                        RandomVariable.of(2.263000, 0.791000, 1.460000, 3.397000),
+                        RandomVariable.of(2.641000, 1.350000, 1.554000, 5.725000),
+                        RandomVariable.of(4.034000, 2.107000, 2.331000, 8.454000),
+                        RandomVariable.of(7.641000, 3.039000, 3.495000, 14.028000),
+                        RandomVariable.of(8.901000, 2.717000, 5.767000, 10.588000),
+                        RandomVariable.of(18.030000, 11.940000, 5.405000, 55.420000) },
+                { null, RandomVariable.of(0.591000, 0.000000, 0.591000, 0.591000),
+                        RandomVariable.of(1.396000, 0.812000, 0.822000, 1.971000),
+                        RandomVariable.of(1.685000, 0.656000, 1.028000, 2.341000),
+                        RandomVariable.of(1.898000, 0.911000, 1.028000, 3.448000),
+                        RandomVariable.of(2.267000, 1.353000, 1.111000, 3.755000),
+                        RandomVariable.of(8.901000, 2.717000, 5.767000, 10.588000),
+                        RandomVariable.of(18.030000, 11.940000, 5.405000, 55.420000) },
+                { null, RandomVariable.of(0.381000, 0.000000, 0.381000, 0.381000),
+                        RandomVariable.of(0.641000, 0.000000, 0.641000, 0.641000),
+                        RandomVariable.of(1.685000, 0.656000, 1.028000, 2.341000),
+                        RandomVariable.of(0.804000, 0.218000, 0.650000, 0.958000),
+                        RandomVariable.of(1.660000, 0.839000, 1.067000, 2.254000),
+                        RandomVariable.of(8.901000, 2.717000, 5.767000, 10.588000),
+                        RandomVariable.of(18.030000, 11.940000, 5.405000, 55.420000) },
+                { null, RandomVariable.of(0.386000, 0.417000, 0.092000, 0.681000),
+                        RandomVariable.of(0.656000, 0.704000, 0.158000, 1.154000),
+                        RandomVariable.of(1.685000, 0.656000, 1.028000, 2.341000),
+                        RandomVariable.of(0.804000, 0.218000, 0.650000, 0.958000),
+                        RandomVariable.of(1.660000, 0.839000, 1.067000, 2.254000),
+                        RandomVariable.of(8.901000, 2.717000, 5.767000, 10.588000),
+                        RandomVariable.of(18.030000, 11.940000, 5.405000, 55.420000) },
+                { null, null, null, null, null, null, null, null } };
+        RandomVariable[][] componentRatios = { { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) },
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) },
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) },
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) },
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) },
+                { RandomVariable.of(1.000000, 0.000000, 1.000000, 1.000000) } };
+        double[] initialUsedMemory = {};
+        double initialCurrentUsedMemory = 0.000000;
+        double initialFlushCapacity = 0.000000;
+        double initialFlushFinalizedPages = 0.000000;
+        double initialFlushSubOperationElapsedTime = 0.000000;
+        double[][] initialComponents = { {}, {}, {}, {}, {}, {} };
+        double[] initialMergedComponents = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        double[] initialMergeFinalizedPages = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        double[] initialMergeSubOperationElapsedTimes = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+        double subOperationPages = 128.000000;
+        double baseLevelCapacity = 68962.000000;
+        double recordsPerPage = 235.660134;
+        ILSMFinalizingPagesEstimator estimator = new LSMFinalizingPagesEstimator(235.660134, 7271.719262, 0.010000,
+                131072);
+        return new QueueFlowControlSimulator(toleratedComponents, 6, memoryComponentCapacity, numMemoryComponents, 3,
+                maxIoSpeed, flushProcessingTimes, flushFinalizeTimes, mergeProcessingTimes, mergeFinalizeTimes,
+                initialUsedMemory, initialCurrentUsedMemory, initialFlushCapacity, initialFlushFinalizedPages,
+                initialFlushSubOperationElapsedTime, initialComponents, initialMergedComponents,
+                initialMergeFinalizedPages, initialMergeSubOperationElapsedTimes, componentRatios, estimator,
+                MergePolicyType.TIER, recordsPerPage * subOperationPages, subOperationPages, baseLevelCapacity,
+                arrivalPeriod, arrivalProcess, latencyPrecision);
+    }
+}

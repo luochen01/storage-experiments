@@ -1,0 +1,148 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.queue;
+
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.DoubleUtil;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.ILSMFinalizingPagesEstimator;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.LSMFlowControlUtils;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.FlushUnit;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.ISpeedProvider;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.MergeOperation;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.MergeUnit;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.RandomVariable;
+import org.apache.hyracks.storage.am.lsm.common.flowcontrol.simulator.Unit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+public class QueueLevelMergeScheduler extends QueueAbstractOperationScheduler {
+
+    private static final Logger LOGGER = LogManager.getLogger(QueueLevelMergeScheduler.class);
+    private final RandomVariable[][] mergeComponentRatios;
+
+    public QueueLevelMergeScheduler(int toleratedComponentsPerLevel, int numLevels,
+            RandomVariable memoryComponentCapacity, int totalMemoryComponents, int sizeRatio, ISpeedProvider flushSpeed,
+            ISpeedProvider[] mergeSpeeds, ILSMFinalizingPagesEstimator pageEstimator,
+            double subOperationProcessingRecords, double subOperationPages, double baseLevelCapacity,
+            RandomVariable[][] mergeComponentRatios, double dataArrivalPeriod, DataArrivalProcess dataArrivalProcess,
+            int latencyPrecision) {
+        super(toleratedComponentsPerLevel, numLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio,
+                flushSpeed, mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
+                baseLevelCapacity, dataArrivalPeriod, dataArrivalProcess, latencyPrecision);
+        this.mergeComponentRatios = mergeComponentRatios;
+        assert toleratedComponentsPerLevel >= 1;
+    }
+
+    @Override
+    public boolean isMergeable(MergeUnit mergeUnit) {
+        return !mergeUnit.blocked && mergeUnit.numComponents >= 2 && mergeUnit.operation == null;
+    }
+
+    protected void completeMergeOperation(MergeUnit mergeUnit) {
+        MergeOperation op = mergeUnit.getOperation();
+        if (op.isCompleted) {
+            return;
+        }
+        //        System.out.println(String.format("%.0f: Complete merge %s in level %d", time,
+        //                Arrays.toString(mergeUnit.components), mergeUnit.level));
+
+        op.setCompleted();
+        operationCompleted();
+        int actualSizeRatio = LSMFlowControlUtils.getMultiplier(op.totalCapacity, mergeUnit.baseCapacity);
+
+        if (actualSizeRatio < sizeRatio) {
+            // no component flushed to the next level, thus no need to finalize
+            mergeUnit.components[0] = op.totalCapacity;
+            mergeUnit.components[1] = 0;
+            for (int i = 0; i < toleratedComponentsPerLevel - 1; i++) {
+                mergeUnit.components[i + 1] = mergeUnit.components[i + 2];
+                mergeUnit.components[i + 2] = 0;
+            }
+            mergeUnit.numComponents -= 1;
+            assert mergeUnit.numComponents >= 0;
+            finalizeMergeOperation(mergeUnit, false);
+        } else {
+            if (mergeUnit.level + 1 < numLevels) {
+                MergeUnit nextUnit = mergeUnits[mergeUnit.level + 1];
+                if (addToMergeUnit(nextUnit, op.totalCapacity, mergeUnit)) {
+                    finalizeMergeOperation(mergeUnit, true);
+                }
+            } else {
+                finalizeMergeOperation(mergeUnit, true);
+            }
+        }
+    }
+
+    private void finalizeMergeOperation(MergeUnit mergeUnit, boolean removeOldComponents) {
+        if (removeOldComponents) {
+            mergeUnit.components[0] = 0;
+            mergeUnit.components[1] = 0;
+            for (int i = 0; i < toleratedComponentsPerLevel - 1; i++) {
+                mergeUnit.components[i] = mergeUnit.components[i + 2];
+                mergeUnit.components[i + 2] = 0;
+            }
+            mergeUnit.numComponents -= 2;
+            assert mergeUnit.numComponents >= 0;
+        }
+        if (mergeUnit.blockedUnit != null) {
+            Unit blockedUnit = mergeUnit.blockedUnit;
+            mergeUnit.unsetBlockedUnit();
+            double resultCapacity = blockedUnit.operation.totalCapacity;
+            addToMergeUnit(mergeUnit, resultCapacity, blockedUnit);
+            if (mergeUnit.level == 0) {
+                finalizeFlushOperation((FlushUnit) blockedUnit);
+            } else {
+                finalizeMergeOperation((MergeUnit) blockedUnit, true);
+            }
+        }
+        mergeUnit.operation = null;
+        if (isMergeable(mergeUnit)) {
+            scheduleMergeOperation(mergeUnit);
+        }
+    }
+
+    @Override
+    protected MergeOperation initializeMergeOperation(int level, double[] capacities) {
+        double largeCapacity = capacities[0];
+        double smallCapacity = capacities[1];
+        MergeOperation op = mergeOperations[level];
+        double resultRatio = getMergeResultRatio(level, largeCapacity, smallCapacity);
+        assert resultRatio > 0 && resultRatio <= 1;
+        double resultCapacity = resultRatio * (smallCapacity + largeCapacity);
+        op.reset(resultCapacity, pageEstimator.estiamtePages(resultCapacity));
+        return op;
+    }
+
+    private double getMergeResultRatio(int level, double largeSize, double smallSize) {
+        if (mergeComponentRatios == null) {
+            return 1;
+        }
+        int multiplier = LSMFlowControlUtils.getMultiplier(largeSize, smallSize);
+        assert level >= 0;
+        assert multiplier >= 1;
+
+        double ratio = LSMFlowControlUtils.nextGaussian(mergeComponentRatios[level][multiplier]);
+        return DoubleUtil.equals(ratio, 0) ? 1 : ratio;
+    }
+
+    @Override
+    public int getMaxNumComponentsPerLevel() {
+        return 1 + toleratedComponentsPerLevel;
+    }
+
+}
