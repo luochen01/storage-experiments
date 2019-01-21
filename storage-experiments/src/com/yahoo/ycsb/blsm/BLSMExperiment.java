@@ -37,18 +37,35 @@ public class BLSMExperiment {
     @Option(name = "-limit", usage = "speed limit")
     public int limitSpeed = -1;
 
+    @Option(name = "-shutdown", usage = "speed limit")
+    public boolean shutdown = true;
+
     public BLSMExperiment(String[] args) throws Exception {
         CmdLineParser parser = new CmdLineParser(this);
         parser.parseArgument(args);
 
         BLSMAdapter.URL = url;
 
+        if (shutdown) {
+            shutdown();
+            return;
+        }
         initializeTimer();
         if (load) {
             doLoad();
         } else {
             doRun();
         }
+    }
+
+    private void shutdown() throws TException {
+        TSocket socket = new TSocket(url, 9090);
+        TTransport trans = new TFramedTransport(socket);
+        TProtocol protocol = new TBinaryProtocol(trans);
+        MapKeeper.Client client = new MapKeeper.Client(protocol);
+        trans.open();
+        client.shutdown();
+        trans.close();
     }
 
     private void initializeTimer() throws Exception {
@@ -86,6 +103,7 @@ public class BLSMExperiment {
         String arg = workloadStr + " " + dbStr + " " + loadStr + " " + threadStr;
         System.out.println("Arg " + arg);
         Client.main(arg.split(" "));
+        Runtime.getRuntime().halt(0);
     }
 
     private void doRun() throws Exception {
@@ -98,7 +116,7 @@ public class BLSMExperiment {
         String threadStr = " -threads " + threads;
         String maxTimeStr = " -p maxexecutiontime=" + totalTime;
         String arg = workloadStr + dbStr + targetStr + maxTimeStr + threadStr;
-
+        System.out.println("Arg " + arg);
         Client.main(arg.trim().split(" "));
         Runtime.getRuntime().halt(0);
     }
