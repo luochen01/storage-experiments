@@ -82,7 +82,7 @@ public class BLSMExperiment {
                 long totalRecords = BLSMAdapter.operationCount.get();
                 long records = totalRecords - prevRecords;
 
-                String line = counter + "," + records + "," + totalRecords;
+                String line = counter + "\t" + records + "\t" + totalRecords;
                 System.out.println(line);
                 writer.println(line);
                 writer.flush();
