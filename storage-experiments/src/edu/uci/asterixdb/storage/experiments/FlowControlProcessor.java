@@ -28,7 +28,8 @@ class Latency {
 
 public class FlowControlProcessor {
 
-    private final String basePath = "/Users/luochen/Documents/Research/experiments/results/flowcontrol/level";
+    private final String basePath =
+            "/Users/luochen/Documents/Research/experiments/results/flowcontrol/uniform/partition";
 
     private final String suffix = ".log";
 
@@ -50,20 +51,35 @@ public class FlowControlProcessor {
     }
 
     private void process(File file) throws IOException {
+        File derived = new File(basePath + "/derived");
+        if (!derived.exists()) {
+            derived.mkdir();
+        }
+
         BufferedReader reader = new BufferedReader(new FileReader(file));
-        PrintWriter latencyWriter = new PrintWriter(new FileWriter(new File(file.getAbsolutePath() + ".latency.txt")));
-        PrintWriter mergeWriter = new PrintWriter(new FileWriter(new File(file.getAbsolutePath() + ".merge.txt")));
+        PrintWriter latencyWriter =
+                new PrintWriter(new FileWriter(new File(basePath + "/derived/" + file.getName() + ".latency.txt")));
+        PrintWriter mergeWriter =
+                new PrintWriter(new FileWriter(new File(basePath + "/derived/" + file.getName() + ".merge.txt")));
+        PrintWriter partitionWriter =
+                new PrintWriter(new FileWriter(new File(basePath + "/derived/" + file.getName() + ".partition.txt")));
 
         List<Latency> latencies = new ArrayList<>();
         latencyWriter.println("latency\tcount\tpercentage");
         PrintWriter componentWriter =
-                new PrintWriter(new FileWriter(new File(file.getAbsolutePath() + ".component.txt")));
+                new PrintWriter(new FileWriter(new File(basePath + "/derived/" + file.getName() + ".component.txt")));
         componentWriter.println("time\tcount");
         mergeWriter.println("#components");
+        partitionWriter.println("level1\tlevel1 total\tlevel2\tlevel2 total\ttotal");
         String line = null;
         double totalCount = 0;
         long mergeComponents = 0;
         long merges = 0;
+        int level1MergeCount = 0;
+        int level2MergeCount = 0;
+        int level1Merge = 0;
+        int level2Merge = 0;
+
         while ((line = reader.readLine()) != null) {
             if (line.contains("[Intended-UPDATE]")) {
                 totalCount += processLatency(line, latencies);
@@ -74,8 +90,24 @@ public class FlowControlProcessor {
                 merges++;
                 mergeComponents += len;
                 mergeWriter.println(len);
+            } else if (line.contains("PartitionedLevelMergePolicy - Schedule merge")) {
+                if (line.contains("at level 0+1")) {
+                    partitionWriter.println(level1MergeCount + "\t" + level1Merge + "\t" + level2MergeCount + "\t"
+                            + level2Merge + "\t" + (level1Merge + level2Merge));
+                    level1MergeCount = 0;
+                    level2MergeCount = 0;
+                    level1Merge = 0;
+                    level2Merge = 0;
+                } else if (line.contains("at level 1+2")) {
+                    level1MergeCount++;
+                    level1Merge += parseMerges(line);
+                } else if (line.contains("at level 2+3")) {
+                    level2MergeCount++;
+                    level2Merge += parseMerges(line);
+                }
             }
         }
+        partitionWriter.close();
 
         int numResultLatencies = 0;
         Latency active = new Latency(binLength, 0);
@@ -115,6 +147,20 @@ public class FlowControlProcessor {
             System.out.println("Skip " + line);
             return 0;
         }
+    }
+
+    private int parseMerges(String line) {
+        String ident = "Schedule merge ";
+        int begin = line.indexOf(ident) + ident.length();
+        int end = line.indexOf(" ", begin);
+        String[] part = line.substring(begin, end).split("\\+");
+        try {
+            return 1 + Integer.valueOf(part[1]);
+        } catch (Exception e) {
+            System.out.println("Fail to parse " + line);
+            return 0;
+        }
+
     }
 
     private void processComponents(String line, PrintWriter writer) {

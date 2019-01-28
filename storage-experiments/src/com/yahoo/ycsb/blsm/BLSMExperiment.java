@@ -72,7 +72,7 @@ public class BLSMExperiment {
         PrintWriter writer = new PrintWriter(new File(output));
 
         Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
+        timer.scheduleAtFixedRate(new TimerTask() {
             long prevRecords = 0;
             int counter = 0;
 
@@ -85,7 +85,7 @@ public class BLSMExperiment {
                 String line = counter + "\t" + records + "\t" + totalRecords;
                 System.out.println(line);
                 writer.println(line);
-                writer.flush();
+                //writer.flush();
                 prevRecords = totalRecords;
                 counter++;
             }
