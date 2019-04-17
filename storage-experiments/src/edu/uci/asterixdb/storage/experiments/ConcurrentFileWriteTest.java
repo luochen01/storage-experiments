@@ -43,6 +43,14 @@ public class ConcurrentFileWriteTest {
         System.out.println("Runs: " + runs);
         System.out.println("Force frequency: " + forceFrequency);
 
+        File dir = new File(file);
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File old : files) {
+                old.delete();
+            }
+        }
+
         long begin = System.currentTimeMillis();
         WriterThread[] threads = new WriterThread[numThreads];
         long fileSize = baseFileSize;
