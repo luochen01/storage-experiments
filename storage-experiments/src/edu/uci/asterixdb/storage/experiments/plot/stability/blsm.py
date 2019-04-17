@@ -12,12 +12,20 @@ seq_uniform = ','
 seq_zipf = '\t'
 
 settings.init()
-def get_uniform_option(x, y):
-    return PlotOption(x, y, color='green', legend='Uniform')
 
 
-def get_zipf_option(x, y):
-    return PlotOption(x, y, color='red', linestyle='dashed', legend='Zipf')
+def get_uniform_option(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, color=green, legend='Uniform', marker='s')
+    else:
+        return PlotOption(x, y, color=green, legend='Uniform')
+
+
+def get_zipf_option(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, color=red, legend='Zipf', marker='^')
+    else:
+        return PlotOption(x, y, color=red, legend='Zipf', linestyle='dashed')
 
 
 uniform_base_path = base_path + 'uniform/blsm/'
@@ -63,12 +71,12 @@ zipf_total_latencies = parse_latency_dists(zipf_total_latencies, write_count)
     
 
 def post():
-    plt.legend(loc=1, ncol=1, bbox_to_anchor=(0.7, 0.8))
+    plt.legend(loc=1, ncol=1, bbox_to_anchor=(1.0, 0.88))
 
     
-plot_latencies([PlotOption(np.arange(len(uniform_write_latencies)), uniform_write_latencies, marker='o', markevery=1, legend='Uniform-Processing', color='green'),
-                PlotOption(np.arange(len(uniform_total_latencies)), uniform_total_latencies, marker='^', markevery=1, legend='Uniform-End-to-End', color='green'),
-                PlotOption(np.arange(len(zipf_write_latencies)), zipf_write_latencies, marker='o', markevery=1, legend='Zipf-Processing', color='red', linestyle='dashed'),
-                PlotOption(np.arange(len(zipf_total_latencies)), zipf_total_latencies, marker='^', markevery=1, legend='Zipf-End-to-End', color='red', linestyle='dashed')],
-                result_base_path + 'blsm-open-write-latency.pdf', ylimit=500 * 1000, post=post)
+plot_latencies([PlotOption(np.arange(len(uniform_write_latencies)), uniform_write_latencies, marker='o', markevery=1, legend='Uniform Processing', color=green),
+                PlotOption(np.arange(len(uniform_total_latencies)), uniform_total_latencies, marker='^', markevery=1, legend='Uniform End-to-end', color=green),
+                PlotOption(np.arange(len(zipf_write_latencies)), zipf_write_latencies, marker='o', markevery=1, legend='Zipf Processing', color=red, linestyle='dashed'),
+                PlotOption(np.arange(len(zipf_total_latencies)), zipf_total_latencies, marker='^', markevery=1, legend='Zipf End-to-end', color=red, linestyle='dashed')],
+                result_base_path + 'blsm-open-write-latency.pdf', ylimit=300, ymin=0.00005, post=post)
 

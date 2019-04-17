@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from base import *
 from pathlib import PurePath
 
-insert_base_path = base_path + 'insert-new/'
+insert_base_path = base_path + 'insert-ssd-new/'
 
 print(insert_base_path)
 

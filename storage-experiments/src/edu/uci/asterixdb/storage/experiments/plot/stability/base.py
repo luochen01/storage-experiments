@@ -34,7 +34,7 @@ params = {
    'xtick.labelsize': label_size,
    'ytick.labelsize': label_size,
    'font.size': font_size,
-   'lines.linewidth':1.5,
+   'lines.linewidth':1.25,
    'lines.markeredgewidth': 1,
    'lines.markersize':4,
    "legend.handletextpad":0.2,
@@ -42,7 +42,7 @@ params = {
    'text.usetex': False,
    'savefig.bbox':'tight',
    'savefig.pad_inches':0,
-   'figure.figsize':(3.75, 2.5),
+   'figure.figsize':(3.25, 2.5),
    "legend.fancybox":True,
    "legend.shadow":False,
    "legend.framealpha":0,
@@ -62,11 +62,11 @@ time_xlabel = "Elapsed Time (s)"
 write_ylabel = "Write Throughput (kops/s)"
 
 point_ylabel = "Query Throughput (kops/s)"
-short_ylabel = "Query Throughput (ops/s)"
+short_ylabel = "Query Throughput (kops/s)"
 long_ylabel = "Query Throughput (ops/min)"
 
 latency_xlabel = "Percentile (%)"
-latency_ylabel = "Latency (ms)"
+latency_ylabel = "Latency (s)"
 
 component_ylabel = "Num of Disk Components"
 
@@ -76,14 +76,17 @@ write_window = 30
 
 write_xlimit = 7200
 
-latency_dists = np.array([90, 95, 99, 99.9, 99.99, 99.999])
-latency_dist_labels = np.array(['90', '95', '99', '99.9', '99.99', '99.999'])
+latency_dists = np.array([50, 90, 95, 99, 99.9, 99.99])
+latency_dist_labels = np.array(['50', '90', '95', '99', '99.9', '99.99'])
 
 load_window = 2 * 60
 
 component_window = 30
 
 query_window = 30
+
+size_ratios = [2, 4, 6, 8, 10]
+size_ratio_labels = ['2', '4', '6', '8', '10']
 
 
 def get_write_times(df, window=write_window):
@@ -103,9 +106,9 @@ def get_write_rates(df, window=write_window):
 
 def get_latest_file(path, prefix):
     for f in os.listdir(path):
-        if prefix in f and '.csv' not in f:
+        if prefix in f:
             s = f.replace(prefix, "")
-            if s.startswith("-2019"):
+            if ".csv" not in s and s.startswith("-2019"):
                 return path + f
     return None
 
@@ -121,7 +124,7 @@ def open_csv(path, sep='\t', header=1):
     
 class PlotOption(object):
 
-    def __init__(self, x, y, legend='', color='black', linestyle='solid', marker=None, markevery=60, alpha=None, hatch=None, dashes=None):
+    def __init__(self, x, y, legend='', color='black', linestyle='solid', marker=None, markevery=1, alpha=None, hatch=None, dashes=None):
         self.x = x
         self.y = y
         self.linestyle = linestyle
@@ -153,16 +156,16 @@ def parse_latency_dists(latencies, count):
     return percentiles
 
 
-def plot_writes(options, output, ylimit=0, post=None):
-    plot_basic(options, output, time_xlabel, write_ylabel, 1200, write_xlimit + 100, ylimit=ylimit, post=post)
+def plot_writes(options, output, ylimit=0, post=None, xstep=1800):
+    plot_basic(options, output, time_xlabel, write_ylabel, xstep, write_xlimit + 100, ylimit=ylimit, post=post)
 
 
-def plot_queries(options, output, ylabel, ylimit=0, post=None):
-    plot_basic(options, output, time_xlabel, ylabel, 1200, write_xlimit + 100, ylimit=ylimit, post=post)
+def plot_queries(options, output, ylabel=short_ylabel, ylimit=0, post=None, xstep=1800):
+    plot_basic(options, output, time_xlabel, ylabel, xstep, write_xlimit + 100, ylimit=ylimit, post=post)
 
 
-def plot_latencies(options, output, ylimit=0, post=None):
-    plot_basic(options, output, latency_xlabel, latency_ylabel, 1, xlimit=0, ylimit=ylimit, xtick_labels=latency_dist_labels, logy=True, post=post)
+def plot_latencies(options, output, xtick_labels=latency_dist_labels, ylimit=0, ymin=0, post=None, logy=True):
+    plot_basic(options, output, latency_xlabel, latency_ylabel, 1, xlimit=0, ylimit=ylimit, ymin=ymin, xtick_labels=xtick_labels, logy=logy, post=post)
 
 
 def plot_components(options, output, xstep=1200, ylimit=0, post=None):
@@ -173,7 +176,7 @@ def plot_component_gbs(options, output, xstep=1200, ylimit=0, post=None):
     plot_basic(options, output, time_xlabel, component_gb_ylabel, xstep=xstep, xlimit=write_xlimit + 100, ylimit=ylimit, post=post)
 
 
-def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, xtick_labels=[], logy=False, post=None):
+def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, ymin=0, xtick_labels=[], logy=False, post=None):
     plt.figure(figsize=settings.fig_size)
     for option in options:
         if settings.plot_mode == 'plot':
@@ -204,10 +207,13 @@ def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, xtick_lab
         plt.xticks(np.arange(len(xtick_labels)), xtick_labels)
     else:
         plt.xticks(np.arange(0, xlimit, xstep))
+    
     if ylimit > 0:
-        plt.ylim(0, ylimit)
+        plt.ylim(ymin, ylimit)
     if logy:
-        plt.ylim(0.1)
+        if ymin == 0:
+            ymin = 0.0001
+        plt.ylim(ymin)
         plt.yscale('log', basey=10)
 
     if len(options) > 1:
@@ -225,14 +231,16 @@ def parse_latencies(path, pattern):
 
     a_list = []   
     count = 0 
+    failed = 0
     for line in fp:
         if pattern in line:
             parts = line.split(", ")
             try:
-                a_list.append([float(parts[1]) / 1000, float(parts[2])])
+                a_list.append([float(parts[1]) / 1000 / 1000, float(parts[2])])
                 count += float(parts[2])
             except:
-                print("ignore " + line)
+                # no op
+              failed += 1  
     fp.close()
     return (a_list, count)
 
@@ -247,9 +255,7 @@ def parse_components(path):
     component_str = "#components:"
     
     start_time = 0
-    sum_components = 0
-    previous_components = 0
-    previous_time = 0
+    max_component = 0
     for line in fp:
         if "#components:" in line:
             begin = line.index(time_str) + len(time_str)
@@ -258,22 +264,23 @@ def parse_components(path):
             begin = line.index(component_str) + len(component_str)
             component = int(line[begin: ])
             
-            tmp = (min(start_time + component_window, time) - previous_time) * previous_components
-            sum_components += tmp
             if time >= start_time + component_window:
-                while time >= start_time + 2 * component_window:
+                if max_component>0:
+                    components.append(max_component)
                     times.append(start_time)
-                    components.append(components[len(components) - 1])
+                while time>=start_time+component_window:
                     start_time += component_window
-                times.append(start_time)
-                components.append(sum_components / component_window)
-                sum_components = 0
-                start_time += component_window
-                sum_components += (time - start_time) * previous_components
-            previous_time = time
-            previous_components = component
+                max_component = 0
+            
+            if max_component < component:
+                max_component = component    
+            
     fp.close()
-    components[0] = components[1]
+    i = 0
+    while components[i] <= 0:
+        i += 1
+    for j in range(0, i):
+        components[j] = components[i]
     return (times, components)
 
 
@@ -323,7 +330,7 @@ def parse_component_sizes(path):
             tmp = (min(start_time + component_window, time) - previous_time) * previous_components
             sum_components += tmp
             if time >= start_time + component_window:
-                while time >= start_time + 2 * component_window:
+                while time >= start_time + 2 * component_window and len(components) > 0:
                     times.append(start_time)
                     components.append(components[len(components) - 1])
                     start_time += component_window
@@ -335,25 +342,56 @@ def parse_component_sizes(path):
             previous_time = time
             previous_components = component_gb
     fp.close()
-    components[0] = components[1]
+    i = 0
+    while components[i] <= 0:
+        i += 1
+    for j in range(0, i):
+        components[j] = components[i]  
     return (times, components)
 
 
-def get_greedy_scheduler(x, y):
-    return PlotOption(x, y, linestyle='dashed', color='red', legend='greedy scheduler')
+red = 'tomato'
+blue = 'royalblue'
+green = 'limegreen'
 
 
-def get_fair_scheduler(x, y):
-    return PlotOption(x, y, linestyle='solid', color='green', legend='fair scheduler')
 
 
-def get_single_scheduler(x, y):
-    return PlotOption(x, y, legend='single scheduler', color='orange', linestyle='-.')
+def get_greedy_scheduler(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, color=red, legend='greedy scheduler', marker='s', markevery=1, linestyle='dashed')
+    else:
+        return PlotOption(x, y, color=red, legend='greedy scheduler', linestyle='dashed')
 
 
-def get_local_scheduler(x, y):
-    return PlotOption(x, y, linestyle='dashed', color='blue', legend='fair scheduler (local)', dashes=(1, 1))
+def get_fair_scheduler(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, linestyle='solid', color=green, legend='fair scheduler', marker='^', markevery=1)
+    else:
+        return PlotOption(x, y, linestyle='solid', color=green, legend='fair scheduler')
+
+
+def get_single_scheduler(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, legend='single scheduler', color=blue, marker='x', markevery=1, linestyle = '-.')
+    else:
+        return PlotOption(x, y, legend='single scheduler', color=blue, linestyle = '-.')
+
+
+def get_local_scheduler(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, legend='fair scheduler (local)', color=red, marker='s', markevery=1, linestyle = 'dashed')
+    else:
+        return PlotOption(x, y, color=red, legend='fair scheduler (local)', linestyle = 'dashed')
+
+
+def get_global_scheduler(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, linestyle='solid', color=green, legend='fair scheduler (global)', marker='^', markevery=1)
+    else:
+        return PlotOption(x, y, linestyle='solid', color=green, legend='fair scheduler (global)')
 
 
 def get_option(x, y):
     return PlotOption(x, y)
+

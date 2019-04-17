@@ -23,7 +23,7 @@ public class ConcurrentFileWriteTest {
 
     public static void main(String args[]) throws Exception {
         if (args.length < 5) {
-            System.out.println("Usage: pageSize(KB), baseFileSize(MB), path, threads, runs, [forceFrequency (pages)]");
+            System.out.println("Usage: pageSize(KB), baseFileSize(MB), path, threads, runs, [forceFrequency (MB)]");
             return;
         }
 
@@ -34,7 +34,7 @@ public class ConcurrentFileWriteTest {
         int runs = Integer.parseInt(args[4]);
         forceFrequency = 0;
         if (args.length > 5) {
-            forceFrequency = Integer.parseInt(args[5]);
+            forceFrequency = (int) (Integer.parseInt(args[5]) * 1024 * 1024 / pageSize);
         }
 
         System.out.println("PageSize: " + pageSize);
@@ -46,15 +46,12 @@ public class ConcurrentFileWriteTest {
         long begin = System.currentTimeMillis();
         WriterThread[] threads = new WriterThread[numThreads];
         long fileSize = baseFileSize;
-        int run = runs;
+        int run = runs / numThreads;
         beginTime = System.currentTimeMillis();
         for (int i = 0; i < numThreads; i++) {
             System.out.println(String.format("%d runs * %d bytes for %s", run, fileSize, "writer-" + i));
             threads[i] = new WriterThread("writer-" + i, pageSize, fileSize, run);
             threads[i].start();
-
-            run = Math.max(1, run / 2);
-            fileSize = fileSize * 2;
         }
 
         for (int i = 0; i < numThreads; i++) {
@@ -100,30 +97,19 @@ public class ConcurrentFileWriteTest {
                     channel.position(0);
                     ByteBuffer buffer = ByteBuffer.wrap(bytes);
                     long unforcedPages = 0;
-                    long cycleBegin = System.currentTimeMillis();
                     for (long i = 0; i < numPages; i++) {
                         buffer.clear();
                         channel.write(buffer);
                         totalPages.incrementAndGet();
                         unforcedPages++;
                         if (forceFrequency != 0 && unforcedPages == forceFrequency) {
-                            long beginForce = System.currentTimeMillis();
                             channel.force(false);
-                            long endForce = System.currentTimeMillis();
-                            LOGGER.error("Force {}/{} pages takes {} ms, write to OS cache takes {} ms", i + 1,
-                                    numPages, (endForce - beginForce), (beginForce - cycleBegin));
                             unforcedPages = 0;
-                            cycleBegin = endForce;
                         }
                     }
                     if (unforcedPages > 0) {
-                        long beginForce = System.currentTimeMillis();
                         channel.force(false);
-                        long endForce = System.currentTimeMillis();
-                        LOGGER.error("Final force {}/{} pages takes {} ms, write to OS cache takes {} ms", numPages, numPages,
-                                (endForce - beginForce), (beginForce - cycleBegin));
                         unforcedPages = 0;
-                        cycleBegin = endForce;
                     }
                     raf.close();
                     long fileEnd = System.currentTimeMillis();
