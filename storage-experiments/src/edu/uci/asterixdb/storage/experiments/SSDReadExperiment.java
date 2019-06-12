@@ -98,7 +98,6 @@ public class SSDReadExperiment implements Runnable {
         try {
 
             long readSize = this.readSize / numThreads;
-
             File[] files = new File(dir).listFiles();
             RandomAccessFile[] rafs = new RandomAccessFile[files.length];
             FileChannel[] channels = new FileChannel[files.length];
@@ -112,7 +111,7 @@ public class SSDReadExperiment implements Runnable {
             for (int i = 0; i < readPages; i++) {
                 int fileId = ThreadLocalRandom.current().nextInt(files.length);
                 int pageId = ThreadLocalRandom.current().nextInt(pagesPerFile);
-                page.reset();
+                page.clear();
                 channels[fileId].read(page, (long) pageId * pageSize);
             }
 
