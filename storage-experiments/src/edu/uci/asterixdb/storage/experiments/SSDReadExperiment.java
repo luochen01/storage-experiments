@@ -27,7 +27,7 @@ public class SSDReadExperiment implements Runnable {
     public int pageSize = 4096;
 
     @Option(name = "-file-size")
-    public long fileSize = 10 * 1024 * 1024 * 1024;
+    public long fileSize = 10l * 1024 * 1024 * 1024;
 
     @Option(name = "-threads")
     public int numThreads = 1;
@@ -36,7 +36,7 @@ public class SSDReadExperiment implements Runnable {
     public boolean write = false;
 
     @Option(name = "-read-size")
-    public long readSize = 20 * 1024 * 1024 * 1024;
+    public long readSize = 20l * 1024 * 1024 * 1024;
 
     public static void main(String[] args) throws Exception {
         SSDReadExperiment experiment = new SSDReadExperiment(args);
