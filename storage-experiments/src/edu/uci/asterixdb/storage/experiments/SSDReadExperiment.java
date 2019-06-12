@@ -40,7 +40,7 @@ public class SSDReadExperiment implements Runnable {
 
     public static void main(String[] args) throws Exception {
         SSDReadExperiment experiment = new SSDReadExperiment(args);
-        experiment.run();
+        experiment.experiment();
     }
 
     public SSDReadExperiment(String[] args) throws CmdLineException {
