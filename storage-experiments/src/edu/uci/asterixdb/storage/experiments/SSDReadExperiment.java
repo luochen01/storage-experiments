@@ -67,7 +67,7 @@ public class SSDReadExperiment implements Runnable {
                 for (int j = 0; j < numPages; j++) {
                     ThreadLocalRandom.current().nextBytes(buffer.array());
                     buffer.position(pageSize);
-                    chanel.write(buffer, pageSize * j);
+                    chanel.write(buffer, (long) pageSize * j);
                 }
                 chanel.force(true);
                 raf.close();
@@ -112,7 +112,7 @@ public class SSDReadExperiment implements Runnable {
                 int fileId = ThreadLocalRandom.current().nextInt(files.length);
                 int pageId = ThreadLocalRandom.current().nextInt(pagesPerFile);
                 page.reset();
-                channels[fileId].read(page, pageId * pageSize);
+                channels[fileId].read(page, (long) pageId * pageSize);
             }
 
             for (int i = 0; i < rafs.length; i++) {
