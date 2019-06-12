@@ -217,9 +217,10 @@ all_options = [
 
 # plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 # plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)
-plot_shared_query(filter_strs, all_options[0], all_options[1], all_options[2], result_base_path + "query-filter-all.pdf", ['Recent + 50% Updates', 'Old + 0% Updates', 'Old + 50% Updates'], framealpha=0.5)
+#plot_shared_query(filter_strs, all_options[0], all_options[1], all_options[2], result_base_path + "query-filter-all.pdf", ['Recent + 50% Updates', 'Old + 0% Updates', 'Old + 50% Updates'], framealpha=0.5)
 
-# plot_query(filter_strs, recent_options[1], result_base_path + "query-filter-recent-50.pdf", 'Update Ratio 50%')
-# plot_query(filter_strs, history_options[0], result_base_path + "query-filter-history-0.pdf", 'Update Ratio 0%', framealpha = 0.8, ylabel = None)
-# plot_query(filter_strs, history_options[1], result_base_path + "query-filter-history-50.pdf", 'Update Ratio 50%', framealpha = 0.8, ylabel = None)
+plot_query(filter_strs, recent_options[0], result_base_path + "query-filter-recent-0.pdf", 'Update Ratio 0%')
+plot_query(filter_strs, recent_options[1], result_base_path + "query-filter-recent-50.pdf", 'Update Ratio 50%')
+plot_query(filter_strs, history_options[0], result_base_path + "query-filter-history-0.pdf", 'Update Ratio 0%', framealpha = 0.8)
+plot_query(filter_strs, history_options[1], result_base_path + "query-filter-history-50.pdf", 'Update Ratio 50%', framealpha = 0.8)
 

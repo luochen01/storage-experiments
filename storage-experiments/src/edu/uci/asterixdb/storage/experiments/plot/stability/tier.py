@@ -29,13 +29,11 @@ def process(dist):
     local_time = get_write_times(df, load_window)
     local_data = get_write_rates(df, load_window)
     
-    settings.fig_size = (3, 2.5)
-    
     plot_writes([
         get_single_scheduler(single_time, single_data),
         get_fair_scheduler(fair_time, fair_data),
         # get_local_scheduler(local_time, local_data),
-        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-' + dist + '.pdf', ylimit=ylimit)
+        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-' + dist + '.pdf', ylimit=ylimit, title = '(a) Tiering Merge Policy')
     
     settings.fig_size = None
     
@@ -61,7 +59,7 @@ def process(dist):
     plot_writes([
         get_single_scheduler(single_time, single_data),
         get_fair_scheduler(fair_time, fair_data),
-        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-open-' + dist + '.pdf', ylimit=ylimit, post=post)    
+        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-open-' + dist + '.pdf', ylimit=ylimit, post=post, title = throughput_title)    
     
     (fair_latencies, write_count) = parse_latencies(tier_base_path + "write-tier-open-95.log", "[Intended-UPDATE]")
     fair_latencies = parse_latency_dists(fair_latencies, write_count)
@@ -84,17 +82,17 @@ def process(dist):
                     # get_local_scheduler(np.arange(len(local_latencies)), local_latencies),
                     get_greedy_scheduler(np.arange(len(greedy_latencies)), greedy_latencies, True)],
                     result_base_path + 'write-tier-write-latency-' + dist + '.pdf', ylimit=5000, ymin=0.00005,
-                    post=post)
+                    post=post, title = latency_title)
     
     def post_latency():
         plt.legend(loc=2, ncol=1, bbox_to_anchor=None)
     
-    settings.fig_size = (3, 2.5)
+    settings.fig_size = (2.75, 2.5)
     
     plot_latencies([
                     get_global_scheduler(np.arange(len(fair_latencies)), fair_latencies, True),
                     get_local_scheduler(np.arange(len(local_latencies)), local_latencies, True)],
-                    result_base_path + 'write-tier-write-latency-local-' + dist + '.pdf', ylimit=0.4,
+                    result_base_path + 'write-tier-write-latency-local-' + dist + '.pdf', ylimit=0.3,
                     post=post_latency, logy=False)
     
     (fair_times, fair_components) = parse_components(tier_base_path + "write-tier-open-95.log")
@@ -111,7 +109,7 @@ def process(dist):
                     get_fair_scheduler(fair_times, fair_components),
                     get_greedy_scheduler(greedy_times, greedy_components)],
                     result_base_path + 'write-tier-components-' + dist + '.pdf', ylimit=57,
-                    post=post, xstep=1800)
+                    post=post, xstep=1800, title = component_title)
 
     (fair_times, fair_gbs) = parse_component_sizes(tier_base_path + "write-tier-open-95.log")
     (greedy_times, greedy_gbs) = parse_component_sizes(tier_base_path + "write-tier-open-95-greedy.log")

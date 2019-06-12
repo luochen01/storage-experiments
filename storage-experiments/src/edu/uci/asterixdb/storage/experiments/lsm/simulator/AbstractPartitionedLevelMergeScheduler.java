@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOperationScheduler {
     private static final Logger LOGGER = LogManager.getLogger(AbstractPartitionedLevelMergeScheduler.class);
-    public static boolean DEBUG = true;
+    public static boolean DEBUG = false;
 
     protected static final double MIN_RANGE = 0;
 
@@ -33,12 +33,16 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
 
     protected final int sizeRatioLevel0;
 
+    protected final double[] lastMergeKeys;
+
     protected final int toleratedComponentsLevel0;
 
     // for now, we assume each disk component has fixed-size
     protected final double diskComponentCapacity;
 
     protected static final int EXTRA_COMPONENTS = 2;
+
+    protected int globalLSN = 0;
 
     public AbstractPartitionedLevelMergeScheduler(int toleratedComponentsPerLevel, int numLevels,
             RandomVariable memoryComponentCapacity, int totalMemoryComponents, int sizeRatio, ISpeedProvider flushSpeed,
@@ -54,54 +58,41 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
         this.diskComponentCapacity = diskComponentCapacity;
         this.sizeRatioLevel0 = sizeRatioLevel0;
         this.toleratedComponentsLevel0 = toleratedComponentsLevel0;
+        this.lastMergeKeys = new double[10];
     }
 
-    protected boolean selectMergeComponents(MergeOperation mergeOp, Component[] components, int numComponents,
-            MergeUnit nextUnit, boolean ignoreMergingComponents) {
+    protected boolean selectMergeComponents(int level, MergeOperation mergeOp, Component[] components,
+            int numComponents, MergeUnit nextUnit) {
         // TODO: we should definitely optimize it
-        int selectedNumComponentsInNextLevel = Integer.MAX_VALUE;
-        int selectedBeginIndexCurrentLevel = 0;
-        int selectedBeginIndexNextLevel = 0;
-        for (int i = 0; i < numComponents; i++) {
-            if (components[i].isMerging) {
-                continue;
-            }
-            int beginIndex = getStartComponentIndex(nextUnit.components, nextUnit.numComponents, components[i]);
-            int endIndex = beginIndex;
-            boolean isMerging = false;
-            for (; endIndex < nextUnit.numComponents; endIndex++) {
-                assert components[i] != nextUnit.components[endIndex];
-                if (DoubleUtil.lessThanOrEqualTo(components[i].max, nextUnit.components[endIndex].min)) {
-                    break;
-                }
-                if (nextUnit.components[endIndex].isMerging) {
-                    isMerging = true;
-                    break;
-                }
-            }
-            if (isMerging && ignoreMergingComponents) {
-                continue;
-            }
-            int numOverlappingComponents = endIndex - beginIndex;
-            assert numOverlappingComponents >= 0;
-            if (numOverlappingComponents < selectedNumComponentsInNextLevel) {
-                selectedNumComponentsInNextLevel = numOverlappingComponents;
-                selectedBeginIndexCurrentLevel = i;
-                selectedBeginIndexNextLevel = beginIndex;
-            }
-        }
-        if (selectedNumComponentsInNextLevel == Integer.MAX_VALUE) {
+        int componentIndex = getNextComponentIndex(components, numComponents, lastMergeKeys[level]);
+        if (components[componentIndex].isMerging) {
             return false;
-        } else {
-            mergeOp.componentsInCurrentLevel[0] = components[selectedBeginIndexCurrentLevel];
-            for (int j = selectedBeginIndexNextLevel; j < selectedBeginIndexNextLevel
-                    + selectedNumComponentsInNextLevel; j++) {
-                assert j - selectedBeginIndexNextLevel < mergeOp.componentsInNextLevel.length;
-                mergeOp.componentsInNextLevel[j - selectedBeginIndexNextLevel] = nextUnit.components[j];
-            }
-            mergeOp.numComponentsInNextLevel = selectedNumComponentsInNextLevel;
-            return true;
         }
+
+        mergeOp.componentsInCurrentLevel[0] = components[componentIndex];
+
+        int nextIndex =
+                getStartComponentIndex(nextUnit.components, nextUnit.numComponents, components[componentIndex].min);
+        if (nextIndex < 0 || nextIndex >= nextUnit.numComponents) {
+            mergeOp.numComponentsInNextLevel = 0;
+        } else {
+            int num = 0;
+            for (int j = nextIndex; j < nextUnit.numComponents; j++) {
+                if (nextUnit.components[j].min <= components[componentIndex].max) {
+                    if (nextUnit.components[j].isMerging) {
+                        return false;
+                    }
+                    mergeOp.componentsInNextLevel[j - nextIndex] = nextUnit.components[j];
+                    num++;
+                } else {
+                    break;
+                }
+            }
+            mergeOp.numComponentsInNextLevel = num;
+            lastMergeKeys[level] = components[componentIndex].max;
+        }
+        lastMergeKeys[level] = components[componentIndex].max;
+        return true;
     }
 
     protected int buildMergeOutputComponentsForLevel0(Component[] components, int numComponents, double totalCapacity,
@@ -114,17 +105,18 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
         double subRange = diskComponentCapacity / totalCapacity * components[0].getRange();
         assert subRange <= components[0].getRange() || numOutputComponents == 1;
         double currentSubRange = components[0].min;
+        int minLSN = getMinLSN(components, numComponents);
         for (int i = 0; i < numOutputComponents - 1; i++) {
             Component outputComponent = Component.get();
             double nextSubRange = currentSubRange + subRange;
-            outputComponent.reset(currentSubRange, nextSubRange, diskComponentCapacity);
+            outputComponent.reset(currentSubRange, nextSubRange, diskComponentCapacity, minLSN);
             currentSubRange = nextSubRange;
             outputComponents[i] = outputComponent;
         }
 
         Component lastComponent = Component.get();
         lastComponent.reset(currentSubRange, components[numComponents - 1].max,
-                totalCapacity - diskComponentCapacity * (numOutputComponents - 1));
+                totalCapacity - diskComponentCapacity * (numOutputComponents - 1), minLSN);
         outputComponents[numOutputComponents - 1] = lastComponent;
         return numOutputComponents;
     }
@@ -141,6 +133,7 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
         double lastLoopMin = lastCompomentMin;
         double records = 0;
         int numOutputComponents = 0;
+        int lastMinLSN = Integer.MAX_VALUE;
         while (currentLevelIndex < numComponentsInCurrentLevel && nextLevelIndex < numComponentsInNextLevel) {
             Component currentLevelComponent = componentsInCurrentLevel[currentLevelIndex];
             Component nextLevelComponent = componentsInNextLevel[nextLevelIndex];
@@ -157,7 +150,9 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
             if (DoubleUtil.lessThanOrEqualTo(tmpMax, Math.min(currentLevelComponent.max, nextLevelComponent.max))) {
                 // the component has been produced
                 Component newComponent = Component.get();
-                newComponent.reset(lastCompomentMin, tmpMax, diskComponentCapacity);
+                newComponent.reset(lastCompomentMin, tmpMax, diskComponentCapacity,
+                        Math.min(lastMinLSN, Math.min(currentLevelComponent.LSN, nextLevelComponent.LSN)));
+                lastMinLSN = Integer.MAX_VALUE;
                 lastCompomentMin = tmpMax;
                 lastLoopMin = lastCompomentMin;
                 records = 0;
@@ -171,8 +166,10 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
                 assert records < diskComponentCapacity;
                 lastLoopMin = actualMax;
                 if (tmpMax > currentLevelComponent.max) {
+                    lastMinLSN = Math.min(lastMinLSN, currentLevelComponent.LSN);
                     currentLevelIndex++;
                 } else {
+                    lastMinLSN = Math.min(lastMinLSN, nextLevelComponent.LSN);
                     nextLevelIndex++;
                 }
             }
@@ -188,10 +185,13 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
                 records = records + consumedRecords;
                 assert records < diskComponentCapacity;
                 lastLoopMin = actualMax;
+                lastMinLSN = Math.min(lastMinLSN, component.LSN);
                 currentLevelIndex++;
             } else {
                 Component newComponent = Component.get();
-                newComponent.reset(lastCompomentMin, tmpMax, diskComponentCapacity);
+                newComponent.reset(lastCompomentMin, tmpMax, diskComponentCapacity,
+                        Math.min(lastMinLSN, component.LSN));
+                lastMinLSN = Integer.MAX_VALUE;
                 outputComponents[numOutputComponents++] = newComponent;
                 lastCompomentMin = tmpMax;
                 lastLoopMin = lastCompomentMin;
@@ -210,9 +210,12 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
                 assert records < diskComponentCapacity;
                 lastLoopMin = actualMax;
                 nextLevelIndex++;
+                lastMinLSN = Math.min(lastMinLSN, component.LSN);
             } else {
                 Component newComponent = Component.get();
-                newComponent.reset(lastCompomentMin, tmpMax, diskComponentCapacity);
+                newComponent.reset(lastCompomentMin, tmpMax, diskComponentCapacity,
+                        Math.min(lastMinLSN, component.LSN));
+                lastMinLSN = Integer.MAX_VALUE;
                 outputComponents[numOutputComponents++] = newComponent;
                 lastCompomentMin = tmpMax;
                 lastLoopMin = lastCompomentMin;
@@ -222,24 +225,39 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
 
         if (DoubleUtil.greaterThan(records, 0)) {
             Component newComponent = Component.get();
-            newComponent.reset(lastCompomentMin, Math.max(componentsInCurrentLevel[numComponentsInCurrentLevel - 1].max,
-                    componentsInNextLevel[numComponentsInNextLevel - 1].max), records);
+            newComponent.reset(lastCompomentMin,
+                    Math.max(componentsInCurrentLevel[numComponentsInCurrentLevel - 1].max,
+                            componentsInNextLevel[numComponentsInNextLevel - 1].max),
+                    records, Math.min(componentsInCurrentLevel[numComponentsInCurrentLevel - 1].LSN,
+                            componentsInNextLevel[numComponentsInNextLevel - 1].LSN));
             outputComponents[numOutputComponents++] = newComponent;
         }
         assert numOutputComponents > 0;
         return numOutputComponents;
     }
 
-    protected int getStartComponentIndex(Component[] components, int numComponents, Component key) {
-        int startIndex = binarySearch(components, numComponents, key.min);
+    protected int getStartComponentIndex(Component[] components, int numComponents, double key) {
+        int startIndex = binarySearch(components, numComponents, key);
         if (startIndex < 0) {
             startIndex = -startIndex - 1;
         }
         if (startIndex < numComponents && components[startIndex] != null
-                && DoubleUtil.equals(components[startIndex].max, key.min)) {
+                && DoubleUtil.equals(components[startIndex].max, key)) {
             startIndex++;
         }
         return startIndex;
+    }
+
+    protected int getNextComponentIndex(Component[] components, int numComponents, double key) {
+        int index = getStartComponentIndex(components, numComponents, key);
+        if (index < numComponents && components[index].max > key && components[index].min < key) {
+            index++;
+        }
+        if (index >= numComponents) {
+            return 0;
+        } else {
+            return index;
+        }
     }
 
     protected int binarySearch(Component[] components, int numComponents, double key) {
@@ -264,7 +282,7 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
     }
 
     protected int addComponent(Component[] components, int numComponents, Component newComponent) {
-        int startIndex = getStartComponentIndex(components, numComponents, newComponent);
+        int startIndex = getStartComponentIndex(components, numComponents, newComponent.min);
         for (int i = numComponents - 1; i >= startIndex; i--) {
             components[i + 1] = components[i];
         }
@@ -277,7 +295,7 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
     }
 
     protected int removeComponent(Component[] components, int numComponents, Component component) {
-        int index = getStartComponentIndex(components, numComponents, component);
+        int index = getStartComponentIndex(components, numComponents, component.min);
         assert components[index] == component;
         components[index].unpin();
         for (int i = index; i < numComponents - 1; i++) {
@@ -289,7 +307,7 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
 
     protected void replaceComponents(MergeUnit unit, Component[] sourceComponents, int numSourceComponents,
             Component[] newComponents, int numNewComponents) {
-        int sourceComponentIndex = getStartComponentIndex(unit.components, unit.numComponents, sourceComponents[0]);
+        int sourceComponentIndex = getStartComponentIndex(unit.components, unit.numComponents, sourceComponents[0].min);
         assert unit.components[sourceComponentIndex] == sourceComponents[0];
         if (numSourceComponents == numNewComponents) {
             // easy case
@@ -349,10 +367,18 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
     protected FlushOperation initializeFlushOperation(double totalCapacity) {
         flushOperation.reset(totalCapacity, pageEstimator.estiamtePages(totalCapacity));
         Component outputComponent = Component.get();
-        outputComponent.reset(MIN_RANGE, MAX_RANGE, totalCapacity);
+        outputComponent.reset(MIN_RANGE, MAX_RANGE, totalCapacity, ++globalLSN);
         flushOperation.outputComponents[0] = outputComponent;
         flushOperation.numOutputComponents = 1;
         return flushOperation;
+    }
+
+    protected int getMinLSN(Component[] components, int numComponents) {
+        int minLSN = Integer.MAX_VALUE;
+        for (int i = 0; i < numComponents; i++) {
+            minLSN = Math.min(minLSN, components[i].LSN);
+        }
+        return minLSN;
     }
 
     public String toString(Component[] components, int numComponents) {
@@ -361,12 +387,12 @@ public abstract class AbstractPartitionedLevelMergeScheduler extends AbstractOpe
         }
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < numComponents - 1; i++) {
-            sb.append(
-                    "[" + (int) components[i].min + "," + (int) components[i].max + "]:" + (int) components[i].records);
+            sb.append("[" + (int) components[i].min + "," + (int) components[i].max + "]:" + (int) components[i].records
+                    + ":" + (int) components[i].LSN);
             sb.append(", ");
         }
         sb.append("[" + (int) components[numComponents - 1].min + "," + (int) components[numComponents - 1].max + "]:"
-                + (int) components[numComponents - 1].records);
+                + (int) components[numComponents - 1].records + ":" + (int) components[numComponents - 1].LSN);
         return sb.toString();
     }
 

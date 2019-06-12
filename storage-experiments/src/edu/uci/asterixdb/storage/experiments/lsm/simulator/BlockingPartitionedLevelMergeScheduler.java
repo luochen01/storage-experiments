@@ -24,19 +24,16 @@ import org.apache.logging.log4j.Logger;
 public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedLevelMergeScheduler {
     private static final Logger LOGGER = LogManager.getLogger(BlockingPartitionedLevelMergeScheduler.class);
 
-    private final double level1Capacity;
-
     public BlockingPartitionedLevelMergeScheduler(int toleratedComponentsPerLevel, int numLevels,
             RandomVariable memoryComponentCapacity, int totalMemoryComponents, int sizeRatio, ISpeedProvider flushSpeed,
             ISpeedProvider[] mergeSpeeds, ILSMFinalizingPagesEstimator pageEstimator,
             double subOperationProcessingRecords, double subOperationPages, double baseLevelCapacity,
             RandomVariable[][] mergeComponentRatios, int sizeRatioLevel0, int toleratedComponentsLevel0,
-            double diskComponentCapacity, double level1Capacity) {
+            double diskComponentCapacity) {
         super(toleratedComponentsPerLevel, numLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio,
                 flushSpeed, mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
                 baseLevelCapacity, mergeComponentRatios, sizeRatioLevel0, toleratedComponentsLevel0,
                 diskComponentCapacity);
-        this.level1Capacity = level1Capacity;
     }
 
     @Override
@@ -44,7 +41,7 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
         if (level == 0) {
             return new MergeUnit(0, sizeRatioLevel0 + toleratedComponentsLevel0, 0, 0 /*base capacity not used*/);
         } else if (level == 1) {
-            int maxNumComponentsLevel1 = (int) Math.ceil(level1Capacity / diskComponentCapacity);
+            int maxNumComponentsLevel1 = (int) Math.ceil(baseLevelCapacity / diskComponentCapacity);
             if (DEBUG) {
                 LOGGER.error("Level {} has maximum number of components {}", level, maxNumComponentsLevel1);
             }
@@ -74,8 +71,8 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
             op.numComponentsInNextLevel = 0;
             return op;
         } else {
-            MergeOperation op = new MergeOperation(level, 0, subOperation, this, speedProvider, 1, sizeRatio * 2,
-                    sizeRatio * 2 + 1);
+            MergeOperation op = new MergeOperation(level, 0, subOperation, this, speedProvider, 1, sizeRatio * 3,
+                    sizeRatio * 3 + 1);
             op.numComponentsInCurrentLevel = 1;
             op.numComponentsInNextLevel = 0;
             return op;
@@ -84,9 +81,10 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
 
     @Override
     public boolean isMergeable(MergeUnit mergeUnit) {
-        if (mergeUnit.operation != null) {
+        if (mergeUnit.operation != null || runningMerges > 0) {
             return false;
         }
+
         if (mergeUnit.level == 0) {
             // for level 0
             if (mergeUnit.numComponents >= sizeRatioLevel0) {
@@ -118,10 +116,11 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
                 totalCapacity += mergeUnit.components[i].records;
                 mergeOp.componentsInCurrentLevel[i] = mergeUnit.components[i];
             }
-            sumComponent.reset(MIN_RANGE, MAX_RANGE, totalCapacity);
+            int minLSN = getMinLSN(mergeUnit.components, mergeUnit.numComponents);
+            sumComponent.reset(MIN_RANGE, MAX_RANGE, totalCapacity, minLSN);
             mergeOp.numComponentsInCurrentLevel = sizeRatioLevel0;
             Component[] sumComponents = new Component[] { sumComponent };
-            if (!selectMergeComponents(mergeOp, sumComponents, 1, mergeUnits[1], true)) {
+            if (!selectMergeComponents(mergeUnit.level, mergeOp, sumComponents, 1, mergeUnits[1])) {
                 // Cannot schedule the merge for level 0, block
                 sumComponent.unpin();
                 mergeUnits[1].setBlockedUnit(mergeUnit);
@@ -149,9 +148,8 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
             }
             sumComponent.unpin();
             if (DEBUG) {
-                LOGGER.error("{}: Schedule merge level 0 components {} into {}. operations {}", time,
-                        toString(mergeOp.componentsInCurrentLevel, mergeOp.numComponentsInCurrentLevel),
-                        toString(mergeOp.outputComponents, mergeOp.numOutputComponents), numRunningOperations + 1);
+                LOGGER.error("{}: Schedule merge level 0 components {}.", time,
+                        toString(mergeOp.componentsInCurrentLevel, mergeOp.numComponentsInCurrentLevel));
             }
             return mergeOp;
         }
@@ -159,7 +157,8 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
             if (mergeUnit.level + 1 < numLevels) {
                 MergeUnit nextUnit = mergeUnits[mergeUnit.level + 1];
                 // select the component
-                if (!selectMergeComponents(mergeOp, mergeUnit.components, mergeUnit.numComponents, nextUnit, true)) {
+                if (!selectMergeComponents(mergeUnit.level, mergeOp, mergeUnit.components, mergeUnit.numComponents,
+                        nextUnit)) {
                     if (DEBUG) {
                         LOGGER.error("{}: Cannot schedule merge for components {} in level {}", time,
                                 toString(mergeUnit.components, mergeUnit.numComponents), mergeUnit.level);
@@ -217,16 +216,17 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
             } else {
                 // there is no next level, we simply select some components to drop (a round round fashion)
                 while (mergeUnit.numComponents >= mergeUnit.maxNumComponents) {
-                    if (!mergeUnit.components[mergeUnit.mergeIndex].isMerging) {
-                        if (DEBUG) {
-                            LOGGER.error("{}: Remove component {} in level {}, number of components {}", time,
-                                    mergeUnit.components[mergeUnit.mergeIndex], mergeUnit.level,
-                                    mergeUnit.numComponents);
-                        }
-                        removeComponent(mergeUnit, mergeUnit.components[mergeUnit.mergeIndex]);
+                    int index = getNextComponentIndex(mergeUnit.components, mergeUnit.numComponents,
+                            lastMergeKeys[mergeUnit.level]);
+                    if (!mergeUnit.components[index].isMerging) {
+                        LOGGER.error("{}: Remove component {} in level {} with min LSN {}", time,
+                                mergeUnit.components[index], mergeUnit.level, mergeUnit.components[index].LSN);
+                        lastMergeKeys[mergeUnit.level] = mergeUnit.components[index].max;
+                        removeComponent(mergeUnit, mergeUnit.components[index]);
                         assert sanityCheck(mergeUnit.components, mergeUnit.numComponents);
+                    } else {
+                        break;
                     }
-                    mergeUnit.mergeIndex = (mergeUnit.mergeIndex + 1) % mergeUnit.numComponents;
                 }
                 notifyBlockedUnit(mergeUnit);
                 return null;
@@ -265,11 +265,10 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
             finalizeFlushOperation(flushUnit);
         }
 
-        if (isMergeable(nextUnit)) {
-            scheduleMergeOperation(nextUnit);
-        }
-        if (isMergeable(mergeUnit)) {
-            scheduleMergeOperation(mergeUnit);
+        for (int i = 0; i < numLevels; i++) {
+            if (isMergeable(mergeUnits[i])) {
+                scheduleMergeOperation(mergeUnits[i]);
+            }
         }
     }
 
@@ -284,21 +283,26 @@ public class BlockingPartitionedLevelMergeScheduler extends AbstractPartitionedL
         mergeUnit.operation = null;
 
         notifyBlockedUnit(mergeUnit);
-        if (isMergeable(nextUnit)) {
-            scheduleMergeOperation(nextUnit);
-        }
-        // we should schedule more merges
-        if (isMergeable(mergeUnit)) {
-            scheduleMergeOperation(mergeUnit);
+        for (int i = numLevels - 1; i >= 0; i--) {
+            if (isMergeable(mergeUnits[i])) {
+                scheduleMergeOperation(mergeUnits[i]);
+            }
         }
     }
 
     protected void completeMergeOperation(MergeUnit mergeUnit) {
+        super.completeMergeOperation(mergeUnit);
         operationCompleted();
         mergeUnit.operation.setCompleted();
         if (DEBUG) {
-            LOGGER.error("{}: Complete merge in level {} with {} components. operations {}", time, mergeUnit.level,
-                    mergeUnit.numComponents, numRunningOperations);
+            MergeOperation mergeOp = (MergeOperation) mergeUnit.operation;
+            LOGGER.error(
+                    "{}: Complete merge in level {} with input components: {} and {} with {} output components: {}",
+                    time, mergeUnit.level,
+                    toString(mergeOp.componentsInCurrentLevel, mergeOp.numComponentsInCurrentLevel),
+                    toString(mergeOp.componentsInNextLevel, mergeOp.numComponentsInNextLevel),
+                    mergeUnit.operation.numOutputComponents,
+                    toString(mergeUnit.operation.outputComponents, mergeUnit.operation.numOutputComponents));
         }
         if (mergeUnit.level == 0) {
             finalizeMergeOperationInLevel0(mergeUnit);

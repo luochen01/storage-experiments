@@ -39,10 +39,6 @@ public class FlowControlSpeedSolver {
 
     public enum PartitionPolicy {
         Blocking,
-        Dual,
-        DualSelect,
-        NonBlocking,
-        Hybrid,
     }
 
     private static final Logger LOGGER = LogManager.getLogger(FlowControlSpeedSolver.class);
@@ -88,7 +84,7 @@ public class FlowControlSpeedSolver {
                 memoryComponentCapacities, currentMemoryComponentCapacity, flushedCapacity, flushFinalizedPages,
                 flushSubOperationElapsedTime, usedComponentsCapacities, mergedCapacities, mergeFinalizedPages,
                 mergeSubOperationElapsedTimes, mergeComponentRatios, pageEstimator, type, subOperationProcessingRecords,
-                subOperationPages, baseLevelCapacity, false, 0, 0, 0, null, 0, 0);
+                subOperationPages, baseLevelCapacity, false, 0, 0, 0, null);
     }
 
     public FlowControlSpeedSolver(int toleratedComponentsPerLevel, int numLevels,
@@ -101,7 +97,7 @@ public class FlowControlSpeedSolver {
             RandomVariable[][] mergeComponentRatios, ILSMFinalizingPagesEstimator pageEstimator, MergePolicyType type,
             double subOperationProcessingRecords, double subOperationPages, double baseLevelCapacity,
             boolean partitioned, int sizeRatioLevel0, int toleratedComponentsLevel0, double diskComponentCapacity,
-            PartitionPolicy partitionPolicy, int maxNumStackedComponents, double level1Capacity) {
+            PartitionPolicy partitionPolicy) {
         int numEffectiveLevels = getNumEffectiveLevels(numLevels, mergeProcessingSpeeds, mergeFinalizeSpeeds);
         this.maxIoSpeed = maxIoSpeed;
         ISpeedProvider flushSpeed = new SpeedProvider(flushProcessingSpeeds, flushFinalizeSpeeds);
@@ -119,35 +115,7 @@ public class FlowControlSpeedSolver {
                             numEffectiveLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio, flushSpeed,
                             mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
                             baseLevelCapacity, mergeComponentRatios, sizeRatioLevel0, toleratedComponentsLevel0,
-                            diskComponentCapacity, level1Capacity);
-                    break;
-                case Dual:
-                    this.scheduler = new DualPartitionedLevelMergeScheduler(toleratedComponentsPerLevel,
-                            numEffectiveLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio, flushSpeed,
-                            mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
-                            baseLevelCapacity, mergeComponentRatios, sizeRatioLevel0, toleratedComponentsLevel0,
-                            diskComponentCapacity, level1Capacity);
-                    break;
-                case DualSelect:
-                    this.scheduler = new DualSelectPartitionedLevelMergeScheduler(toleratedComponentsPerLevel,
-                            numEffectiveLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio, flushSpeed,
-                            mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
-                            baseLevelCapacity, mergeComponentRatios, sizeRatioLevel0, toleratedComponentsLevel0,
-                            diskComponentCapacity, level1Capacity);
-                    break;
-                case NonBlocking:
-                    this.scheduler = new NonBlockingPartitionedLevelMergeScheduler(toleratedComponentsPerLevel,
-                            numEffectiveLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio, flushSpeed,
-                            mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
-                            baseLevelCapacity, mergeComponentRatios, sizeRatioLevel0, toleratedComponentsLevel0,
                             diskComponentCapacity);
-                    break;
-                case Hybrid:
-                    this.scheduler = new HybridPartitionedLevelMergeScheduler(toleratedComponentsPerLevel,
-                            numEffectiveLevels, memoryComponentCapacity, totalMemoryComponents, sizeRatio, flushSpeed,
-                            mergeSpeeds, pageEstimator, subOperationProcessingRecords, subOperationPages,
-                            baseLevelCapacity, mergeComponentRatios, sizeRatioLevel0, toleratedComponentsLevel0,
-                            diskComponentCapacity, maxNumStackedComponents);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown partition policy " + partitionPolicy);

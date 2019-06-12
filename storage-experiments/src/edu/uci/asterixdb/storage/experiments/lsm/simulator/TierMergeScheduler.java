@@ -49,7 +49,7 @@ public class TierMergeScheduler extends AbstractOperationScheduler {
         }
 
         Component outputComponent = Component.get();
-        outputComponent.initialize(total * resultRatio);
+        outputComponent.initialize(total * resultRatio, 0);
         op.outputComponents[0] = outputComponent;
         op.numOutputComponents = 1;
         op.reset(total * resultRatio, pageEstimator.estiamtePages(total * resultRatio));

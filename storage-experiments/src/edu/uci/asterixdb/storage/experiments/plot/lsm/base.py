@@ -8,8 +8,8 @@ import os
 time_index = 'counter'
 total_records_index = 'total_records'
 base_path = '/Users/luochen/Documents/Research/experiments/results/lsm/'
-result_base_path = '/Users/luochen/Documents/Research/papers/lsm-paper/expr/'
-# result_base_path = '/Users/luochen/Documents/Research/experiments/results/figure/'
+#result_base_path = '/Users/luochen/Documents/Research/papers/lsm-paper/expr/'
+result_base_path = '/Users/luochen/MEGA/MEGAsync/UCI/topic defense/'
 
 antimatter_color = 'red'
 antimatter_linestyle = 'solid'
@@ -75,7 +75,7 @@ plt.rcParams.update(params)
 # shared_fig_size = (10, 3)
 # shared_font_size = 12
 ingestion_xlabel = 'Time (Minutes)'
-ingestion_ylabel = 'Total Records (100 Millions)'
+ingestion_ylabel = 'Total Records (Millions)'
 
 
 def set_large_fonts(size):

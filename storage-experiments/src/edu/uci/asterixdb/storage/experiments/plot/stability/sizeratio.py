@@ -23,7 +23,7 @@ def parse_sizeratio_latencies(base_path, size_ratios, scheduler, policy):
     return size_latencies
 
 
-settings.fig_size = (3, 2.5)
+settings.fig_size = (2.75, 2.5)
 
 level_writes = np.array([8233, 6364, 5135, 4739, 3600]) / 0.95 / 1000
 tier_writes = np.array([8250, 13764, 17604, 18815, 20112]) / 0.95 / 1000
@@ -57,9 +57,9 @@ def post():
 plot_basic(
     [
         PlotOption(np.arange(len(size_ratios)), level_fair_latencies, legend="fair + leveling", color=green, marker='^', markevery=1),
-        PlotOption(np.arange(len(size_ratios)), level_greedy_latencies, legend="greedy + leveling", color=red, marker='^', markevery=1, linestyle = 'dashed'),
+        PlotOption(np.arange(len(size_ratios)), level_greedy_latencies, legend="greedy + leveling", color=red, marker='^', markevery=1, linestyle = '--', dashes = dashes),
         PlotOption(np.arange(len(size_ratios)), tier_fair_latencies, legend="fair + tiering", color=green, marker='s', markevery=1),
-        PlotOption(np.arange(len(size_ratios)), tier_greedy_latencies, legend="greedy + tiering", color=red, marker='s', markevery=1, linestyle = 'dashed'),
+        PlotOption(np.arange(len(size_ratios)), tier_greedy_latencies, legend="greedy + tiering", color=red, marker='s', markevery=1, linestyle = '--', dashes = dashes),
     ], result_base_path + 'write-size-ratio-latency.pdf', 'Size Ratio', latency_ylabel, 1, xlimit=0, ylimit=800, ymin=0.001,
        xtick_labels=size_ratio_labels, logy=True, post=post)
 

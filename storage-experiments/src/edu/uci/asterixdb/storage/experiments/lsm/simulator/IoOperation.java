@@ -32,6 +32,7 @@ class Component {
     public boolean isMerging;
     public boolean isFull;
     private int pinCount = 0;
+    public int LSN;
 
     private static int requestedComponents = 0;
     private static int returnedComponents = 0;
@@ -74,28 +75,27 @@ class Component {
         }
     }
 
-    public void reset(double min, double max, double records) {
+    public void reset(double min, double max, double records, int LSN) {
         this.min = min;
         this.max = max;
         this.records = records;
         this.isMerging = false;
         this.isFull = false;
         this.range = max - min;
+        this.LSN = LSN;
         assert this.range > 0;
-        if (records < 0.001) {
-            System.out.println();
-        }
     }
 
-    public void initialize(double records) {
+    public void initialize(double records, int LSN) {
         this.records = records;
         this.isMerging = false;
         this.isFull = false;
+        this.LSN = LSN;
     }
 
     @Override
     public String toString() {
-        return "[" + min + "," + max + "]" + ":" + String.valueOf(records);
+        return "[" + min + "," + max + "]" + ":" + (int) records + ":" + String.valueOf(LSN);
     }
 
     public double getRange() {

@@ -14,16 +14,16 @@ settings.init()
 
 def get_open_scheduler(x, y, marker=False):
     if marker == True:
-        return PlotOption(x, y, color=red, legend='No Write Limit', marker='s', linestyle = 'dashed')
+        return PlotOption(x, y, color=red, legend='No Limit', marker='s', linestyle = '--', dashes = dashes)
     else:
-        return PlotOption(x, y, color=red, legend='No Write Limit', linestyle = 'dashed')
+        return PlotOption(x, y, color=red, legend='No Limit', linestyle = '--', dashes = dashes)
 
 
 def get_closed_scheduler(x, y, marker=False):
     if marker == True:
-        return PlotOption(x, y, color=green, legend='With Write Limit', marker='^')
+        return PlotOption(x, y, color=green, legend='Limit', marker='^')
     else:
-        return PlotOption(x, y, color=green, legend='With Write Limit')
+        return PlotOption(x, y, color=green, legend='Limit')
 
 
 def process(dist):
@@ -38,7 +38,7 @@ def process(dist):
     closed_time = get_write_times(df, write_window)
     closed_data = get_write_rates(df, write_window)
     
-    settings.fig_size = (3, 2.5)
+    settings.fig_size = (2.75, 2.5)
     
     def post_write():
         plt.legend(loc=2, ncol=1, bbox_to_anchor=None, framealpha=0)
@@ -48,7 +48,7 @@ def process(dist):
     plot_writes([
         get_closed_scheduler(closed_time, closed_data),
         get_open_scheduler(open_time, open_data),
-        ], result_base_path + 'write-level-open-bust-' + dist + '.pdf', post=post_write, xstep=1800, ylimit=20)
+        ], result_base_path + 'write-level-open-bust-' + dist + '.pdf', post=post_write, xstep=1800, ylimit=15)
     
     (open_latencies, write_count) = parse_latencies(level_base_path + "write-level-open-95-burst.log", "[Intended-UPDATE]")
     open_latencies = parse_latency_dists(open_latencies, write_count)
@@ -57,7 +57,7 @@ def process(dist):
     closed_latencies = parse_latency_dists(closed_latencies, write_count)
     
     def post():
-        plt.legend(loc=4, ncol=1, bbox_to_anchor=(1, -0.05))
+        plt.legend(loc=4, ncol=1)
         # plt.legend(loc=4, ncol=1, bbox_to_anchor=None)
     
     plot_latencies([

@@ -12,6 +12,9 @@ misc_base_path = base_path + 'query-misc/'
 
 time_index = 'time'
 
+result_base_path = '/Users/luochen/MEGA/MEGAsync/UCI/topic defense/'
+
+
 
 class QueryResult(object):
 
@@ -58,7 +61,7 @@ def parse_experiment(prefix, pattern, skips, dir=query_base_path):
 
 def plot_bar(xvalues, options, output, title, xlabel='Batch Memory Size', ylabel='Query Time (s)', ylimit=0, legendloc=2):
     # use as global
-    plt.figure(figsize=(2.7, 2.5))
+    plt.figure(figsize=(3.25, 2.5))
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
@@ -77,7 +80,7 @@ def plot_bar(xvalues, options, output, title, xlabel='Batch Memory Size', ylabel
     if ylimit > 0:
         plt.ylim(0, ylimit)
     plt.xlabel(xlabel)
-    #plt.ylabel(ylabel)
+    plt.ylabel(ylabel)
     plt.savefig(output)
     print('output figure to ' + output)
 
@@ -100,7 +103,7 @@ def parse_batch_experiment(prefix, pattern, skips):
     return results
 
 
-# batch_0_001_results = parse_batch_experiment(batch_prefix, '0.00001', batch_skips)
+batch_0_001_results = parse_batch_experiment(batch_prefix, '0.00001', batch_skips)
 batch_0_01_results = parse_batch_experiment(batch_prefix, '0.0001', batch_skips)
 batch_0_1_results = parse_batch_experiment(batch_prefix, '0.001', batch_skips)
 batch_1_results = parse_batch_experiment(batch_prefix, '0.01', batch_skips)

@@ -20,22 +20,24 @@ zipf_path = base_path + zipf
 if not os.path.exists(result_base_path):
     os.makedirs(result_base_path)
 
-font_size = 12
+font_size = 10
 font_weight = 100
-label_size = 12
+label_size = 10
+title_size = 11
+legend_size = 11
 params = {
     'font.family': 'Times New Roman',
     'font.weight': font_weight,
     'axes.labelweight': font_weight,
     'figure.titleweight': font_weight,
-    'axes.titlesize': font_size,
+    'axes.titlesize': title_size,
    'axes.labelsize': label_size,
-   'legend.fontsize': font_size,
+   'legend.fontsize': legend_size,
    'xtick.labelsize': label_size,
    'ytick.labelsize': label_size,
    'font.size': font_size,
-   'lines.linewidth':1.25,
-   'lines.markeredgewidth': 1,
+   'lines.linewidth':1.5,
+   'lines.markeredgewidth': 1.5,
    'lines.markersize':4,
    "legend.handletextpad":0.2,
    "legend.handlelength":1.5,
@@ -66,7 +68,7 @@ short_ylabel = "Query Throughput (kops/s)"
 long_ylabel = "Query Throughput (ops/min)"
 
 latency_xlabel = "Percentile (%)"
-latency_ylabel = "Latency (s)"
+latency_ylabel = "Write Latency (s)"
 
 component_ylabel = "Num of Disk Components"
 
@@ -87,6 +89,10 @@ query_window = 30
 
 size_ratios = [2, 4, 6, 8, 10]
 size_ratio_labels = ['2', '4', '6', '8', '10']
+
+throughput_title = '(a) Instantaneous Write Throughput'
+component_title = '(b) Number of Disk Components'
+latency_title = '(c) Percentile Write Latencies'
 
 
 def get_write_times(df, window=write_window):
@@ -156,27 +162,27 @@ def parse_latency_dists(latencies, count):
     return percentiles
 
 
-def plot_writes(options, output, ylimit=0, post=None, xstep=1800):
-    plot_basic(options, output, time_xlabel, write_ylabel, xstep, write_xlimit + 100, ylimit=ylimit, post=post)
+def plot_writes(options, output, ylimit=0, post=None, xstep=1800, title = None, ystep = None):
+    plot_basic(options, output, time_xlabel, write_ylabel, xstep, write_xlimit + 100, ylimit=ylimit, post=post, title = title, ystep = ystep)
 
 
-def plot_queries(options, output, ylabel=short_ylabel, ylimit=0, post=None, xstep=1800):
-    plot_basic(options, output, time_xlabel, ylabel, xstep, write_xlimit + 100, ylimit=ylimit, post=post)
+def plot_queries(options, output, ylabel=short_ylabel, ylimit=0, post=None, xstep=1800, title = None):
+    plot_basic(options, output, time_xlabel, ylabel, xstep, write_xlimit + 100, ylimit=ylimit, post=post, title = title)
 
 
-def plot_latencies(options, output, xtick_labels=latency_dist_labels, ylimit=0, ymin=0, post=None, logy=True):
-    plot_basic(options, output, latency_xlabel, latency_ylabel, 1, xlimit=0, ylimit=ylimit, ymin=ymin, xtick_labels=xtick_labels, logy=logy, post=post)
+def plot_latencies(options, output, xtick_labels=latency_dist_labels, ylimit=0, ymin=0, post=None, logy=True, title = None):
+    plot_basic(options, output, latency_xlabel, latency_ylabel, 1, xlimit=0, ylimit=ylimit, ymin=ymin, xtick_labels=xtick_labels, logy=logy, post=post, title = title)
 
 
-def plot_components(options, output, xstep=1200, ylimit=0, post=None):
-    plot_basic(options, output, time_xlabel, component_ylabel, xstep=xstep, xlimit=write_xlimit + 100, ylimit=ylimit, post=post)
+def plot_components(options, output, xstep=1200, ylimit=0, post=None, title = None):
+    plot_basic(options, output, time_xlabel, component_ylabel, xstep=xstep, xlimit=write_xlimit + 100, ylimit=ylimit, post=post, title = title)
 
 
 def plot_component_gbs(options, output, xstep=1200, ylimit=0, post=None):
     plot_basic(options, output, time_xlabel, component_gb_ylabel, xstep=xstep, xlimit=write_xlimit + 100, ylimit=ylimit, post=post)
 
 
-def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, ymin=0, xtick_labels=[], logy=False, post=None):
+def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, ymin=0, xtick_labels=[], logy=False, post=None, title = None, ystep = None):
     plt.figure(figsize=settings.fig_size)
     for option in options:
         if settings.plot_mode == 'plot':
@@ -192,11 +198,11 @@ def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, ymin=0, x
                       label=option.legend, color=option.color, linestyle=option.linestyle,
                       markerfacecolor=option.color, markeredgecolor=option.color, marker=option.marker, markevery=option.markevery)
         else:
-            plt.scatter(option.x, option.y,
-                        1,
+            plt.scatter(option.x, option.y, 1,
                   label=option.legend, color=option.color, linestyle=option.linestyle)
 
-    # plt.title(title)
+    #if title != None:
+    #    plt.title(title, y=-0.4)
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -209,7 +215,11 @@ def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, ymin=0, x
         plt.xticks(np.arange(0, xlimit, xstep))
     
     if ylimit > 0:
-        plt.ylim(ymin, ylimit)
+        if ystep != None:
+            plt.yticks(np.arange(ymin, ylimit+ystep, ystep))
+            plt.ylim(ymin, ylimit)
+        else:
+            plt.ylim(ymin, ylimit)
     if logy:
         if ymin == 0:
             ymin = 0.0001
@@ -350,39 +360,40 @@ def parse_component_sizes(path):
     return (times, components)
 
 
-red = 'tomato'
-blue = 'royalblue'
-green = 'limegreen'
+red = 'green'
+blue = 'blue'
+green = 'red'
 
+dashes = (1,1)
 
-
+dot_dashes = (3,1)
 
 def get_greedy_scheduler(x, y, marker=False):
     if marker == True:
-        return PlotOption(x, y, color=red, legend='greedy scheduler', marker='s', markevery=1, linestyle='dashed')
+        return PlotOption(x, y, color=red, legend='greedy scheduler', marker='s', markevery=1, linestyle='--', dashes = dashes)
     else:
-        return PlotOption(x, y, color=red, legend='greedy scheduler', linestyle='dashed')
+        return PlotOption(x, y, color=red, legend='greedy scheduler', linestyle='--', dashes = dashes)
 
 
 def get_fair_scheduler(x, y, marker=False):
     if marker == True:
-        return PlotOption(x, y, linestyle='solid', color=green, legend='fair scheduler', marker='^', markevery=1)
+        return PlotOption(x, y, color=green, legend='fair scheduler', marker='^', markevery=1, linestyle = 'solid')
     else:
-        return PlotOption(x, y, linestyle='solid', color=green, legend='fair scheduler')
+        return PlotOption(x, y, color=green, legend='fair scheduler', linestyle='solid')
 
 
 def get_single_scheduler(x, y, marker=False):
     if marker == True:
-        return PlotOption(x, y, legend='single scheduler', color=blue, marker='x', markevery=1, linestyle = '-.')
+        return PlotOption(x, y, legend='single scheduler', color=blue, marker='x', markevery=1, linestyle = '--', dashes = dot_dashes )
     else:
-        return PlotOption(x, y, legend='single scheduler', color=blue, linestyle = '-.')
+        return PlotOption(x, y, legend='single scheduler', color=blue, linestyle = '--', dashes = dot_dashes)
 
 
 def get_local_scheduler(x, y, marker=False):
     if marker == True:
-        return PlotOption(x, y, legend='fair scheduler (local)', color=red, marker='s', markevery=1, linestyle = 'dashed')
+        return PlotOption(x, y, legend='fair scheduler (local)', color=red, marker='s', markevery=1, linestyle='--', dashes = dashes)
     else:
-        return PlotOption(x, y, color=red, legend='fair scheduler (local)', linestyle = 'dashed')
+        return PlotOption(x, y, color=red, legend='fair scheduler (local)', linestyle='--', dashes = dashes)
 
 
 def get_global_scheduler(x, y, marker=False):

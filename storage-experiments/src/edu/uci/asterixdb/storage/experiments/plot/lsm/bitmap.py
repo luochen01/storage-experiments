@@ -13,6 +13,8 @@ filter_base_path = base_path + 'query-filter/'
 time_index = 'time'
 
 
+
+
 def plot_options(xvalues, options, ax, xlabel, xlimit, ylimit):
     x = np.arange(len(xvalues))
     numbars = float(len(options))

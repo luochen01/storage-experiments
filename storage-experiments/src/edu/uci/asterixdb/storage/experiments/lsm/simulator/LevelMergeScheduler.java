@@ -60,10 +60,6 @@ public class LevelMergeScheduler extends AbstractOperationScheduler {
             component.isFull = false;
             nextUnit.addComponent(component);
             mergeUnit.removeComponent(0);
-            //            if (mergeUnit.level > 0) {
-            //                System.out.println(String.format("time: %.0f, push component %.0f in level %d to level %d.", time,
-            //                        component.records, mergeUnit.level, mergeUnit.level + 1));
-            //            }
             return null;
         } else {
             // we should schedule a merge
@@ -75,17 +71,11 @@ public class LevelMergeScheduler extends AbstractOperationScheduler {
             double totalRecords = component.records + nextComponent.records;
             // TODO: improve merge result ratio
             double sizeRatio = getMergeResultRatio(mergeUnit.level, nextComponent.records, component.records);
-            outputComponent.initialize(totalRecords * sizeRatio);
+            outputComponent.initialize(totalRecords * sizeRatio, 0);
             mergeOp.outputComponents[0] = outputComponent;
             mergeOp.numOutputComponents = 1;
 
             mergeOp.reset(totalRecords * sizeRatio, pageEstimator.estiamtePages(totalRecords * sizeRatio));
-
-            //            if (mergeOp.level > 0) {
-            //                System.out.println(String.format("time: %.1f, schedule merge in level %d. component %.0f + %.0f", time,
-            //                        mergeOp.level, mergeOp.componentsInCurrentLevel[0].records,
-            //                        mergeOp.componentsInNextLevel[0].records));
-            //            }
 
             return mergeOp;
         }

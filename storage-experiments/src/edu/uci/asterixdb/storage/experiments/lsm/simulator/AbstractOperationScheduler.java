@@ -57,6 +57,7 @@ public abstract class AbstractOperationScheduler implements IOperationScheduler 
 
     protected final IoOperation[] newIoOperations;
     protected int numNewIoOperations = 0;
+    protected int runningMerges = 0;
 
     protected static final int INGEST_SUB_OP = 0;
     protected static final int FLUSH_SUB_OP = 1;
@@ -297,11 +298,10 @@ public abstract class AbstractOperationScheduler implements IOperationScheduler 
     }
 
     public void addNewIoOperation(IoOperation ioOp) {
-        try {
-            newIoOperations[numNewIoOperations++] = ioOp;
-        } catch (IndexOutOfBoundsException e) {
-            throw e;
+        if (ioOp instanceof MergeOperation) {
+            runningMerges++;
         }
+        newIoOperations[numNewIoOperations++] = ioOp;
     }
 
     public void prepare(double ingestSpeed, double[] memoryComponentCapacities, double currentMemoryComponentCapacity,
@@ -327,7 +327,7 @@ public abstract class AbstractOperationScheduler implements IOperationScheduler 
             Component[] components = new Component[mergeComponents[i].length];
             for (int j = 0; j < components.length; j++) {
                 components[j] = Component.get();
-                components[j].initialize(mergeComponents[i][j]);
+                components[j].initialize(mergeComponents[i][j], 0);
             }
             mergeUnits[i].initialize(components);
         }
@@ -454,7 +454,7 @@ public abstract class AbstractOperationScheduler implements IOperationScheduler 
     protected FlushOperation initializeFlushOperation(double totalCapacity) {
         flushOperation.reset(totalCapacity, pageEstimator.estiamtePages(totalCapacity));
         Component outputComponent = Component.get();
-        outputComponent.initialize(totalCapacity);
+        outputComponent.initialize(totalCapacity, 0);
         flushOperation.outputComponents[0] = outputComponent;
         flushOperation.numOutputComponents = 1;
         return flushOperation;
@@ -467,7 +467,9 @@ public abstract class AbstractOperationScheduler implements IOperationScheduler 
 
     protected abstract boolean isMergeable(MergeUnit unit);
 
-    protected abstract void completeMergeOperation(MergeUnit unit);
+    protected void completeMergeOperation(MergeUnit unit) {
+        runningMerges--;
+    }
 
     public double getSubOperationPages() {
         return subOperationPages;

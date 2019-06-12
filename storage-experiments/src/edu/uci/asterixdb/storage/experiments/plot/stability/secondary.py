@@ -6,11 +6,12 @@ from base import *
 from pathlib import PurePath
 from itertools import count
 
-ylimit = 30
+ylimit = 18
 
 settings.init()
 
 write_window = 10
+
 
 def get_eager(x, y):
     return PlotOption(x, y, color=red, legend='eager')
@@ -33,7 +34,7 @@ def process_query(base_path, selectivity, strategy, ylimit, title):
 
     def post():
         plt.title(title)
-        
+    
     df = open_csv(get_latest_file(base_path, "write-secondary-open-95-read-" + strategy + "-" + selectivity), header=1)
     fair_times = get_write_times(df, query_window)
     fair_queries = get_queries(df, query_window)
@@ -42,9 +43,25 @@ def process_query(base_path, selectivity, strategy, ylimit, title):
     greedy_times = get_write_times(df, query_window)
     greedy_queries = get_queries(df, query_window)
     
+    if selectivity == '1' or selectivity == '10':
+        y_label = "Query Throughput (1000 ops/s)"
+        fair_queries = fair_queries / 1000
+        greedy_queries = greedy_queries / 1000
+        ylimit = ylimit / 1000
+    elif selectivity == '100':
+        y_label = "Query Throughput (100 ops/s)"
+        fair_queries = fair_queries / 100
+        greedy_queries = greedy_queries / 100
+        ylimit = ylimit / 100
+    else:
+        y_label = "Query Throughput (10 ops/s)"
+        fair_queries = fair_queries / 10
+        greedy_queries = greedy_queries / 10
+        ylimit = ylimit / 10    
+        
     plot_queries([get_fair_scheduler(fair_times, fair_queries),
                   get_greedy_scheduler(greedy_times, greedy_queries)],
-                  result_base_path + "write-secondary-read-" + strategy + "-" + selectivity + ".pdf", xstep=1800, ylimit=ylimit, post=post)
+                  result_base_path + "write-secondary-read-" + strategy + "-" + selectivity + ".pdf", xstep=1800, ylimit=ylimit, post=post, ylabel=y_label)
 
 
 def process(dist):
@@ -58,11 +75,11 @@ def process(dist):
     eager_time = get_write_times(df, load_window)
     eager_data = get_write_rates(df, load_window)
     
+    settings.fig_size = (2.75, 2.5)
+    
     plot_writes([
         get_lazy(lazy_time, lazy_data),
         get_eager(eager_time, eager_data)], result_base_path + 'write-secondary-' + dist + '.pdf', ylimit=ylimit)
-    
-    settings.fig_size = (3, 2.5)
     
     df = open_csv(get_latest_file(secondary_base_path, 'write-secondary-open-95-lazy'), header=1)
     fair_time = get_write_times(df, write_window)
@@ -79,7 +96,7 @@ def process(dist):
         get_fair_scheduler(fair_time, fair_data),
         get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-secondary-open-lazy-' + dist + '.pdf',
         xstep=1800,
-         ylimit=ylimit, post=post)    
+         ylimit=ylimit, post=post, ystep=3)
     
     df = open_csv(get_latest_file(secondary_base_path, 'write-secondary-open-95-eager-7220'), header=1)
     fair_time = get_write_times(df, write_window)
@@ -94,7 +111,7 @@ def process(dist):
         get_greedy_scheduler(greedy_time, greedy_data)],
         result_base_path + 'write-secondary-open-eager-' + dist + '.pdf',
         xstep=1800,
-        ylimit=ylimit, post=post)    
+        ylimit=ylimit, post=post, ystep=3)    
     
     def post():
         plt.legend(loc=2, ncol=1, bbox_to_anchor=None)
@@ -109,7 +126,7 @@ def process(dist):
                     get_fair_scheduler(np.arange(len(fair_latencies)), fair_latencies, True),
                     get_greedy_scheduler(np.arange(len(greedy_latencies)), greedy_latencies, True)],
                     result_base_path + 'write-secondary-write-latency-lazy-' + dist + '.pdf',
-                    post=post, logy=False, ylimit=0.6)
+                    post=post, logy=False, ylimit=0.4)
     
     (fair_latencies, write_count) = parse_latencies(secondary_base_path + "write-secondary-open-95-eager-7220.log", "[Intended-UPDATE]")
     fair_latencies = parse_latency_dists(fair_latencies, write_count)
@@ -134,12 +151,12 @@ def process(dist):
        for i in range(0, len(speeds)):
            plt.text(i - 0.3, util_latencies[i] + 5, "{0:.2f}".format(util_latencies[i])) 
     
-    settings.fig_size = (3.72, 2.5)
+    # settings.fig_size = (3.72, 2.25)
+    settings.fig_size = None
+    plot_basic([PlotOption(utils, util_latencies, color='red', marker='s')],
+        result_base_path + 'write-secondary-eager-util-latency.pdf', 'System Utilization', latency_ylabel, 1, xlimit=0, ylimit=150, xtick_labels=utils, logy=False, post=post)
     
-    plot_basic([PlotOption(utils, util_latencies, color='red', marker= 's')],
-        result_base_path + 'write-secondary-eager-util-latency.pdf', 'Utilization', latency_ylabel, 1, xlimit=0, ylimit=180, xtick_labels=utils, logy=False, post=post)
-    
-    settings.fig_size = (3, 2.5)
+    settings.fig_size = (2.75, 2.5)
     secondary_base_path = base_path + dist + "/secondary-query/"
     
     sels = [1, 10, 100, 1000]

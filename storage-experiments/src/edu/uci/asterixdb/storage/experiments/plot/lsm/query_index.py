@@ -175,6 +175,36 @@ batch_results = parse_query_experiment(validation_norepair_1_prefix, "16184", di
 print(matplotlib.font_manager.get_cachedir())
 
 
+def plot_query(xvalues, options, output, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0.5, barwidth=0.18, legendsize=12, logy=False):
+    # use as global
+    plt.figure()
+    x = np.arange(len(xvalues))
+    numbars = float(len(options))
+    i = 0
+    for option in options:
+        line = plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
+        i += 1
+    # plt.set_title(title)
+    plt.xlabel(xlabel)
+    plt.xticks(x, xvalues)
+    plt.xlim([-0.5, len(x) - 0.5])
+    plt.legend(loc=2, ncol=1, framealpha=framealpha, fontsize=legendsize)
+    if ylabel != None:
+        plt.ylabel(ylabel)
+
+    if logy:
+        plt.yscale('log', basey=10)
+        plt.ylim(0.05, 50)
+        plt.yticks([0.1,1,10], ['0.1','1','10'])
+
+
+    # ax1.set_ylim(0, 1000)
+    # ax2.set_ylim(0, 1000)
+
+    plt.savefig(output)
+    print('output figure to ' + output)
+
+
 def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0.18, xfontsize=None):
     x = np.arange(len(xvalues))
     numbars = float(len(options))
@@ -191,6 +221,8 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0
         ax.set_xticklabels(xvalues, fontsize=xfontsize)
     else:
         ax.set_xticklabels(xvalues)
+
+        
     ax.set_xlim([-0.5, len(x) - 0.5])
     ax.set_ylim(0, ylimit)
     return lines
@@ -213,7 +245,6 @@ def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Que
 
     plt.savefig(output)
     print('output figure to ' + output)
-    
 
 color = 'blue'
 alphas = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
@@ -222,17 +253,19 @@ query_options.append(
      [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_norepair_1_direct_results), 'direct (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
                 PlotOption(toTime(validation_norepair_1_pk_results), 'ts (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5),
-                PlotOption(toTime(validation_1_direct_results), 'direct', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
-                PlotOption(toTime(validation_1_pk_results), 'ts', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
+                PlotOption(toTime(validation_1_direct_results), 'direct (repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
+                PlotOption(toTime(validation_1_pk_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
 
 query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_norepair_5_direct_results), 'direct (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
                 PlotOption(toTime(validation_norepair_5_pk_results), 'ts (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5),
-                PlotOption(toTime(validation_5_direct_results), 'direct', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
-                PlotOption(toTime(validation_5_pk_results), 'ts', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
+                PlotOption(toTime(validation_5_direct_results), 'direct (repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
+                PlotOption(toTime(validation_5_pk_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
 
 plot_shared_query(sels, query_options[0], query_options[1], result_base_path + "query-index.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 
+plot_query(sels, query_options[0],result_base_path + "query-index-0.pdf")
+plot_query(sels, query_options[1],result_base_path + "query-index-50.pdf")
 
 def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=50):
     # use as global
@@ -262,38 +295,17 @@ def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, 
 index_only_options = []
 
 index_only_options.append([ PlotOption(toTime(antimatter_1_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color),
-                PlotOption(toTime(validation_1_pk_indexonly_results), 'ts', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color)])
+                PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha = 0.5),
+                PlotOption(toTime(validation_1_pk_indexonly_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha = 0.5)])
 
 index_only_options.append([ PlotOption(toTime(antimatter_5_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color),
-                PlotOption(toTime(validation_5_pk_indexonly_results), 'ts', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color)])
+                PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha = 0.5),
+                PlotOption(toTime(validation_5_pk_indexonly_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha = 0.5)])
 
 plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + "query-index-only.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
+plot_query(sels, index_only_options[0],result_base_path + "query-index-only-0.pdf", logy=True)
+plot_query(sels, index_only_options[1],result_base_path + "query-index-only-50.pdf", logy=True)
 
-
-def plot_query(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0.5, barwidth=0.22, legendsize=14):
-    # use as global
-    plt.figure()
-    x = np.arange(len(xvalues))
-    numbars = float(len(options))
-    i = 0
-    for option in options:
-        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
-        i += 1
-    # plt.set_title(title)
-    plt.xlabel(xlabel)
-    plt.xticks(x, xvalues)
-    plt.xlim([-0.5, len(x) - 0.5])
-    plt.legend(loc=2, ncol=1, framealpha=framealpha, fontsize=legendsize)
-    if ylabel != None:
-        plt.ylabel(ylabel)
-
-    # ax1.set_ylim(0, 1000)
-    # ax2.set_ylim(0, 1000)
-
-    plt.savefig(output)
-    print('output figure to ' + output)
 
 
 ts_cache_options = [PlotOption(toTime(validation_1_pk_results), 'ts validation', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
@@ -305,7 +317,7 @@ sort_options = [PlotOption(toTime(sort_results), 'No Batching', marker=markers[1
                 PlotOption(toTime(batch_results), 'Batching', marker=markers[2], linestyle=validation_linestyle, color=validation_norepair_color, alpha=0.5),
                 PlotOption(diffTime(sort_batch_results, batch_results), 'Sorting', marker=markers[2], linestyle=validation_linestyle, color=validation_color, alpha=0.5)]
 
-plt.rcParams.update({'figure.figsize':(2.5, 2.5)})
+plt.rcParams.update({'figure.figsize':(3.25, 2.5)})
 
 
 def plot_batch_sort(xvalues, nobatch, batch, sort, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0.5, barwidth=0.22, legendsize=14):
@@ -332,5 +344,5 @@ def plot_batch_sort(xvalues, nobatch, batch, sort, output, title, xlabel='Query 
     print('output figure to ' + output)
 
 
-plot_batch_sort(sort_sels, sort_options[0], sort_options[1], sort_options[2], result_base_path + "query-batch-sort.pdf", "", framealpha=0, ylabel=None, barwidth=0.3, legendsize=11)
+plot_batch_sort(sort_sels, sort_options[0], sort_options[1], sort_options[2], result_base_path + "query-batch-sort.pdf", "", framealpha=0, barwidth=0.3, legendsize=11)
 

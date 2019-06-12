@@ -36,14 +36,12 @@ def process(dist):
   
     # write_window = 1
   
-    settings.fig_size = (3, 2.5)
-
     plot_writes([
         get_single_scheduler(single_time, single_data),
         get_fair_scheduler(fair_time, fair_data),
         # get_local_scheduler(local_time, local_data),
         get_greedy_scheduler(greedy_time, greedy_data),
-        ], result_base_path + 'write-level-' + dist + '.pdf', ylimit=25)
+        ], result_base_path + 'write-level-' + dist + '.pdf', ylimit=18, title = '(b) Leveling Merge Policy', ystep = 3)
    
     df = open_csv(get_latest_file(level_base_path, 'write-level-open-95'), header=1)
     fair_time = get_write_times(df, write_window)
@@ -66,14 +64,12 @@ def process(dist):
     
     settings.plot_mode = 'plot'
     
-    settings.fig_size = None
-
     plot_writes([
         get_single_scheduler(single_time, single_data),
         get_fair_scheduler(fair_time, fair_data),
         # get_local_scheduler(local_time, local_data),
         get_greedy_scheduler(greedy_time, greedy_data),
-        ], result_base_path + 'write-level-open-' + dist + '.pdf', post=post_write, ylimit=25)
+        ], result_base_path + 'write-level-open-' + dist + '.pdf', post=post_write, ylimit=20, title = throughput_title)
     
     (fair_latencies, write_count) = parse_latencies(level_base_path + "write-level-open-95.log", "[Intended-UPDATE]")
     fair_latencies = parse_latency_dists(fair_latencies, write_count)
@@ -97,18 +93,17 @@ def process(dist):
                     # get_local_scheduler(np.arange(len(local_latencies)), local_latencies),
                     get_greedy_scheduler(np.arange(len(greedy_latencies)), greedy_latencies, True)],
                     result_base_path + 'write-level-write-latency-' + dist + '.pdf', ylimit=4000, ymin=0.00005,
-                    post=post)
+                    post=post, title = latency_title)
     
     def post_latency():
         plt.legend(loc=1, ncol=1)
     
-    
-    settings.fig_size = (3, 2.5)
+    settings.fig_size = (2.75, 2.5)
     
     plot_latencies([
                     get_global_scheduler(np.arange(len(fair_latencies)), fair_latencies, True),
                     get_local_scheduler(np.arange(len(local_latencies)), local_latencies, True)],
-                    result_base_path + 'write-level-write-latency-local-' + dist + '.pdf', ylimit=300,
+                    result_base_path + 'write-level-write-latency-local-' + dist + '.pdf', ylimit=250,
                     post=post_latency, logy=False)
     
     settings.fig_size = None
@@ -121,15 +116,13 @@ def process(dist):
         plt.legend(loc=4, ncol=1, bbox_to_anchor=None)
         plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.1f}'))
 
-    
-    
 
     plot_components([
                     get_single_scheduler(single_times, single_components),
                     get_fair_scheduler(fair_times, fair_components),
                     get_greedy_scheduler(greedy_times, greedy_components)],
                     result_base_path + 'write-level-components-' + dist + '.pdf', ylimit=8,
-                    post=post_components, xstep=1800)
+                    post=post_components, xstep=1800, title = component_title)
     
     (fair_times, fair_gbs) = parse_component_sizes(level_base_path + "write-level-open-95.log")
     (greedy_times, greedy_gbs) = parse_component_sizes(level_base_path + "write-level-open-95-greedy.log")

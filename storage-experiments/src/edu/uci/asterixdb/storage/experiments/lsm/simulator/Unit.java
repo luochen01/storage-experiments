@@ -131,7 +131,6 @@ class MergeUnit extends Unit {
     public final int maxNumComponents;
     public final int extraNumComponents;
     public int numComponents = 0;
-    public int mergeIndex;
 
     public MergeUnit(int level, int maxNumComponents, int extraNumComponents, double baseCapacity) {
         this.level = level;
@@ -174,7 +173,6 @@ class MergeUnit extends Unit {
             Arrays.fill(components, null);
             this.numComponents = 0;
         }
-        this.mergeIndex = 0;
     }
 
     public void addComponent(Component component) {

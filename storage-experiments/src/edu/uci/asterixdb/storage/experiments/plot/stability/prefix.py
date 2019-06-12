@@ -8,10 +8,12 @@ from itertools import count
 
 ylimit = 40
 
-xstep = 2400
+xstep = 1800
 
 settings.init()
 
+
+settings.fig_size = [2.75, 2.5]
 
 def process(dist):
     prefix_base_path = base_path + dist + "/prefix/"
@@ -20,7 +22,7 @@ def process(dist):
     fair_time = get_write_times(df, load_window)
     fair_data = get_write_rates(df, load_window)
     
-    settings.fig_size = (3, 2.5)
+    #settings.fig_size = (3.75, 2.5)
     
     plot_writes([
         get_fair_scheduler(fair_time, fair_data)], result_base_path + 'write-prefix-' + dist + '.pdf', ylimit=ylimit)
@@ -45,7 +47,7 @@ def process(dist):
     
     def post():
         plt.legend(loc=4, ncol=1, bbox_to_anchor=None)
-        plt.plot([0, 7200], [50, 50], color='black', linestyle='dashed', linewidth='1')
+        #plt.plot([0, 7200], [50, 50], color='black', linestyle='dashed', linewidth='1')
     
     plot_components([
                     get_fair_scheduler(fair_times, fair_components),
@@ -70,7 +72,7 @@ def process(dist):
     plot_writes([
         get_fair_scheduler(fair_time, fair_data),
         get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-prefix-open-slow-' + dist + '.pdf',
-        ylimit=ylimit, xstep=xstep)
+        ylimit=18, xstep=xstep, ystep = 3)
     
     (fair_times, fair_components) = parse_components(prefix_base_path + "write-prefix-open-95-max-10-slow.log")
     (greedy_times, greedy_components) = parse_components(prefix_base_path + "write-prefix-open-95-max-10-greedy-slow.log")

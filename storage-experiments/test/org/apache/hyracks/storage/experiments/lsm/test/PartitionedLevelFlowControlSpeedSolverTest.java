@@ -19,48 +19,29 @@
 
 package org.apache.hyracks.storage.experiments.lsm.test;
 
-import java.util.Arrays;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.uci.asterixdb.storage.experiments.lsm.simulator.BlockingPartitionedLevelMergeScheduler;
 import edu.uci.asterixdb.storage.experiments.lsm.simulator.FlowControlSpeedSolver;
 import edu.uci.asterixdb.storage.experiments.lsm.simulator.FlowControlSpeedSolver.MergePolicyType;
 import edu.uci.asterixdb.storage.experiments.lsm.simulator.FlowControlSpeedSolver.PartitionPolicy;
 import edu.uci.asterixdb.storage.experiments.lsm.simulator.ILSMFinalizingPagesEstimator;
 import edu.uci.asterixdb.storage.experiments.lsm.simulator.LSMFinalizingPagesEstimator;
-import edu.uci.asterixdb.storage.experiments.lsm.simulator.NonBlockingPartitionedLevelMergeScheduler;
 import edu.uci.asterixdb.storage.experiments.lsm.simulator.RandomVariable;
 
 public class PartitionedLevelFlowControlSpeedSolverTest {
     private final int sizeRatio = 10;
 
-    public void testHybrid() {
-        System.out.println("Hybrid partition policy");
-        PartitionPolicy policy = PartitionPolicy.Hybrid;
-        int sizeRatioLevel0 = 4;
-        int toleratedComponentsLevel0 = sizeRatioLevel0 * 2;
-        int baseLevelComponents = 4;
-        int maxNumStackedComponents = 2;
-        FlowControlSpeedSolver solver = createFlowControlSpeedSolver(policy, sizeRatioLevel0, toleratedComponentsLevel0,
-                baseLevelComponents, baseLevelComponents, maxNumStackedComponents);
-        NonBlockingPartitionedLevelMergeScheduler.DEBUG = false;
-        //FlowControlSpeedSolver.MAX_TIME = 50000;
-        //solver.simulate(2500);
-        solver.solveMaxSpeedProbSampling();
-        print();
-    }
-
-    private final int sizeRatioLevel0 = 2;
+    private final int sizeRatioLevel0 = 4;
 
     private final int toleratedComponentsLevel0 = sizeRatioLevel0;
 
-    private final int baseLevelComponents = 2;
+    private final int baseLevelComponents = 4;
 
     @Before
     public void before() {
-        FlowControlSpeedSolver.MAX_TIME = 3600 * 12;
-        NonBlockingPartitionedLevelMergeScheduler.DEBUG = false;
+        FlowControlSpeedSolver.MAX_TIME = 3600 * 24;
     }
 
     private void printHeader() {
@@ -68,87 +49,18 @@ public class PartitionedLevelFlowControlSpeedSolverTest {
                 "L1\tL0 current level costs\tL0 next level costs\tL0 merges\tL1 current level costs\tL1 next level costs\tL1 merges\tthroughput\tnon-blocking speed");
     }
 
-    private void print(int components, int speed, int nonBlockingSpeed) {
-        System.out.println(components + "\t" + getMergeInCurrentLevelCosts(0) + "\t" + getMergeInNextLevelCosts(0)
-                + "\t" + getNumMerges(0) + "\t" + getMergeInCurrentLevelCosts(1) + "\t" + getMergeInNextLevelCosts(1)
-                + "\t" + getNumMerges(1) + "\t" + speed + "\t" + nonBlockingSpeed);
-    }
-
     @Test
     public void testBlocking() {
         System.out.println("Blocking partition policy");
         PartitionPolicy policy = PartitionPolicy.Blocking;
-        printHeader();
-        for (int i = 0; i < 20; i++) {
-            FlowControlSpeedSolver solver = createFlowControlSpeedSolver(policy, sizeRatioLevel0,
-                    toleratedComponentsLevel0, baseLevelComponents, i, 0);
-            int nonBlockingSpeed = solver.solveMaxSpeedProbSampling();
-            int speed = solver.solveMaxBlockingSpeed();
-            print(i, speed, nonBlockingSpeed);
-        }
-    }
-
-    @Test
-    public void testDualSelect() {
-        System.out.println("Dual Select partition policy");
-        printHeader();
-        PartitionPolicy policy = PartitionPolicy.DualSelect;
-
-        //        FlowControlSpeedSolver solver = createFlowControlSpeedSolver(policy, sizeRatioLevel0, toleratedComponentsLevel0,
-        //                baseLevelComponents, 4, 0);
-        //        solver.solveMaxBlockingSpeed();
-        //        print();
-
-        for (int i = 0; i < 20; i++) {
-            FlowControlSpeedSolver solver = createFlowControlSpeedSolver(policy, sizeRatioLevel0,
-                    toleratedComponentsLevel0, baseLevelComponents, i, 0);
-            int nonBlockingSpeed = solver.solveMaxSpeedProbSampling();
-            int speed = solver.solveMaxBlockingSpeed();
-            print(i, speed, nonBlockingSpeed);
-        }
-    }
-
-    private int getNumMerges(int level) {
-        return NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGES[level];
-    }
-
-    private double getMergeInCurrentLevelCosts(int level) {
-        return NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGE_CURRENT_LEVEL_COSTS[level];
-    }
-
-    private double getMergeInNextLevelCosts(int level) {
-        return NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGE_NEXT_LEVEL_COSTS[level];
-    }
-
-    private double getWriteAmplification(int level) {
-        return NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGE_NEXT_LEVEL_COSTS[level]
-                / NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGE_CURRENT_LEVEL_COSTS[level];
-    }
-
-    public void testNonBlocking() {
-        System.out.println("NonBlocking partition policy");
-        PartitionPolicy policy = PartitionPolicy.NonBlocking;
-        int sizeRatioLevel0 = 6;
-        int toleratedComponentsLevel0 = sizeRatioLevel0 * 2;
-        int baseLevelComponents = 4;
-        FlowControlSpeedSolver solver = createFlowControlSpeedSolver(policy, sizeRatioLevel0, toleratedComponentsLevel0,
-                baseLevelComponents, baseLevelComponents, 0);
-        NonBlockingPartitionedLevelMergeScheduler.DEBUG = false;
-        //FlowControlSpeedSolver.MAX_TIME = 50000;
-        //solver.simulate(2500);
-        solver.solveMaxSpeedProbSampling();
-        print();
-    }
-
-    private void print() {
-        System.out.println(Arrays.toString(NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGES));
-        System.out.println(Arrays.toString(NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGE_CURRENT_LEVEL_COSTS));
-        System.out.println(Arrays.toString(NonBlockingPartitionedLevelMergeScheduler.TOTAL_MERGE_NEXT_LEVEL_COSTS));
+        BlockingPartitionedLevelMergeScheduler.DEBUG = false;
+        FlowControlSpeedSolver solver =
+                createFlowControlSpeedSolver(policy, sizeRatioLevel0, toleratedComponentsLevel0, baseLevelComponents);
+        solver.simulate(3000, true);
     }
 
     private FlowControlSpeedSolver createFlowControlSpeedSolver(PartitionPolicy partitionPolicy, int sizeRatioLevel0,
-            int toleratedComponentsLevel0, double baseLevelComponents, double level1Components,
-            int maxNumStackedComponents) {
+            int toleratedComponentsLevel0, double baseLevelComponents) {
         int toleratedComponents = 1;
         int numMemoryComponents = 4;
         RandomVariable memoryComponentCapacity =
@@ -272,8 +184,7 @@ public class PartitionedLevelFlowControlSpeedSolverTest {
                         initialMergedComponents, initialMergeFinalizedPages, initialMergeSubOperationElapsedTimes,
                         componentRatios, estimator, MergePolicyType.LEVEL, recordsPerPage * subOperationPages,
                         subOperationPages, baseLevelComponents * diskComponentCapacity, true, sizeRatioLevel0,
-                        toleratedComponentsLevel0, diskComponentCapacity, partitionPolicy, maxNumStackedComponents,
-                        level1Components * diskComponentCapacity);
+                        toleratedComponentsLevel0, diskComponentCapacity, partitionPolicy);
         return solver;
     }
 }
