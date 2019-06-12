@@ -27,6 +27,9 @@ public class SSDReadExperiment implements Runnable {
     @Option(name = "-page-size", required = true)
     public int pageSize = 4096;
 
+    @Option(name = "-batch-size")
+    public int batchSize = 1;
+
     @Option(name = "-file-size")
     public long fileSize = 10l * 1024 * 1024 * 1024;
 
@@ -89,7 +92,7 @@ public class SSDReadExperiment implements Runnable {
             long throughputMB = readSize / durationMs * 1000 / 1024 / 1024;
             long readPages = readSize / pageSize;
             long pageThroguhput = readPages / durationMs * 1000;
-            System.out.println("Duration " + durationMs + " read throughput " + throughputMB + " MB/s" + " pages "
+            System.out.println("Duration " + durationMs + " ms read throughput " + throughputMB + " MB/s" + " pages "
                     + pageThroguhput + " ops/s");
         }
     }
@@ -107,12 +110,15 @@ public class SSDReadExperiment implements Runnable {
             }
             int pagesPerFile = (int) (fileSize / pageSize);
             int readPages = (int) (readSize / pageSize);
+            int readBatches = readPages / batchSize;
             ByteBuffer page = ByteBuffer.allocate(pageSize);
-            for (int i = 0; i < readPages; i++) {
+            for (int i = 0; i < readBatches; i++) {
                 int fileId = ThreadLocalRandom.current().nextInt(files.length);
-                int pageId = ThreadLocalRandom.current().nextInt(pagesPerFile);
-                page.clear();
-                channels[fileId].read(page, (long) pageId * pageSize);
+                int pageId = ThreadLocalRandom.current().nextInt(pagesPerFile - batchSize);
+                for (int j = 0; j < batchSize; i++) {
+                    page.clear();
+                    channels[fileId].read(page, (long) (pageId + j) * pageSize);
+                }
             }
 
             for (int i = 0; i < rafs.length; i++) {
