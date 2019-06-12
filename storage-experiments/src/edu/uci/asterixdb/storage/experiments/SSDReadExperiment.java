@@ -115,7 +115,7 @@ public class SSDReadExperiment implements Runnable {
             for (int i = 0; i < readBatches; i++) {
                 int fileId = ThreadLocalRandom.current().nextInt(files.length);
                 int pageId = ThreadLocalRandom.current().nextInt(pagesPerFile - batchSize);
-                for (int j = 0; j < batchSize; i++) {
+                for (int j = 0; j < batchSize; j++) {
                     page.clear();
                     channels[fileId].read(page, (long) (pageId + j) * pageSize);
                 }
