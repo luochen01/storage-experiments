@@ -66,7 +66,6 @@ public class SSDReadExperiment implements Runnable {
                 ByteBuffer buffer = ByteBuffer.allocate(pageSize);
                 for (int j = 0; j < numPages; j++) {
                     ThreadLocalRandom.current().nextBytes(buffer.array());
-                    buffer.position(pageSize);
                     chanel.write(buffer, (long) pageSize * j);
                 }
                 chanel.force(true);
