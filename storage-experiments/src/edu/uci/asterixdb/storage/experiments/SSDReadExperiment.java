@@ -48,7 +48,7 @@ public class SSDReadExperiment implements Runnable {
         parser.parseArgument(args);
         System.out.println("dir " + dir);
         System.out.println("page size " + pageSize);
-        System.out.println("fileSize" + fileSize);
+        System.out.println("file size " + fileSize);
         System.out.println("numThreads " + numThreads);
         System.out.println("write " + write);
         System.out.println("read size " + readSize);
@@ -66,6 +66,7 @@ public class SSDReadExperiment implements Runnable {
                 ByteBuffer buffer = ByteBuffer.allocate(pageSize);
                 for (int j = 0; j < numPages; j++) {
                     ThreadLocalRandom.current().nextBytes(buffer.array());
+                    buffer.position(pageSize);
                     chanel.write(buffer);
                 }
                 chanel.force(true);
@@ -81,7 +82,6 @@ public class SSDReadExperiment implements Runnable {
             for (int i = 0; i < threads.length; i++) {
                 threads[i].start();
             }
-
             for (int i = 0; i < threads.length; i++) {
                 threads[i].join();
             }
@@ -103,7 +103,6 @@ public class SSDReadExperiment implements Runnable {
             FileChannel[] channels = new FileChannel[files.length];
             for (int i = 0; i < files.length; i++) {
                 rafs[i] = new RandomAccessFile(files[i], "r");
-
                 channels[i] = rafs[i].getChannel();
             }
             int pagesPerFile = (int) (fileSize / pageSize);
@@ -112,6 +111,7 @@ public class SSDReadExperiment implements Runnable {
             for (int i = 0; i < readPages; i++) {
                 int fileId = ThreadLocalRandom.current().nextInt(files.length);
                 int pageId = ThreadLocalRandom.current().nextInt(pagesPerFile);
+                page.reset();
                 channels[fileId].read(page, pageId * pageSize);
             }
 
