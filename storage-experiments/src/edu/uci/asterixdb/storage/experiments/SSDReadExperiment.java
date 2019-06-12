@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadPendingException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -85,8 +86,11 @@ public class SSDReadExperiment implements Runnable {
             long end = System.nanoTime();
 
             long durationMs = TimeUnit.NANOSECONDS.toMillis(end - begin);
-            long throughputMB = readSize / durationMs / 1000 / 1024 / 1024;
-            System.out.println("Duration " + durationMs + " read throughput " + throughputMB + " MB/s");
+            long throughputMB = readSize / durationMs * 1000 / 1024 / 1024;
+            long readPages = readSize / pageSize;
+            long pageThroguhput = readPages / durationMs * 1000;
+            System.out.println("Duration " + durationMs + " read throughput " + throughputMB + " MB/s" + " pages "
+                    + pageThroguhput + " ops/s");
         }
     }
 
