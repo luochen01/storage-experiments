@@ -76,8 +76,8 @@ options = []
 
 for i in [0, 1, 2]:
     options.append([ PlotOption(upsert_antimatters[i], 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-            PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
-            PlotOption(upsert_validations[i], 'validation (repair)', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+            #PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+            PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_inplaces[i], 'mutable-bitmap', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
 
 #plot_shared_ingestion(options[0], options[1], options[2], ['No Update', '50% Uniform Updates', '50% Zipf Updates'], result_base_path + 'upsert-secondary-update.pdf', ylimit=190)

@@ -41,7 +41,8 @@ zipf_time = get_write_times(df)
 zipf_data = get_write_rates(df)
 
 plot_writes([get_zipf_option(zipf_time, zipf_data),
-             get_uniform_option(uniform_time, uniform_data)], result_base_path + 'blsm-max.pdf', ylimit=50)
+             get_uniform_option(uniform_time, uniform_data)], result_base_path + 'blsm-max.pdf', ylimit=50,
+             title = '(a) Testing Phase: Instantaneous\nWrite Throughput (Maximum)')
 
 df = open_csv(uniform_base_path + 'blsm-open-95.csv', sep=seq_uniform, header=None)
 uniform_time = get_write_times(df)
@@ -57,7 +58,8 @@ def post():
 
 
 plot_writes([get_zipf_option(zipf_time, zipf_data),
-             get_uniform_option(uniform_time, uniform_data)], result_base_path + 'blsm-open.pdf', ylimit=50, post=post)
+             get_uniform_option(uniform_time, uniform_data)], result_base_path + 'blsm-open.pdf', ylimit=50, post=post,
+             title='(b) Running Phase: Instantaneous\nWriteThroughput (95% Load)')
 
 (uniform_write_latencies, write_count) = parse_latencies(uniform_base_path + "blsm-open-95.log", "[UPDATE]")
 uniform_write_latencies = parse_latency_dists(uniform_write_latencies, write_count)
@@ -86,5 +88,6 @@ plot_latencies([
                 PlotOption(np.arange(len(zipf_write_latencies)), zipf_write_latencies, marker='s', markevery=1, legend='zipf: processing latency', color=red, linestyle='--', dashes = dashes),
                 PlotOption(np.arange(len(uniform_total_latencies)), uniform_total_latencies, marker='^', markevery=1, legend='uniform: write latency', color=green),
                 PlotOption(np.arange(len(uniform_write_latencies)), uniform_write_latencies, marker='s', markevery=1, legend='uniform: processing latency', color=green)],
-                result_base_path + 'blsm-open-write-latency.pdf', ylimit=300, ymin=0.00005, post=post)
+                result_base_path + 'blsm-open-write-latency.pdf', ylimit=300, ymin=0.00005, post=post, title = '(c) Running Phase: Percentile\nWrite Latencies (95% Load)' 
+                )
 

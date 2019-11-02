@@ -49,7 +49,7 @@ upsert_inplaces = [upsert_inplace_0, upsert_inplace_005, upsert_inplace_01, upse
 i=4
 
 plot_basic([ PlotOption(upsert_antimatters[i], 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-            PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
+           # PlotOption(upsert_validation_norepairs[i], 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
             PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_inplaces[i], 'mutable-bitmap', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
             result_base_path + 'upsert-secondary-zipf-' + str(updates[i]) + '.pdf', "Ingestion Performance with Update Ratio " + str(updates[i]), figsize=(3.75, 2.5), framealpha=0.5)

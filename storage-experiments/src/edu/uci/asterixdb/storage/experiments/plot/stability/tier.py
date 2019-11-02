@@ -10,6 +10,7 @@ ylimit = 40
 
 settings.init()
 
+
 def process(dist):
     tier_base_path = base_path + dist + "/tier/"
     print(tier_base_path)
@@ -29,11 +30,16 @@ def process(dist):
     local_time = get_write_times(df, load_window)
     local_data = get_write_rates(df, load_window)
     
+        
+    def post():
+        plt.annotate("", xy=(1200, 19), xytext=(1600, 24),arrowprops=dict(arrowstyle="->", edgecolor='green'))
+        plt.annotate("", xy=(4200, 18), xytext=(4600, 23),arrowprops=dict(arrowstyle="->", edgecolor='green'))
+
     plot_writes([
         get_single_scheduler(single_time, single_data),
         get_fair_scheduler(fair_time, fair_data),
         # get_local_scheduler(local_time, local_data),
-        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-' + dist + '.pdf', ylimit=ylimit, title = '(a) Tiering Merge Policy')
+        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-' + dist + '.pdf', ylimit=ylimit, title = '(a) Tiering Merge Policy', post = post)
     
     settings.fig_size = None
     
@@ -54,12 +60,12 @@ def process(dist):
     local_data = get_write_rates(df, load_window)
       
     def post():
-        plt.legend(loc=1, ncol=1)
+        plt.legend(loc=2, ncol=1, framealpha = 0.8)
     
     plot_writes([
         get_single_scheduler(single_time, single_data),
         get_fair_scheduler(fair_time, fair_data),
-        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-open-' + dist + '.pdf', ylimit=ylimit, post=post, title = throughput_title)    
+        get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-open-' + dist + '.pdf', ylimit=ylimit, post=post, title=throughput_title)    
     
     (fair_latencies, write_count) = parse_latencies(tier_base_path + "write-tier-open-95.log", "[Intended-UPDATE]")
     fair_latencies = parse_latency_dists(fair_latencies, write_count)
@@ -70,11 +76,14 @@ def process(dist):
     (single_latencies, write_count) = parse_latencies(tier_base_path + "write-tier-open-95-single.log", "[Intended-UPDATE]")
     single_latencies = parse_latency_dists(single_latencies, write_count)
     
-    (local_latencies, write_count) = parse_latencies(tier_base_path + "write-tier-open-95-strict.log", "[Intended-UPDATE]")
-    local_latencies = parse_latency_dists(local_latencies, write_count)
+    (local_fair_latencies, write_count) = parse_latencies(tier_base_path + "write-tier-open-95-strict.log", "[Intended-UPDATE]")
+    local_fair_latencies = parse_latency_dists(local_fair_latencies, write_count)
+    
+    (local_greedy_latencies, write_count) = parse_latencies(tier_base_path + "write-tier-open-95-greedy-strict.log", "[Intended-UPDATE]")
+    local_greedy_latencies = parse_latency_dists(local_greedy_latencies, write_count)
     
     def post():
-        plt.legend(loc=4, ncol=1, bbox_to_anchor=(0.8, 0.4))
+        plt.legend(loc=4, ncol=1, bbox_to_anchor=(1.02, 0.4))
     
     plot_latencies([
                     get_single_scheduler(np.arange(len(single_latencies)), single_latencies, True),
@@ -82,25 +91,28 @@ def process(dist):
                     # get_local_scheduler(np.arange(len(local_latencies)), local_latencies),
                     get_greedy_scheduler(np.arange(len(greedy_latencies)), greedy_latencies, True)],
                     result_base_path + 'write-tier-write-latency-' + dist + '.pdf', ylimit=5000, ymin=0.00005,
-                    post=post, title = latency_title)
+                    post=post, title=latency_title)
     
     def post_latency():
-        plt.legend(loc=2, ncol=1, bbox_to_anchor=None)
+        plt.legend(loc=2, ncol=1, framealpha = 0.8)
     
-    settings.fig_size = (2.75, 2.5)
+    settings.fig_size = fig_size_small
     
     plot_latencies([
-                    get_global_scheduler(np.arange(len(fair_latencies)), fair_latencies, True),
-                    get_local_scheduler(np.arange(len(local_latencies)), local_latencies, True)],
+                    get_local_fair_scheduler(np.arange(len(local_fair_latencies)), local_fair_latencies, True),
+                    get_local_greedy_scheduler(np.arange(len(local_greedy_latencies)), local_greedy_latencies, True),
+                    get_global_fair_scheduler(np.arange(len(fair_latencies)), fair_latencies, True),
+                    get_global_greedy_scheduler(np.arange(len(fair_latencies)), greedy_latencies, True),
+                  ],
                     result_base_path + 'write-tier-write-latency-local-' + dist + '.pdf', ylimit=0.3,
-                    post=post_latency, logy=False)
+                    post=post_latency, logy=False, title = '(a) Tiering Merge Policy')
     
     (fair_times, fair_components) = parse_components(tier_base_path + "write-tier-open-95.log")
     (greedy_times, greedy_components) = parse_components(tier_base_path + "write-tier-open-95-greedy.log")
     (single_times, single_components) = parse_components(tier_base_path + "write-tier-open-95-single.log")
     
     def post():
-        plt.legend(loc=2, ncol=1, framealpha=0.5)
+        plt.legend(loc=2, ncol=1, framealpha=0.8)
     
     settings.fig_size = None
     
@@ -109,15 +121,7 @@ def process(dist):
                     get_fair_scheduler(fair_times, fair_components),
                     get_greedy_scheduler(greedy_times, greedy_components)],
                     result_base_path + 'write-tier-components-' + dist + '.pdf', ylimit=57,
-                    post=post, xstep=1800, title = component_title)
-
-    (fair_times, fair_gbs) = parse_component_sizes(tier_base_path + "write-tier-open-95.log")
-    (greedy_times, greedy_gbs) = parse_component_sizes(tier_base_path + "write-tier-open-95-greedy.log")
-    plot_component_gbs([
-                    get_fair_scheduler(fair_times, fair_gbs),
-                    get_greedy_scheduler(greedy_times, greedy_gbs)],
-                    result_base_path + 'write-tier-component-gb-' + dist + '.pdf',
-                    post=post, xstep=1800)
+                    post=post, xstep=1800, title=component_title)
 
 
 process(uniform)

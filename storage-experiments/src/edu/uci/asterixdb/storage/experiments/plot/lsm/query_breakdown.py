@@ -112,10 +112,13 @@ def plot_bar(xvalues, options,
         plt.ylabel(ylabel)
     plt.xlim([-0.5, len(x) - 0.5])
     if len(line_options) > 0:
-        box = dict(facecolor='white', alpha=0, linestyle='None', capstyle='round', edgecolor='none', joinstyle='round', pad=0.0)
-        plt.text(-0.05, 785, 'scan', bbox = box)
+#         box = dict(facecolor='white', alpha=0, linestyle='None', capstyle='round', edgecolor='none', joinstyle='round', pad=0.0)
+#         plt.text(-0.05, 785, 'scan', bbox = box)
+#         box = dict(facecolor='white', alpha=0.6, linestyle='None', capstyle='round', edgecolor='none', joinstyle='round', pad=0.0)
+#         plt.text(-0.05, 460, 'scan (seq keys)', bbox=box)
+
         box = dict(facecolor='white', alpha=0.6, linestyle='None', capstyle='round', edgecolor='none', joinstyle='round', pad=0.0)
-        plt.text(-0.05, 460, 'scan (seq keys)', bbox=box)
+        plt.text(-0.05, 460, 'scan', bbox=box)
 
     plt.savefig(output)
 
@@ -200,10 +203,15 @@ plot_bar(first_half(sels), low_options,
                 [],
                 result_base_path + 'query-opt-breakdown-low.pdf', "", legendloc=2, figsize=(3.4,2.5))
 
+# plot_bar(second_half(sels), high_options,
+#                [ PlotOption(toTime(second_half(scan_results)), 'scan', marker=None, linestyle='dotted', color='red'),
+#                 PlotOption(toTime(second_half(seq_scan_results)), 'scan (sequential keys)', marker=None, linestyle='dotted', color='green')],
+#                 result_base_path + 'query-opt-breakdown-high.pdf', "", legendloc=2, figsize=(3.4,2.5), ylabel = None, legend_alpha = 0.5)
 plot_bar(second_half(sels), high_options,
-               [ PlotOption(toTime(second_half(scan_results)), 'scan', marker=None, linestyle='dotted', color='red'),
-                PlotOption(toTime(second_half(seq_scan_results)), 'scan (sequential keys)', marker=None, linestyle='dotted', color='green')],
+               [ PlotOption(toTime(second_half(seq_scan_results)), 'scan', marker=None, linestyle='dotted', color='red')],
                 result_base_path + 'query-opt-breakdown-high.pdf', "", legendloc=2, figsize=(3.4,2.5), ylabel = None, legend_alpha = 0.5)
+
+
 
 plot_shared_query(first_half(sels), second_half(sels), low_options, high_options,
                [ PlotOption(toTime(second_half(scan_results)), 'scan', marker=markers[0], linestyle='solid', color=antimatter_color),

@@ -175,7 +175,7 @@ batch_results = parse_query_experiment(validation_norepair_1_prefix, "16184", di
 print(matplotlib.font_manager.get_cachedir())
 
 
-def plot_query(xvalues, options, output, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0.5, barwidth=0.18, legendsize=12, logy=False):
+def plot_query(xvalues, options, output, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0.5, barwidth=0.3, legendsize=12, logy=False):
     # use as global
     plt.figure()
     x = np.arange(len(xvalues))
@@ -249,18 +249,26 @@ def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Que
 color = 'blue'
 alphas = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
 query_options = []
+# query_options.append(
+#      [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_norepair_1_direct_results), 'direct (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
+#                 PlotOption(toTime(validation_norepair_1_pk_results), 'ts (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5),
+#                 PlotOption(toTime(validation_1_direct_results), 'direct (repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
+#                 PlotOption(toTime(validation_1_pk_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
+# 
+# query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_norepair_5_direct_results), 'direct (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
+#                 PlotOption(toTime(validation_norepair_5_pk_results), 'ts (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5),
+#                 PlotOption(toTime(validation_5_direct_results), 'direct (repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
+#                 PlotOption(toTime(validation_5_pk_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
+
 query_options.append(
      [ PlotOption(toTime(antimatter_1_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_norepair_1_direct_results), 'direct (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
-                PlotOption(toTime(validation_norepair_1_pk_results), 'ts (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5),
-                PlotOption(toTime(validation_1_direct_results), 'direct (repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
-                PlotOption(toTime(validation_1_pk_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
+                PlotOption(toTime(validation_1_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color='blue', alpha=0.75)])
 
 query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_norepair_5_direct_results), 'direct (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
-                PlotOption(toTime(validation_norepair_5_pk_results), 'ts (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5),
-                PlotOption(toTime(validation_5_direct_results), 'direct (repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_color, alpha=1),
-                PlotOption(toTime(validation_5_pk_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha=0.5)])
+                PlotOption(toTime(validation_5_direct_results), 'direct validation', marker=markers[1], linestyle=validation_linestyle, color='blue', alpha=0.75)])
+
 
 plot_shared_query(sels, query_options[0], query_options[1], result_base_path + "query-index.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 
@@ -271,7 +279,7 @@ def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, 
     # use as global
     f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(6, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
-    barwidth = 0.2
+    barwidth = 0.5
 
     plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit, barwidth, xfontsize=12)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit, barwidth, xfontsize=12)
@@ -294,13 +302,20 @@ def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, 
 
 index_only_options = []
 
+# index_only_options.append([ PlotOption(toTime(antimatter_1_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha = 0.5),
+#                 PlotOption(toTime(validation_1_pk_indexonly_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha = 0.5)])
+# 
+# index_only_options.append([ PlotOption(toTime(antimatter_5_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha = 0.5),
+#                 PlotOption(toTime(validation_5_pk_indexonly_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha = 0.5)])
+
 index_only_options.append([ PlotOption(toTime(antimatter_1_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_norepair_1_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha = 0.5),
-                PlotOption(toTime(validation_1_pk_indexonly_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha = 0.5)])
+                PlotOption(toTime(validation_1_pk_indexonly_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color='blue', alpha = 0.75)])
 
 index_only_options.append([ PlotOption(toTime(antimatter_5_indexonly_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color, alpha = 0.5),
-                PlotOption(toTime(validation_5_pk_indexonly_results), 'ts (repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color, alpha = 0.5)])
+                PlotOption(toTime(validation_5_pk_indexonly_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color='blue', alpha = 0.75)])
+
 
 plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + "query-index-only.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 plot_query(sels, index_only_options[0],result_base_path + "query-index-only-0.pdf", logy=True)

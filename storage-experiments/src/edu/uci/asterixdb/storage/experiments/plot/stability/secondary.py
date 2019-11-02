@@ -96,7 +96,7 @@ def process(dist):
         get_fair_scheduler(fair_time, fair_data),
         get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-secondary-open-lazy-' + dist + '.pdf',
         xstep=1800,
-         ylimit=ylimit, post=post, ystep=3)
+         ylimit=ylimit, post=post, ystep=3, title = '(a) Instantaneous Write\nThroughput')
     
     df = open_csv(get_latest_file(secondary_base_path, 'write-secondary-open-95-eager-7220'), header=1)
     fair_time = get_write_times(df, write_window)
@@ -110,7 +110,7 @@ def process(dist):
         get_fair_scheduler(fair_time, fair_data),
         get_greedy_scheduler(greedy_time, greedy_data)],
         result_base_path + 'write-secondary-open-eager-' + dist + '.pdf',
-        xstep=1800,
+        xstep=1800, title = '(a) Instantaneous Write\nThroughput',
         ylimit=ylimit, post=post, ystep=3)    
     
     def post():
@@ -126,7 +126,7 @@ def process(dist):
                     get_fair_scheduler(np.arange(len(fair_latencies)), fair_latencies, True),
                     get_greedy_scheduler(np.arange(len(greedy_latencies)), greedy_latencies, True)],
                     result_base_path + 'write-secondary-write-latency-lazy-' + dist + '.pdf',
-                    post=post, logy=False, ylimit=0.4)
+                    post=post, logy=False, ylimit=0.4, title = '(b) Percentile Write\nLatencies')
     
     (fair_latencies, write_count) = parse_latencies(secondary_base_path + "write-secondary-open-95-eager-7220.log", "[Intended-UPDATE]")
     fair_latencies = parse_latency_dists(fair_latencies, write_count)
@@ -141,7 +141,7 @@ def process(dist):
                     get_fair_scheduler(np.arange(len(fair_latencies)), fair_latencies, True),
                     get_greedy_scheduler(np.arange(len(greedy_latencies)), greedy_latencies, True)],
                     result_base_path + 'write-secondary-write-latency-eager-' + dist + '.pdf',
-                    post=post, logy=True, ylimit=300, ymin=0.01)
+                    post=post, logy=True, ylimit=300, ymin=0.01, title='(b) Percentile Write\nLatencies')
 
     speeds = [7220, 6840, 6460, 6080, 5700, 5320, 4940, 4560]
     utils = ['95%', '90%', '85%', '80%', '75%', '70%', '65%', '60%']
@@ -156,7 +156,7 @@ def process(dist):
     plot_basic([PlotOption(utils, util_latencies, color='red', marker='s')],
         result_base_path + 'write-secondary-eager-util-latency.pdf', 'System Utilization', latency_ylabel, 1, xlimit=0, ylimit=150, xtick_labels=utils, logy=False, post=post)
     
-    settings.fig_size = (2.75, 2.5)
+    settings.fig_size = (2.75, 2.3)
     secondary_base_path = base_path + dist + "/secondary-query/"
     
     sels = [1, 10, 100, 1000]

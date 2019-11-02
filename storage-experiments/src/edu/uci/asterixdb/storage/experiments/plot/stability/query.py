@@ -11,9 +11,9 @@ from matplotlib.ticker import StrMethodFormatter
 
 settings.init()
 
-settings.fig_size = (3.25, 2.5)
+#settings.fig_size = (3.25, 2.5)
 
-def process_query(base_path, fair_input, greedy_input, output, ylabel, window, title):
+def process_query(base_path, fair_input, greedy_input, output, ylabel, window, title, ylimit):
     df = open_csv(get_latest_file(base_path, fair_input), header=1)
     fair_times = get_write_times(df, window)
     fair_queries = get_queries(df, window)
@@ -39,19 +39,20 @@ def process_query(base_path, fair_input, greedy_input, output, ylabel, window, t
                   get_greedy_scheduler(greedy_times, greedy_queries)],
                   result_base_path + output, ylabel, 
                   xstep = 1800,
+                  ylimit = ylimit,
                   post=post)
 
 
 tier_items = [
-    ['write-tier-open-95-read', 'write-tier-open-95-read-greedy', 'query-tier-point.pdf', point_ylabel, query_window, 'Point Lookup'],
-    ['write-tier-open-95-scan', 'write-tier-open-95-scan-greedy', 'query-tier-scan.pdf', short_ylabel, query_window, 'Short Range Query'],
-    ['write-tier-open-95-long', 'write-tier-open-95-long-greedy', 'query-tier-long.pdf', long_ylabel, 60, 'Long Range Query']
+    ['write-tier-open-95-read', 'write-tier-open-95-read-greedy', 'query-tier-point.pdf', point_ylabel, query_window, '(a) Point Lookup', 40],
+    ['write-tier-open-95-scan', 'write-tier-open-95-scan-greedy', 'query-tier-scan.pdf', short_ylabel, query_window, '(b) Short Range Query', 2.5],
+    ['write-tier-open-95-long', 'write-tier-open-95-long-greedy', 'query-tier-long.pdf', long_ylabel, 60, '(c) Long Range Query', 60]
 ]
 
 level_items = [
-    ['write-level-open-95-read', 'write-level-open-95-read-greedy', 'query-level-point.pdf', point_ylabel, query_window, 'Point Lookup'],
-    ['write-level-open-95-scan', 'write-level-open-95-scan-greedy', 'query-level-scan.pdf', short_ylabel, query_window, 'Short Range Query'],
-    ['write-level-open-95-long', 'write-level-open-95-long-greedy', 'query-level-long.pdf', long_ylabel, 60, 'Long Range Query']
+    ['write-level-open-95-read', 'write-level-open-95-read-greedy', 'query-level-point.pdf', point_ylabel, query_window, '(a) Point Lookup', 40],
+    ['write-level-open-95-scan', 'write-level-open-95-scan-greedy', 'query-level-scan.pdf', short_ylabel, query_window, '(b) Short Range Query', 2.5],
+    ['write-level-open-95-long', 'write-level-open-95-long-greedy', 'query-level-long.pdf', long_ylabel, 60, '(c) Long Range Query', 60]
 ]
 
 
@@ -60,13 +61,13 @@ def process(dist):
     print(tier_base_path)
     
     for item in tier_items:
-        process_query(tier_base_path, item[0], item[1], item[2], item[3], item[4], item[5])
+        process_query(tier_base_path, item[0], item[1], item[2], item[3], item[4], item[5], item[6])
         
     level_base_path = base_path + dist + "/level-query/"
     print(level_base_path)
     
     for item in level_items:
-        process_query(level_base_path, item[0], item[1], item[2], item[3], item[4], item[5])
+        process_query(level_base_path, item[0], item[1], item[2], item[3], item[4], item[5], item[6])
   
 
 process(uniform)

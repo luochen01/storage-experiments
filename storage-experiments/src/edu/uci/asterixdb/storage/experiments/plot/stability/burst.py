@@ -11,12 +11,14 @@ import settings
 
 settings.init()
 
+dashes = (3, 1)
+
 
 def get_open_scheduler(x, y, marker=False):
     if marker == True:
-        return PlotOption(x, y, color=red, legend='No Limit', marker='s', linestyle = '--', dashes = dashes)
+        return PlotOption(x, y, color='grey', legend='No Limit', marker='s', linestyle = '--', dashes = dashes)
     else:
-        return PlotOption(x, y, color=red, legend='No Limit', linestyle = '--', dashes = dashes)
+        return PlotOption(x, y, color='grey', legend='No Limit', linestyle = '--', dashes = dashes)
 
 
 def get_closed_scheduler(x, y, marker=False):
@@ -48,7 +50,8 @@ def process(dist):
     plot_writes([
         get_closed_scheduler(closed_time, closed_data),
         get_open_scheduler(open_time, open_data),
-        ], result_base_path + 'write-level-open-bust-' + dist + '.pdf', post=post_write, xstep=1800, ylimit=15)
+        ], result_base_path + 'write-level-open-bust-' + dist + '.pdf', post=post_write, xstep=1800, ylimit=15,
+        title = '(a) Instantaneous Write\nThroughput')
     
     (open_latencies, write_count) = parse_latencies(level_base_path + "write-level-open-95-burst.log", "[Intended-UPDATE]")
     open_latencies = parse_latency_dists(open_latencies, write_count)
@@ -64,8 +67,7 @@ def process(dist):
                     get_closed_scheduler(np.arange(len(closed_latencies)), closed_latencies, True),
                     get_open_scheduler(np.arange(len(open_latencies)), open_latencies, True)],
                     result_base_path + 'write-level-write-latency-burst-' + dist + '.pdf', ylimit=800,
-                    ymin=0.00001,
-                    post=post, logy=True)
+                    ymin=0.00001, post=post, logy=True, title = '(b) Percentile Write\nLatencies')
   
 
 process(uniform)

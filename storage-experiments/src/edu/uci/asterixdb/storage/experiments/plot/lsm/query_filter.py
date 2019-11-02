@@ -184,36 +184,63 @@ def plot_query(xvalues, options, output, title, xlabel='Time Range (Days)', ylab
     print('output figure to ' + output)
 
 
+# recent_options = [
+#     [ PlotOption(toTime(antimatter_1_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_1_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(toTime(inplace_1_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+# 
+#     [ PlotOption(toTime(antimatter_5_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_5_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(toTime(inplace_5_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]
+#     ]
+# 
+# history_options = [
+#    [ PlotOption(toTime(antimatter_1_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_1_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(toTime(inplace_1_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+# 
+#    [ PlotOption(toTime(antimatter_5_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(toTime(inplace_5_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
+# 
+# all_options = [
+#      [ PlotOption(toTime(antimatter_5_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_5_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(toTime(inplace_5_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+#      [ PlotOption(toTime(antimatter_1_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_1_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(toTime(inplace_1_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+# 
+#    [ PlotOption(toTime(antimatter_5_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(toTime(inplace_5_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
+
+inplace_color = 'blue'
+inplace_alpha = 0.75
 recent_options = [
     [ PlotOption(toTime(antimatter_1_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_1_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_1_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+                PlotOption(toTime(inplace_1_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color, alpha = inplace_alpha)],
 
     [ PlotOption(toTime(antimatter_5_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_5_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]
+                PlotOption(toTime(inplace_5_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color, alpha = inplace_alpha)]
     ]
 
 history_options = [
    [ PlotOption(toTime(antimatter_1_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_1_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_1_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+                PlotOption(toTime(inplace_1_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color, alpha = inplace_alpha)],
 
    [ PlotOption(toTime(antimatter_5_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
+                PlotOption(toTime(inplace_5_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color, alpha = inplace_alpha)]]
 
 all_options = [
      [ PlotOption(toTime(antimatter_5_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_5_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+                PlotOption(toTime(inplace_5_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color, alpha = inplace_alpha)],
      [ PlotOption(toTime(antimatter_1_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_1_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_1_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+                PlotOption(toTime(inplace_1_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color, alpha = inplace_alpha)],
 
    [ PlotOption(toTime(antimatter_5_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
+                PlotOption(toTime(inplace_5_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color, alpha = inplace_alpha)]]
+
 
 # plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 # plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)

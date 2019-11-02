@@ -1,0 +1,180 @@
+package edu.uci.asterixdb.storage.sim;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.tuple.Pair;
+
+public class LSMSimulatorVerticalUnused extends LSMSimulator {
+
+    public LSMSimulatorVerticalUnused(KeyGenerator keyGen, Config config) {
+        super(keyGen, config);
+    }
+
+    @Override
+    protected void diskFlush() {
+        Pair<SSTable, List<SSTableGroup>> pair = memoryLevels.isEmpty() ? Pair.of(memTable, unpartitionedLevel.groups)
+                : RoundRobinSelector.INSTANCE.selectMerge(memoryLevels.get(memoryLevels.size() - 1),
+                        unpartitionedLevel.groups);
+
+        List<SSTableGroup> overlappingGroups = pair.getRight();
+        MergeIterator iterator = new DiskFlushIterator(pair.getLeft());
+
+        if (overlappingGroups.isEmpty()) {
+            // form fixed sized groups
+            List<SSTable> newSSTables = buildSSTables(iterator, true);
+            List<SSTableGroup> newGroups =
+                    newSSTables.stream().map(t -> new SSTableGroup(t)).collect(Collectors.toList());
+            unpartitionedLevel.addGroups(newGroups);
+        } else {
+            int numGroups = overlappingGroups.size();
+            KeyEntry entry = new KeyEntry();
+            KeyEntry currentKey = Utils.getNextKey(iterator, entry);
+            for (int i = 0; i < numGroups; i++) {
+                SSTableGroup group = overlappingGroups.get(i);
+                SSTable sstable = getFreeSSTable(true);
+                while (currentKey != null && currentKey.key <= group.max()) {
+                    sstable.add(currentKey.key, currentKey.seq);
+                    currentKey = Utils.getNextKey(iterator, entry);
+                }
+                if (currentKey != null) {
+                    long maxKey = Long.MAX_VALUE;
+                    boolean skipThisGroup = false;
+                    if (i < numGroups - 1) {
+                        long thisAverageSize = (group.getSize() + sstable.getSize()) / (group.sstables.size() + 1);
+                        SSTableGroup thatGroup = overlappingGroups.get(i + 1);
+                        long thatAverageSize =
+                                thatGroup.sstables.isEmpty() ? 0 : thatGroup.getSize() / thatGroup.sstables.size();
+                        if (thisAverageSize > thatAverageSize) {
+                            skipThisGroup = true;
+                        } else {
+                            maxKey = thatGroup.min() - 1;
+                        }
+                    }
+                    if (!skipThisGroup) {
+                        while (currentKey != null && currentKey.key <= maxKey) {
+                            sstable.add(currentKey.key, currentKey.seq);
+                            currentKey = Utils.getNextKey(iterator, currentKey);
+                        }
+                    }
+                }
+                if (sstable.getSize() > 0) {
+                    group.add(sstable);
+                    unpartitionedLevel.addSize(sstable.getSize());
+                } else {
+                    freeSSTable(sstable);
+                }
+            }
+        }
+
+        totalMemTableSize -= pair.getLeft().getSize();
+        diskMergeKeys += pair.getLeft().getSize();
+        freeSSTable(pair.getLeft());
+
+        if (!memoryLevels.isEmpty()) {
+            memoryLevels.get(memoryLevels.size() - 1).remove(pair.getLeft());
+        }
+
+        scheduleMerge(unpartitionedLevel, diskLevels, config.diskConfig.sizeRatio);
+    }
+
+    @Override
+    protected GroupSelection selectGroupToMerge(UnpartitionedLevel unpartitionedLevel,
+            List<PartitionedLevel> partitionedLevels) {
+        if (unpartitionedLevel == null || unpartitionedLevel.getSize() == 0) {
+            return null;
+        }
+
+        List<SSTable> nextLevel = null;
+        boolean addLevel = false;
+        if (partitionedLevels.isEmpty() || Utils.getLevelCapacity(partitionedLevels, 0,
+                config.diskConfig.sizeRatio) > unpartitionedLevel.getSize() * config.diskConfig.sizeRatio) {
+            addLevel = true;
+            nextLevel = Collections.emptyList();
+        } else {
+            nextLevel = partitionedLevels.get(0).sstables;
+        }
+        long capacity = partitionedLevels.isEmpty() ? 0
+                : Utils.getLevelCapacity(partitionedLevels, 0, config.diskConfig.sizeRatio)
+                        / config.diskConfig.sizeRatio;
+
+        int selectedGroup = -1;
+        int selectedSize = Integer.MAX_VALUE;
+        int selectedFrom = -1;
+        int selectedTo = -1;
+
+        int fromIndex = 0;
+        int toIndex = 0;
+
+        boolean isFull = unpartitionedLevel.getSize() > capacity;
+        int numGroups = unpartitionedLevel.groups.size();
+        for (int i = 0; i < numGroups; i++) {
+            SSTableGroup group = unpartitionedLevel.groups.get(i);
+            if (group.sstables.isEmpty()) {
+                continue;
+            }
+            if (group.sstables.size() >= config.diskConfig.maxUnpartitionedSSTables || isFull) {
+                int size = 0;
+                while (fromIndex < nextLevel.size() && group.min() > nextLevel.get(fromIndex).max()) {
+                    fromIndex++;
+                }
+                toIndex = fromIndex;
+                while (toIndex < nextLevel.size() && group.max() >= nextLevel.get(toIndex).min()) {
+                    size += nextLevel.get(toIndex).getSize();
+                    toIndex++;
+                }
+                // check whether we should use the new sstable
+                if (selectedGroup >= 0 && unpartitionedLevel.groups.get(selectedGroup).sstables
+                        .size() >= config.diskConfig.maxUnpartitionedSSTables) {
+                    if (group.sstables.size() >= config.diskConfig.maxUnpartitionedSSTables && size < selectedSize) {
+                        selectedGroup = i;
+                        selectedSize = size;
+                        selectedFrom = fromIndex;
+                        selectedTo = toIndex;
+                    }
+                } else if (group.sstables.size() >= config.diskConfig.maxUnpartitionedSSTables || size < selectedSize) {
+                    selectedGroup = i;
+                    selectedSize = size;
+                    selectedFrom = fromIndex;
+                    selectedTo = toIndex;
+                }
+            }
+        }
+        return selectedGroup >= 0 ? new GroupSelection(selectedGroup, selectedFrom, selectedTo, addLevel) : null;
+    }
+
+    @Override
+    protected void doUnpartitionedMerge(UnpartitionedLevel unpartitionedLevel, List<PartitionedLevel> levels,
+            GroupSelection groupSelection) {
+        List<SSTable> nextSSTables = groupSelection.addLevel ? Collections.emptyList()
+                : levels.get(0).sstables.subList(groupSelection.fromIndex, groupSelection.toIndex);
+        SSTableGroup selectedGroup = unpartitionedLevel.groups.get(groupSelection.group);
+
+        if (nextSSTables.isEmpty() && selectedGroup.sstables.size() == 1) {
+            // simply push
+            if (groupSelection.addLevel) {
+                Utils.addLevel(selectedGroup.sstables, levels);
+            } else {
+                levels.get(0).replace(Collections.emptyList(), selectedGroup.sstables);
+            }
+        } else {
+            MergeIterator unpartitionedIterator = new UnpartitionedIterator(selectedGroup.sstables, nextSSTables);
+
+            List<SSTable> newSSTables = buildSSTables(unpartitionedIterator, false);
+
+            int newKeys = Utils.getTotalSize(newSSTables);
+            freeSSTables(selectedGroup.sstables);
+            freeSSTables(nextSSTables);
+            diskMergeKeys += newKeys;
+            if (groupSelection.addLevel) {
+                Utils.addLevel(newSSTables, levels);
+            } else {
+                levels.get(0).replace(nextSSTables, newSSTables);
+            }
+        }
+        unpartitionedLevel.clearGroup(selectedGroup);
+
+    }
+
+}
