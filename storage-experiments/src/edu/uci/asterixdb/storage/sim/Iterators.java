@@ -109,26 +109,7 @@ abstract class AbstractIterator implements MergeIterator {
 class DiskFlushIterator extends AbstractIterator {
 
     public DiskFlushIterator(SSTable sstable) {
-        if (!sstable.isPersisted) {
-            queue.add(new PQEntry(sstable, 0));
-        }
-    }
-
-    @Override
-    public boolean hasNext() {
-        while (!queue.isEmpty()) {
-            PQEntry top = queue.peek();
-            if (top.getSeq() < 0) {
-                queue.poll();
-                top.consumeKey();
-                if (top.hasMore()) {
-                    queue.add(top);
-                }
-            } else {
-                break;
-            }
-        }
-        return !queue.isEmpty();
+        queue.add(new PQEntry(sstable, 0));
     }
 }
 
@@ -153,23 +134,6 @@ class PartitionedIterator extends AbstractIterator {
         if (!nextLevel.isEmpty()) {
             queue.add(new PQEntry(nextLevel, 1));
         }
-    }
-
-    @Override
-    public void getNext(KeyEntry entry) {
-        PQEntry peek = queue.peek();
-        entry.key = peek.getKey();
-
-        if (peek.sstable.isPersisted) {
-            entry.seq = -Math.abs(peek.getSeq());
-        } else {
-            entry.seq = peek.getSeq();
-        }
-
-        while (!queue.isEmpty() && queue.peek().getKey() == entry.key) {
-            consumeMin();
-        }
-
     }
 
 }

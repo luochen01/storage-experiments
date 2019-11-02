@@ -22,21 +22,14 @@ class MemoryConfig {
     final int sstableSize;
     final int sizeRatio;
     final boolean enableMemoryMerge;
-    final boolean keepInMemory;
 
     public MemoryConfig(int activeSize, int totalMemSize, int sstableSize, int sizeRatio, boolean enableMemoryMerge) {
-        this(activeSize, totalMemSize, sstableSize, sizeRatio, enableMemoryMerge, enableMemoryMerge);
-    }
-
-    public MemoryConfig(int activeSize, int totalMemSize, int sstableSize, int sizeRatio, boolean enableMemoryMerge,
-            boolean keepInMemory) {
         super();
         this.activeSize = activeSize;
         this.totalMemSize = totalMemSize;
         this.sstableSize = sstableSize;
         this.sizeRatio = sizeRatio;
         this.enableMemoryMerge = enableMemoryMerge;
-        this.keepInMemory = keepInMemory;
     }
 }
 
@@ -217,11 +210,10 @@ public abstract class LSMSimulator {
         }
 
         while (totalMemTableSize > 0) {
-            diskFlush(true);
+            diskFlush();
         }
 
         minSeq = nextSeq;
-
         loading = false;
     }
 
@@ -230,7 +222,7 @@ public abstract class LSMSimulator {
         int diskFlushed = 0;
         if (config.maxLogLength > 0 && minSeq + config.maxLogLength < nextSeq) {
             while (minSeq + config.minLogLength < nextSeq) {
-                diskFlush(false);
+                diskFlush();
                 diskFlushed++;
             }
             totalLogTruncations++;
@@ -264,7 +256,7 @@ public abstract class LSMSimulator {
         prepareMemoryFlush();
 
         if (memTable.getSize() >= config.memConfig.totalMemSize || !config.memConfig.enableMemoryMerge) {
-            diskFlush(true);
+            diskFlush();
         } else {
             boolean addLevel = memoryLevels.isEmpty()
                     || memoryLevels.get(0).getSize() > memTable.getSize() * config.memConfig.sizeRatio;
@@ -289,7 +281,7 @@ public abstract class LSMSimulator {
             scheduleMerge(null, memoryLevels, config.memConfig.sizeRatio);
 
             while (totalMemTableSize > config.memConfig.totalMemSize) {
-                diskFlush(true);
+                diskFlush();
             }
         }
         memTable.reset();
@@ -304,7 +296,7 @@ public abstract class LSMSimulator {
         this.totalMemTableSize -= size;
     }
 
-    protected abstract void diskFlush(boolean evict);
+    protected abstract void diskFlush();
 
     protected abstract GroupSelection selectGroupToMerge(UnpartitionedLevel unpartitionedLevel,
             List<PartitionedLevel> partitionedLevels);
@@ -317,9 +309,7 @@ public abstract class LSMSimulator {
             minSeq = nextSeq - 1;
             for (PartitionedLevel level : memoryLevels) {
                 for (StorageUnit sstable : level.sstables) {
-                    if (!sstable.isPersisted()) {
-                        minSeq = Math.min(minSeq, ((SSTable) sstable).minSeq);
-                    }
+                    minSeq = Math.min(minSeq, ((SSTable) sstable).minSeq);
                 }
             }
         }
@@ -362,8 +352,6 @@ public abstract class LSMSimulator {
         SSTableSelector selector = isMemory ? config.memSSTableSelector : config.diskSSTableSelector;
         Pair<StorageUnit, Set<StorageUnit>> pair = selector.selectMerge(this, current, next.sstables);
 
-        current.mergedKeys += pair.getLeft().getSize();
-
         if (pair.getRight().isEmpty()) {
             // special case
             current.remove(pair.getLeft());
@@ -376,6 +364,7 @@ public abstract class LSMSimulator {
         } else {
             PartitionedIterator iterator = new PartitionedIterator(pair.getLeft(), pair.getRight());
 
+            current.mergedKeys += pair.getLeft().getSize();
             current.overlapingKeys += Utils.getTotalSize(pair.getRight());
             List<StorageUnit> newSSTables = buildSSTables(iterator, isMemory);
 

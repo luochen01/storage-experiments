@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 public class LSMSimulatorHorizontal extends LSMSimulator {
 
     protected final SSTable mergeRange = new SSTable(2, false);
@@ -17,28 +15,10 @@ public class LSMSimulatorHorizontal extends LSMSimulator {
     }
 
     @Override
-    protected void diskFlush(boolean evict) {
-        SSTable sstable = null;
-        if (!evict) {
-            for (int i = memoryLevels.size() - 1; i >= 0; i--) {
-                Pair<StorageUnit, Set<StorageUnit>> pair =
-                        OldestMinLSNSelector.INSTANCE.selectMerge(this, memoryLevels.get(i), Empty_TreeSet);
-                if (pair != null && ((SSTable) pair.getLeft()).minSeq == minSeq) {
-                    sstable = (SSTable) pair.getLeft();
-                    break;
-                }
-            }
-
-            System.out.println("Log Disk flush " + sstable.getDirtySize() + "/" + sstable.getSize());
-            if (sstable == null) {
-                throw new IllegalStateException();
-            }
-        } else {
-            sstable = memoryLevels.isEmpty() ? memTable
-                    : (SSTable) MinSizeSelector.INSTANCE
-                            .selectMerge(this, memoryLevels.get(memoryLevels.size() - 1), Empty_TreeSet).getLeft();
-            System.out.println("Full memory Disk flush " + sstable.getDirtySize() + "/" + sstable.getSize());
-        }
+    protected void diskFlush() {
+        SSTable sstable = memoryLevels.isEmpty() ? memTable
+                : (SSTable) config.memSSTableSelector
+                        .selectMerge(this, memoryLevels.get(memoryLevels.size() - 1), Empty_TreeSet).getLeft();
 
         if (sstable == memTable && memTable.getSize() == 0) {
             prepareMemoryFlush();
@@ -50,33 +30,27 @@ public class LSMSimulatorHorizontal extends LSMSimulator {
         List<StorageUnit> newSSTables = buildSSTables(iterator, false);
 
         long totalSize = addFlushedSSTable(newSSTables);
-        assert totalSize == sstable.getDirtySize();
         diskMergeKeys += totalSize;
 
-        if (evict) {
-            decreaseMemorySize(sstable.getSize());
-            if (sstable != memTable) {
-                freeSSTable(sstable);
-                PartitionedLevel lastLevel = memoryLevels.get(memoryLevels.size() - 1);
-                lastLevel.remove(sstable);
-                if (lastLevel.sstables.isEmpty()) {
-                    assert (lastLevel.getSize() == 0);
-                    memoryLevels.remove(memoryLevels.size() - 1);
-                }
-
-                if (VERBOSE) {
-                    System.out.println(String.format("Disk flush mlevel %d sstable %s with %d keys", lastLevel.level,
-                            sstable.toString(), sstable.getSize()));
-                }
-
-            } else {
-                minSeq = nextSeq - 1;
-                memTable.reset();
+        decreaseMemorySize(sstable.getSize());
+        if (sstable != memTable) {
+            freeSSTable(sstable);
+            PartitionedLevel lastLevel = memoryLevels.get(memoryLevels.size() - 1);
+            lastLevel.remove(sstable);
+            if (lastLevel.sstables.isEmpty()) {
+                assert (lastLevel.getSize() == 0);
+                memoryLevels.remove(memoryLevels.size() - 1);
             }
-        } else {
-            sstable.isPersisted = true;
-        }
 
+            if (VERBOSE) {
+                System.out.println(String.format("Disk flush mlevel %d sstable %s with %d keys", lastLevel.level,
+                        sstable.toString(), sstable.getSize()));
+            }
+
+        } else {
+            minSeq = nextSeq - 1;
+            memTable.reset();
+        }
         updateMinSeq();
 
         scheduleMerge(unpartitionedLevel, diskLevels, config.diskConfig.sizeRatio);

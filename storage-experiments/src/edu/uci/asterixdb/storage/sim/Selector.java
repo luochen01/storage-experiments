@@ -1,6 +1,5 @@
 package edu.uci.asterixdb.storage.sim;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -73,36 +72,12 @@ class OldestMinLSNSelector implements SSTableSelector {
         long minSeq = Long.MAX_VALUE;
         for (StorageUnit unit : level.sstables) {
             SSTable sstable = (SSTable) unit;
-            if (!sstable.isPersisted() && sstable.minSeq < minSeq) {
+            if (sstable.minSeq < minSeq) {
                 minSeq = sstable.minSeq;
                 minSSTable = sstable;
             }
         }
         return minSSTable;
-    }
-}
-
-class MinSizeSelector implements SSTableSelector {
-    public static final MinSizeSelector INSTANCE = new MinSizeSelector();
-
-    private MinSizeSelector() {
-    }
-
-    @Override
-    public Pair<StorageUnit, Set<StorageUnit>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
-            TreeSet<StorageUnit> nextLevel) {
-        assert nextLevel.isEmpty();
-
-        StorageUnit minSSTable = null;
-        for (StorageUnit unit : currentLevel.sstables) {
-            if (unit.isPersisted()) {
-                minSSTable = unit;
-                break;
-            } else if (minSSTable == null || unit.getDirtySize() < minSSTable.getDirtySize()) {
-                minSSTable = unit;
-            }
-        }
-        return Pair.of(minSSTable, Collections.emptySet());
     }
 }
 

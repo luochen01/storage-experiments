@@ -46,11 +46,11 @@ class Experiment {
         List<Config> configs = new ArrayList<>();
 
         long log = 512 * 1024l;
-        //Integer[] memories = new Integer[] { 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024 };
-        Integer[] memories = new Integer[] { 256 * 1024 };
+        Integer[] memories = new Integer[] { 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024 };
+        //Integer[] memories = new Integer[] { 512 * 1024 };
         for (Integer mem : memories) {
-            configs.add(new Config(new MemoryConfig(4096, mem, 4096 / 2, 10, true, true), DISK, CARD,
-                    HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
+            configs.add(new Config(new MemoryConfig(4096, mem, 4096 * 2, 10, true), DISK, CARD, HybridSelector.INSTANCE,
+                    GreedySelector.INSTANCE, log, log));
         }
 
         //KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator(), new ZipfGenerator() };

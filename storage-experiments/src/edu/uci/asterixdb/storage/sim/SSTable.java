@@ -11,10 +11,6 @@ interface StorageUnit extends Comparable<StorageUnit> {
 
     int getSize();
 
-    int getDirtySize();
-
-    boolean isPersisted();
-
     @Override
     default int compareTo(StorageUnit o) {
         if (max() < o.min()) {
@@ -33,10 +29,7 @@ class SSTable implements StorageUnit {
     final long[] seqs;
     long minSeq;
     private int numKeys;
-    private int numDirtyKeys;
     boolean isFree;
-
-    boolean isPersisted;
 
     public SSTable(int capacity, boolean isMemory) {
         numKeys = 0;
@@ -48,9 +41,7 @@ class SSTable implements StorageUnit {
 
     public void reset() {
         this.numKeys = 0;
-        this.numDirtyKeys = 0;
         this.minSeq = Long.MAX_VALUE;
-        this.isPersisted = false;
     }
 
     public void resetKey(long key) {
@@ -75,20 +66,14 @@ class SSTable implements StorageUnit {
     public void add(long key, long seq) {
         keys[numKeys] = key;
         seqs[numKeys] = seq;
+        assert seq >= 0;
+
         numKeys++;
-        if (seq >= 0) {
-            this.minSeq = Math.min(minSeq, seq);
-            this.numDirtyKeys++;
-        }
+        minSeq = Math.min(minSeq, seq);
     }
 
     public boolean isFull() {
         return numKeys >= keys.length;
-    }
-
-    @Override
-    public boolean isPersisted() {
-        return isPersisted;
     }
 
     @Override
@@ -104,15 +89,6 @@ class SSTable implements StorageUnit {
     @Override
     public int getSize() {
         return numKeys;
-    }
-
-    @Override
-    public int getDirtySize() {
-        if (isPersisted) {
-            return 0;
-        } else {
-            return numDirtyKeys;
-        }
     }
 
     @Override
@@ -183,16 +159,6 @@ class SSTableGroup implements StorageUnit {
     @Override
     public int getSize() {
         return size;
-    }
-
-    @Override
-    public boolean isPersisted() {
-        return true;
-    }
-
-    @Override
-    public int getDirtySize() {
-        return 0;
     }
 
     @Override
