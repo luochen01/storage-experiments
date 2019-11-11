@@ -6,50 +6,92 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexAccessor.FlushRequest;
+
 public class LSMSimulatorHorizontal extends LSMSimulator {
 
     protected final SSTable mergeRange = new SSTable(2, false);
+
+    protected final SSTable flushRange = new SSTable(2, false);
 
     public LSMSimulatorHorizontal(KeyGenerator keyGen, Config config) {
         super(keyGen, config);
     }
 
     @Override
-    protected void diskFlush() {
-        SSTable sstable = memoryLevels.isEmpty() ? memTable
-                : (SSTable) config.memSSTableSelector
-                        .selectMerge(this, memoryLevels.get(memoryLevels.size() - 1), Empty_TreeSet).getLeft();
-
-        if (sstable == memTable && memTable.getSize() == 0) {
-            prepareMemoryFlush();
-            assert memTable.getSize() > 0;
+    protected void diskFlush(FlushRequest request) {
+        List<List<StorageUnit>> sstables = null;
+        int startLevel = -1;
+        boolean flushingMemTable = false;
+        if (memoryLevels.isEmpty()) {
+            flushingMemTable = true;
+            sstables = Collections.singletonList(Collections.singletonList(memTable));
+            if (memTable.getSize() == 0) {
+                prepareMemoryFlush();
+            }
+        } else if (request == FlushRequest.MEMORY) {
+            startLevel = memoryLevels.size() - 1;
+            SSTable sstable = (SSTable) OldestMinLSNSelector.INSTANCE
+                    .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();
+            sstables = Collections.singletonList(Collections.singletonList(sstable));
+        } else {
+            SSTable oldestSSTable = null;
+            for (int i = 0; i < memoryLevels.size(); i++) {
+                PartitionedLevel level = memoryLevels.get(i);
+                for (StorageUnit sstable : level.sstables) {
+                    if (oldestSSTable == null || ((SSTable) sstable).minSeq < oldestSSTable.minSeq) {
+                        oldestSSTable = (SSTable) sstable;
+                        startLevel = i;
+                    }
+                }
+            }
+            assert oldestSSTable.minSeq == minSeq;
+            sstables = new ArrayList<>();
+            sstables.add(Collections.singletonList(oldestSSTable));
+            flushRange.resetRange();
+            flushRange.updateRange(oldestSSTable);
+            for (int i = startLevel + 1; i < memoryLevels.size(); i++) {
+                TreeSet<StorageUnit> overlap = Utils.findOverlappingSSTables(flushRange, memoryLevels.get(i).sstables);
+                sstables.add(new ArrayList<>(overlap));
+                if (!overlap.isEmpty()) {
+                    flushRange.updateRange(overlap.first());
+                    flushRange.updateRange(overlap.last());
+                }
+            }
         }
 
-        MergeIterator iterator = new DiskFlushIterator(sstable);
+        MergeIterator iterator = new DiskFlushIterator(sstables);
 
         List<StorageUnit> newSSTables = buildSSTables(iterator, false);
 
         long totalSize = addFlushedSSTable(newSSTables);
         diskMergeKeys += totalSize;
 
-        decreaseMemorySize(sstable.getSize());
-        if (sstable != memTable) {
-            freeSSTable(sstable);
-            PartitionedLevel lastLevel = memoryLevels.get(memoryLevels.size() - 1);
-            lastLevel.remove(sstable);
-            if (lastLevel.sstables.isEmpty()) {
-                assert (lastLevel.getSize() == 0);
-                memoryLevels.remove(memoryLevels.size() - 1);
-            }
-
-            if (VERBOSE) {
-                System.out.println(String.format("Disk flush mlevel %d sstable %s with %d keys", lastLevel.level,
-                        sstable.toString(), sstable.getSize()));
-            }
-
-        } else {
+        int flushSize = 0;
+        for (List<StorageUnit> list : sstables) {
+            flushSize += Utils.getTotalSize(list);
+        }
+        decreaseMemorySize(flushSize);
+        if (flushingMemTable) {
             minSeq = nextSeq - 1;
             memTable.reset();
+        } else {
+            for (List<StorageUnit> list : sstables) {
+                freeSSTables(list);
+            }
+            boolean cleanup = false;
+            for (int i = 0; i < sstables.size(); i++) {
+                PartitionedLevel level = memoryLevels.get(i + startLevel);
+                for (StorageUnit unit : sstables.get(i)) {
+                    level.remove(unit);
+                }
+                if (level.sstables.isEmpty()) {
+                    cleanup = true;
+                }
+            }
+            if (cleanup) {
+                memoryLevels.removeIf(t -> t.sstables.isEmpty());
+            }
         }
         updateMinSeq();
 

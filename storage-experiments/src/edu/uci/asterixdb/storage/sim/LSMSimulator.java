@@ -15,6 +15,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexAccessor.FlushRequest;
 
 class MemoryConfig {
     final int activeSize;
@@ -94,6 +95,7 @@ public abstract class LSMSimulator {
 
     protected final Random rand = new Random(17);
     protected final TreeMap<Long, Long> memTableMap;
+    protected long memTableMinSeq = Long.MAX_VALUE;
     protected final SSTable memTable;
     protected final List<PartitionedLevel> memoryLevels = new ArrayList<>();
 
@@ -209,20 +211,22 @@ public abstract class LSMSimulator {
             write(list.get(loadKeys));
         }
 
-        while (totalMemTableSize > 0) {
-            diskFlush();
+        while (totalMemTableSize > 0 || !memTableMap.isEmpty()) {
+            diskFlush(FlushRequest.MEMORY);
         }
 
-        minSeq = nextSeq;
         loading = false;
     }
 
     protected void write(long key) {
+        if (memTableMap.isEmpty()) {
+            memTableMinSeq = nextSeq;
+        }
         memTableMap.put(key, nextSeq++);
         int diskFlushed = 0;
         if (config.maxLogLength > 0 && minSeq + config.maxLogLength < nextSeq) {
             while (minSeq + config.minLogLength < nextSeq) {
-                diskFlush();
+                diskFlush(FlushRequest.LOG);
                 diskFlushed++;
             }
             totalLogTruncations++;
@@ -248,6 +252,7 @@ public abstract class LSMSimulator {
             memTable.add(e.getKey(), e.getValue());
         }
         memTableMap.clear();
+        memTableMinSeq = Long.MAX_VALUE;
 
         increaseMemorySize(memTable.getSize());
     }
@@ -256,7 +261,7 @@ public abstract class LSMSimulator {
         prepareMemoryFlush();
 
         if (memTable.getSize() >= config.memConfig.totalMemSize || !config.memConfig.enableMemoryMerge) {
-            diskFlush();
+            diskFlush(FlushRequest.MEMORY);
         } else {
             boolean addLevel = memoryLevels.isEmpty()
                     || memoryLevels.get(0).getSize() > memTable.getSize() * config.memConfig.sizeRatio;
@@ -281,7 +286,7 @@ public abstract class LSMSimulator {
             scheduleMerge(null, memoryLevels, config.memConfig.sizeRatio);
 
             while (totalMemTableSize > config.memConfig.totalMemSize) {
-                diskFlush();
+                diskFlush(FlushRequest.MEMORY);
             }
         }
         memTable.reset();
@@ -296,7 +301,7 @@ public abstract class LSMSimulator {
         this.totalMemTableSize -= size;
     }
 
-    protected abstract void diskFlush();
+    protected abstract void diskFlush(FlushRequest request);
 
     protected abstract GroupSelection selectGroupToMerge(UnpartitionedLevel unpartitionedLevel,
             List<PartitionedLevel> partitionedLevels);
@@ -306,7 +311,7 @@ public abstract class LSMSimulator {
 
     protected void updateMinSeq() {
         if (config.maxLogLength > 0) {
-            minSeq = nextSeq - 1;
+            minSeq = Math.min(nextSeq, memTableMinSeq);
             for (PartitionedLevel level : memoryLevels) {
                 for (StorageUnit sstable : level.sstables) {
                     minSeq = Math.min(minSeq, ((SSTable) sstable).minSeq);
@@ -393,6 +398,7 @@ public abstract class LSMSimulator {
                 int reduced = pair.getLeft().getSize() - increments;
                 assert reduced >= 0;
                 decreaseMemorySize(reduced);
+                updateMinSeq();
             } else {
                 diskMergeKeys += newKeys;
             }

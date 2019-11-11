@@ -26,12 +26,14 @@ class Experiment {
     private static final Config CONF =
             new Config(MERGE_MEMORY, DISK, CARD, RoundRobinSelector.INSTANCE, RoundRobinSelector.INSTANCE, 0, 0);
 
-    private static final int NUM_THREADS = 4;
+    private static final int NUM_THREADS = 2;
     private static final ThreadPoolExecutor executor =
             new ThreadPoolExecutor(NUM_THREADS, NUM_THREADS, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
 
     public static void main(String[] args) {
-        runLogMemory();
+        runPaper();
+        // runLogMemory();
+        //compareLogStrategy();
         // compareLogStrategy();
         // runMemorySizeForAddLevel();
         //        runMultipleUnpartitioned();
@@ -40,6 +42,47 @@ class Experiment {
         //  compareLogStrategy();
 
         // compareMemory();
+    }
+
+    private static void runPaper() {
+        List<Config> partitionedConfigs = new ArrayList<>();
+        List<Config> btreeConfigs = new ArrayList<>();
+
+        DiskConfig disk = new DiskConfig(64 * 1024, 10, 0, false);
+        // 100M keys
+        int card = 100 * 1024 * 1024;
+        long log = 512 * 1024l;
+        Integer[] memories = new Integer[] { 128 * 1024, 256 * 1024, 512 * 1024, 1024 * 1024, 2048 * 1024, 4096 * 1024,
+                8192 * 1024 };
+        //Integer[] memories = new Integer[] { 512 * 1024 };
+        for (Integer mem : memories) {
+            partitionedConfigs.add(new Config(new MemoryConfig(8192, mem, 8192, 10, true), disk, card,
+                    HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
+            btreeConfigs.add(new Config(new MemoryConfig((int) (mem * 0.69), (int) (mem * 0.69), 8192, 10, false), disk,
+                    card, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
+        }
+
+        KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator(), new ZipfGenerator() };
+
+        //KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator() };
+
+        List<Map<Integer, String>> maps = new ArrayList<>();
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (KeyGenerator keyGen : keyGens) {
+            parallelSimulations(partitionedConfigs, keyGen, "partitioned", memories, maps, futures, false);
+            parallelSimulations(btreeConfigs, keyGen, "full", memories, maps, futures, false);
+        }
+        futures.forEach(f -> {
+            try {
+                f.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        maps.forEach(m -> printMap(m));
+
+        executor.shutdown();
     }
 
     private static void runLogMemory() {
@@ -79,10 +122,9 @@ class Experiment {
         List<Config> roundRobinConfigs = new ArrayList<>();
         List<Config> oldestSeqConfigs = new ArrayList<>();
         List<Config> greedyConfigs = new ArrayList<>();
-        List<Config> hybridConfigs = new ArrayList<>();
 
-        //Long[] logs = new Long[] { 64 * 1024l, 128 * 1024l, 256 * 1024l, 512 * 1024l, 1024 * 1024l, 2048 * 1024l };
-        Long[] logs = new Long[] { 128 * 1024l };
+        Long[] logs = new Long[] { 64 * 1024l, 128 * 1024l, 256 * 1024l, 512 * 1024l, 1024 * 1024l, 2048 * 1024l };
+        //Long[] logs = new Long[] { 256 * 1024l };
         for (Long log : logs) {
             roundRobinConfigs.add(new Config(new MemoryConfig(4096, Integer.MAX_VALUE, 4096, 10, true), DISK, CARD,
                     RoundRobinSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
@@ -90,20 +132,16 @@ class Experiment {
                     OldestMinLSNSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
             greedyConfigs.add(new Config(new MemoryConfig(4096, Integer.MAX_VALUE, 4096, 10, true), DISK, CARD,
                     GreedySelector.INSTANCE, GreedySelector.INSTANCE, log, log));
-
-            hybridConfigs.add(new Config(new MemoryConfig(4096, Integer.MAX_VALUE, 4096, 10, true), DISK, CARD,
-                    HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
         }
 
-        KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator() };
+        KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator(), new ZipfGenerator() };
         List<Map<Integer, String>> maps = new ArrayList<>();
         List<Future<?>> futures = new ArrayList<>();
 
         for (KeyGenerator keyGen : keyGens) {
-            // parallelSimulations(roundRobinConfigs, keyGen, "round-robin", logs, maps, futures);
-            //parallelSimulations(oldestSeqConfigs, keyGen, "oldest-seq", logs, maps, futures);
-            //parallelSimulations(greedyConfigs, keyGen, "greedy", logs, maps, futures);
-            parallelSimulations(hybridConfigs, keyGen, "hybrid", logs, maps, futures, false);
+            parallelSimulations(roundRobinConfigs, keyGen, "round-robin", logs, maps, futures, false);
+            parallelSimulations(oldestSeqConfigs, keyGen, "oldest-seq", logs, maps, futures, false);
+            parallelSimulations(greedyConfigs, keyGen, "greedy", logs, maps, futures, false);
         }
         futures.forEach(f -> {
             try {

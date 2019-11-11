@@ -26,7 +26,7 @@ class HybridSelector implements SSTableSelector {
         if (currentLevel.level == sim.memoryLevels.size() - 1) {
             return OldestMinLSNSelector.INSTANCE.selectMerge(sim, currentLevel, nextLevel);
         } else {
-            return RoundRobinSelector.INSTANCE.selectMerge(sim, currentLevel, nextLevel);
+            return GreedySelector.INSTANCE.selectMerge(sim, currentLevel, nextLevel);
         }
     }
 

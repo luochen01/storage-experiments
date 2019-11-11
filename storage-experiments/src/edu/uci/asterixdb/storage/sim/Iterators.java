@@ -1,5 +1,6 @@
 package edu.uci.asterixdb.storage.sim;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -24,7 +25,7 @@ class PQEntry implements Comparable<PQEntry> {
 
     final int pos;
 
-    public PQEntry(Set<StorageUnit> treeSet, int pos) {
+    public PQEntry(Collection<StorageUnit> treeSet, int pos) {
         sstableIterator = treeSet.iterator();
         if (sstableIterator.hasNext()) {
             sstable = (SSTable) sstableIterator.next();
@@ -108,8 +109,11 @@ abstract class AbstractIterator implements MergeIterator {
 
 class DiskFlushIterator extends AbstractIterator {
 
-    public DiskFlushIterator(SSTable sstable) {
-        queue.add(new PQEntry(sstable, 0));
+    public DiskFlushIterator(List<List<StorageUnit>> sstables) {
+        int pos = 0;
+        for (List<StorageUnit> list : sstables) {
+            queue.add(new PQEntry(list, pos++));
+        }
     }
 }
 
