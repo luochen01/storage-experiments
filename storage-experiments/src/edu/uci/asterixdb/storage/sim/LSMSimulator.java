@@ -13,8 +13,13 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang3.tuple.Pair;
+
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongLists;
 
 class MemoryConfig {
     final int activeSize;
@@ -206,13 +211,13 @@ public abstract class LSMSimulator {
 
     protected void load() {
         loading = true;
-        List<Long> list = new ArrayList<>(config.cardinality);
+        LongList list = new LongArrayList(config.cardinality);
         for (long i = 0; i < config.cardinality; i++) {
             list.add(i);
         }
-        Collections.shuffle(list, rand);
+        LongLists.shuffle(list, ThreadLocalRandom.current());
         for (loadKeys = 0; loadKeys < config.cardinality; loadKeys++) {
-            write(list.get(loadKeys));
+            write(list.getLong(loadKeys));
         }
 
         while (totalMemTableSize > 0 || !memTableMap.isEmpty()) {

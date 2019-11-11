@@ -26,7 +26,7 @@ class Experiment {
     private static final Config CONF =
             new Config(MERGE_MEMORY, DISK, CARD, RoundRobinSelector.INSTANCE, RoundRobinSelector.INSTANCE, 0, 0);
 
-    private static final int NUM_THREADS = 2;
+    private static final int NUM_THREADS = 1;
     private static final ThreadPoolExecutor executor =
             new ThreadPoolExecutor(NUM_THREADS, NUM_THREADS, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
 
