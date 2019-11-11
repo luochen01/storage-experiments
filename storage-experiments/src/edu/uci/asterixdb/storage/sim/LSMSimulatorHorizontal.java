@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class LSMSimulatorHorizontal extends LSMSimulator {
+    public static boolean ROUND_ROBIN = false;
 
     protected final SSTable mergeRange = new SSTable(2, false);
 
@@ -27,35 +28,45 @@ public class LSMSimulatorHorizontal extends LSMSimulator {
             if (memTable.getSize() == 0) {
                 prepareMemoryFlush();
             }
-        } else if (request == FlushReason.MEMORY) {
-            startLevel = memoryLevels.size() - 1;
-            SSTable sstable = (SSTable) OldestMinLSNSelector.INSTANCE
-                    .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();
-            sstables = Collections.singletonList(Collections.singletonList(sstable));
         } else {
-            SSTable oldestSSTable = null;
-            for (int i = 0; i < memoryLevels.size(); i++) {
-                PartitionedLevel level = memoryLevels.get(i);
-                for (StorageUnit sstable : level.sstables) {
-                    if (oldestSSTable == null || ((SSTable) sstable).minSeq < oldestSSTable.minSeq) {
-                        oldestSSTable = (SSTable) sstable;
-                        startLevel = i;
+            if (ROUND_ROBIN) {
+                StorageUnit sstable = RoundRobinSelector.INSTANCE
+                        .selectMerge(this, memoryLevels.get(memoryLevels.size() - 1), Empty_TreeSet).getLeft();
+                sstables = Collections.singletonList(Collections.singletonList(sstable));
+            } else {
+                if (request == FlushReason.MEMORY) {
+                    startLevel = memoryLevels.size() - 1;
+                    SSTable sstable = (SSTable) OldestMinLSNSelector.INSTANCE
+                            .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();
+                    sstables = Collections.singletonList(Collections.singletonList(sstable));
+                } else {
+                    SSTable oldestSSTable = null;
+                    for (int i = 0; i < memoryLevels.size(); i++) {
+                        PartitionedLevel level = memoryLevels.get(i);
+                        for (StorageUnit sstable : level.sstables) {
+                            if (oldestSSTable == null || ((SSTable) sstable).minSeq < oldestSSTable.minSeq) {
+                                oldestSSTable = (SSTable) sstable;
+                                startLevel = i;
+                            }
+                        }
+                    }
+                    assert oldestSSTable.minSeq == minSeq;
+                    sstables = new ArrayList<>();
+                    sstables.add(Collections.singletonList(oldestSSTable));
+                    flushRange.resetRange();
+                    flushRange.updateRange(oldestSSTable);
+                    for (int i = startLevel + 1; i < memoryLevels.size(); i++) {
+                        TreeSet<StorageUnit> overlap =
+                                Utils.findOverlappingSSTables(flushRange, memoryLevels.get(i).sstables);
+                        sstables.add(new ArrayList<>(overlap));
+                        if (!overlap.isEmpty()) {
+                            flushRange.updateRange(overlap.first());
+                            flushRange.updateRange(overlap.last());
+                        }
                     }
                 }
             }
-            assert oldestSSTable.minSeq == minSeq;
-            sstables = new ArrayList<>();
-            sstables.add(Collections.singletonList(oldestSSTable));
-            flushRange.resetRange();
-            flushRange.updateRange(oldestSSTable);
-            for (int i = startLevel + 1; i < memoryLevels.size(); i++) {
-                TreeSet<StorageUnit> overlap = Utils.findOverlappingSSTables(flushRange, memoryLevels.get(i).sstables);
-                sstables.add(new ArrayList<>(overlap));
-                if (!overlap.isEmpty()) {
-                    flushRange.updateRange(overlap.first());
-                    flushRange.updateRange(overlap.last());
-                }
-            }
+
         }
 
         MergeIterator iterator = new DiskFlushIterator(sstables);

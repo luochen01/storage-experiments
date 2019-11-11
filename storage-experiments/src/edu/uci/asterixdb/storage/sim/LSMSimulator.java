@@ -473,14 +473,16 @@ public abstract class LSMSimulator {
     protected void checkCounter() {
         counter++;
         if (counter == progress) {
-            System.out.println("max memory table size " + maxMemTableSize);
-            System.out.println("current memory table size " + totalMemTableSize);
-            System.out.println("total memory sstables " + totalMemorySSTables);
-            System.out.println("total disk sstables " + totalDiskSSTables);
-            System.out.println(String.format("%s: completed %d keys. memory write amp %s, disk write amp %s",
-                    loading ? "Load" : "Update", loading ? loadKeys : writeKeys,
-                    printWriteAmplification(memoryMergeKeys), printWriteAmplification(diskMergeKeys)));
-            System.out.println(printLevels());
+            synchronized (LSMSimulator.class) {
+                System.out.println("max memory table size " + maxMemTableSize);
+                System.out.println("current memory table size " + totalMemTableSize);
+                System.out.println("total memory sstables " + totalMemorySSTables);
+                System.out.println("total disk sstables " + totalDiskSSTables);
+                System.out.println(String.format("%s: completed %d keys. memory write amp %s, disk write amp %s",
+                        loading ? "Load" : "Update", loading ? loadKeys : writeKeys,
+                        printWriteAmplification(memoryMergeKeys), printWriteAmplification(diskMergeKeys)));
+                System.out.println(printLevels());
+            }
             counter = 0;
 
             diskMergeKeysList.add(diskMergeKeys);
