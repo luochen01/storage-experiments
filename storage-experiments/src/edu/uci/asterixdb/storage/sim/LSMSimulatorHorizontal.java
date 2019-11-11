@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexAccessor.FlushRequest;
-
 public class LSMSimulatorHorizontal extends LSMSimulator {
 
     protected final SSTable mergeRange = new SSTable(2, false);
@@ -19,7 +17,7 @@ public class LSMSimulatorHorizontal extends LSMSimulator {
     }
 
     @Override
-    protected void diskFlush(FlushRequest request) {
+    protected void diskFlush(FlushReason request) {
         List<List<StorageUnit>> sstables = null;
         int startLevel = -1;
         boolean flushingMemTable = false;
@@ -29,7 +27,7 @@ public class LSMSimulatorHorizontal extends LSMSimulator {
             if (memTable.getSize() == 0) {
                 prepareMemoryFlush();
             }
-        } else if (request == FlushRequest.MEMORY) {
+        } else if (request == FlushReason.MEMORY) {
             startLevel = memoryLevels.size() - 1;
             SSTable sstable = (SSTable) OldestMinLSNSelector.INSTANCE
                     .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();

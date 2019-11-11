@@ -15,7 +15,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hyracks.storage.am.lsm.common.api.ILSMIndexAccessor.FlushRequest;
 
 class MemoryConfig {
     final int activeSize;
@@ -87,6 +86,11 @@ class GroupSelection {
 }
 
 public abstract class LSMSimulator {
+    public enum FlushReason {
+        MEMORY,
+        LOG
+    }
+
     public static boolean VERBOSE = false;
 
     public static int MEMORY_INTERVAL = 1000;
@@ -212,7 +216,7 @@ public abstract class LSMSimulator {
         }
 
         while (totalMemTableSize > 0 || !memTableMap.isEmpty()) {
-            diskFlush(FlushRequest.MEMORY);
+            diskFlush(FlushReason.MEMORY);
         }
 
         loading = false;
@@ -226,7 +230,7 @@ public abstract class LSMSimulator {
         int diskFlushed = 0;
         if (config.maxLogLength > 0 && minSeq + config.maxLogLength < nextSeq) {
             while (minSeq + config.minLogLength < nextSeq) {
-                diskFlush(FlushRequest.LOG);
+                diskFlush(FlushReason.LOG);
                 diskFlushed++;
             }
             totalLogTruncations++;
@@ -261,7 +265,7 @@ public abstract class LSMSimulator {
         prepareMemoryFlush();
 
         if (memTable.getSize() >= config.memConfig.totalMemSize || !config.memConfig.enableMemoryMerge) {
-            diskFlush(FlushRequest.MEMORY);
+            diskFlush(FlushReason.MEMORY);
         } else {
             boolean addLevel = memoryLevels.isEmpty()
                     || memoryLevels.get(0).getSize() > memTable.getSize() * config.memConfig.sizeRatio;
@@ -286,7 +290,7 @@ public abstract class LSMSimulator {
             scheduleMerge(null, memoryLevels, config.memConfig.sizeRatio);
 
             while (totalMemTableSize > config.memConfig.totalMemSize) {
-                diskFlush(FlushRequest.MEMORY);
+                diskFlush(FlushReason.MEMORY);
             }
         }
         memTable.reset();
@@ -301,7 +305,7 @@ public abstract class LSMSimulator {
         this.totalMemTableSize -= size;
     }
 
-    protected abstract void diskFlush(FlushRequest request);
+    protected abstract void diskFlush(FlushReason request);
 
     protected abstract GroupSelection selectGroupToMerge(UnpartitionedLevel unpartitionedLevel,
             List<PartitionedLevel> partitionedLevels);
