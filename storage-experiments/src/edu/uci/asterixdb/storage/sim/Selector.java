@@ -92,14 +92,14 @@ class GreedySelector implements SSTableSelector {
     public Pair<StorageUnit, Set<StorageUnit>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
             TreeSet<StorageUnit> nextLevel) {
         StorageUnit selectedUnit = null;
-        int selectedSize = Integer.MAX_VALUE;
+        double selectedRatio = 0;
 
         for (StorageUnit unit : currentLevel.sstables) {
             Set<StorageUnit> overlappingUnits = Utils.findOverlappingSSTables(unit, nextLevel);
 
-            int size = Utils.getTotalSize(overlappingUnits);
-            if (size < selectedSize) {
-                selectedSize = size;
+            double ratio = (double) Utils.getTotalSize(overlappingUnits) / unit.getSize();
+            if (selectedUnit == null || ratio < selectedRatio) {
+                selectedRatio = ratio;
                 selectedUnit = unit;
             }
         }
