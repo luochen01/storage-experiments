@@ -30,8 +30,9 @@ public class LSMSimulatorHorizontal extends LSMSimulator {
             }
         } else {
             if (ROUND_ROBIN) {
+                startLevel = memoryLevels.size() - 1;
                 StorageUnit sstable = RoundRobinSelector.INSTANCE
-                        .selectMerge(this, memoryLevels.get(memoryLevels.size() - 1), Empty_TreeSet).getLeft();
+                        .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();
                 sstables = Collections.singletonList(Collections.singletonList(sstable));
             } else {
                 if (request == FlushReason.MEMORY) {
