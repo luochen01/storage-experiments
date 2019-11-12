@@ -55,7 +55,7 @@ class Experiment {
         Integer[] memories = new Integer[] { 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024, 1024 * 1024, 2048 * 1024,
                 4096 * 1024, 8192 * 1024 };
         for (Integer mem : memories) {
-            partitionedConfigs.add(new Config(new MemoryConfig(8192, mem, 8192, 10, true), disk, card,
+            partitionedConfigs.add(new Config(new MemoryConfig(8192 * 4, mem, 8192, 10, true), disk, card,
                     HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
             btreeConfigs.add(new Config(new MemoryConfig((int) (mem * 0.69), (int) (mem * 0.69), 8192, 10, false), disk,
                     card, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
@@ -66,10 +66,10 @@ class Experiment {
         List<Map<Integer, String>> maps = new ArrayList<>();
         List<Future<?>> futures = new ArrayList<>();
 
-        LSMSimulatorHorizontal.ROUND_ROBIN = true;
+        //LSMSimulatorHorizontal.ROUND_ROBIN = true;
         for (KeyGenerator keyGen : keyGens) {
             parallelSimulations(partitionedConfigs, keyGen, "partitioned", memories, maps, futures, false);
-            //parallelSimulations(btreeConfigs, keyGen, "full", memories, maps, futures, false);
+            parallelSimulations(btreeConfigs, keyGen, "full", memories, maps, futures, false);
         }
         futures.forEach(f -> {
             try {

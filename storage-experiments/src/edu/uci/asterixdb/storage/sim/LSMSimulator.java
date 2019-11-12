@@ -272,8 +272,7 @@ public abstract class LSMSimulator {
         if (memTable.getSize() >= config.memConfig.totalMemSize || !config.memConfig.enableMemoryMerge) {
             diskFlush(FlushReason.MEMORY);
         } else {
-            boolean addLevel = memoryLevels.isEmpty()
-                    || memoryLevels.get(0).getSize() > memTable.getSize() * config.memConfig.sizeRatio;
+            boolean addLevel = memoryLevels.isEmpty() || memoryLevels.get(0).getSize() > memTable.getSize();
             Set<StorageUnit> overlappingSSTables = addLevel ? Collections.emptySet()
                     : Utils.findOverlappingSSTables(memTable, memoryLevels.get(0).sstables);
 
