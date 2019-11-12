@@ -50,7 +50,7 @@ class Experiment {
 
         DiskConfig disk = new DiskConfig(64 * 1024, 10, 0, false);
         // 100M keys
-        int card = 10 * 1024 * 1024;
+        int card = 100 * 1024 * 1024;
         long log = 10 * 1024 * 1024l;
         Integer[] memories = new Integer[] { 64 * 1024, 128 * 1024, 256 * 1024, 512 * 1024, 1024 * 1024, 2048 * 1024,
                 4096 * 1024, 8192 * 1024 };
