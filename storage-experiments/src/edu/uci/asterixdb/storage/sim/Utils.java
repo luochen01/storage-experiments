@@ -3,6 +3,7 @@ package edu.uci.asterixdb.storage.sim;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.PriorityQueue;
 import java.util.TreeSet;
 
@@ -14,8 +15,7 @@ class Utils {
         return String.format("%.2f", (double) v1 / v2);
     }
 
-    public static Pair<Integer, Integer> findOverlappingSSTableIndex(StorageUnit sstable,
-            List<? extends StorageUnit> sstables) {
+    public static Pair<Integer, Integer> findOverlappingSSTableIndex(SSTable sstable, List<SSTable> sstables) {
         int index = Collections.binarySearch(sstables, sstable);
         if (index < 0) {
             // not found
@@ -33,20 +33,20 @@ class Utils {
         }
     }
 
-    private static final ThreadLocal<Pair<SSTable, SSTable>> LOCAL_SSTABLES = new ThreadLocal<>();
+    private static final ThreadLocal<Pair<KeySSTable, KeySSTable>> LOCAL_SSTABLES = new ThreadLocal<>();
 
-    public static TreeSet<StorageUnit> findOverlappingSSTables(StorageUnit sstable, TreeSet<StorageUnit> sstables) {
-        Pair<SSTable, SSTable> pair = LOCAL_SSTABLES.get();
+    public static NavigableSet<SSTable> findOverlappingSSTables(SSTable sstable, TreeSet<SSTable> sstables) {
+        Pair<KeySSTable, KeySSTable> pair = LOCAL_SSTABLES.get();
         if (pair == null) {
-            pair = Pair.of(new SSTable(1, false), new SSTable(1, false));
+            pair = Pair.of(new KeySSTable(), new KeySSTable());
             LOCAL_SSTABLES.set(pair);
         }
         pair.getLeft().resetKey(sstable.min());
         pair.getRight().resetKey(sstable.max());
-        return (TreeSet<StorageUnit>) sstables.subSet(pair.getLeft(), true, pair.getRight(), true);
+        return sstables.subSet(pair.getLeft(), true, pair.getRight(), true);
     }
 
-    public static void addLevel(List<StorageUnit> newSSTables, List<PartitionedLevel> levels, boolean isMemory) {
+    public static void addLevel(List<SSTable> newSSTables, List<PartitionedLevel> levels, boolean isMemory) {
         levels.forEach(l -> l.level++);
         PartitionedLevel newLevel = new PartitionedLevel(0, isMemory);
         newSSTables.forEach(t -> newLevel.add(t));
@@ -64,7 +64,7 @@ class Utils {
         return capacity;
     }
 
-    public static <T extends StorageUnit> void replace(List<T> list, List<T> oldUnits, List<T> newUnits) {
+    public static <T extends SSTable> void replace(List<T> list, List<T> oldUnits, List<T> newUnits) {
         int index = -1;
         if (!oldUnits.isEmpty()) {
             index = Collections.binarySearch(list, oldUnits.get(0));
@@ -89,16 +89,16 @@ class Utils {
         }
     }
 
-    public static int getTotalSize(Collection<? extends StorageUnit> list) {
+    public static int getTotalSize(Collection<SSTable> list) {
         int total = 0;
-        for (StorageUnit unit : list) {
+        for (SSTable unit : list) {
             total += unit.getSize();
         }
         return total;
     }
 
-    public static StorageUnit getNextMergeSSTable(TreeSet<StorageUnit> sstables, StorageUnit key) {
-        StorageUnit sstable = sstables.higher(key);
+    public static SSTable getNextMergeSSTable(TreeSet<SSTable> sstables, SSTable key) {
+        SSTable sstable = sstables.higher(key);
         if (sstable == null) {
             return sstables.first();
         } else {
@@ -110,6 +110,28 @@ class Utils {
             List<SSTable> newSSTables) {
         queue.removeAll(oldSSTables);
         queue.addAll(newSSTables);
+    }
+
+    public static int getBloomFilterPages(int numKeys, int pageSize) {
+        int bfBytes = Utils.ceil(numKeys * 10, 8);
+        return Utils.ceil(bfBytes, 1024 * pageSize);
+    }
+
+    public static int ceil(int a, int b) {
+        int c = a / b;
+        if (a % b != 0) {
+            return c + 1;
+        } else {
+            return c;
+        }
+    }
+
+    public static boolean contains(TreeSet<SSTable> sstables, KeySSTable key) {
+        SSTable sstable = sstables.ceiling(key);
+        if (sstable == null || sstable.min() > key.max()) {
+            return false;
+        }
+        return sstable.contains(key.min());
     }
 
 }

@@ -6,8 +6,8 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 
 interface SSTableSelector {
-    public Pair<StorageUnit, Set<StorageUnit>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
-            TreeSet<StorageUnit> nextLevel);
+    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+            TreeSet<SSTable> nextLevel);
 }
 
 class HybridSelector implements SSTableSelector {
@@ -18,8 +18,8 @@ class HybridSelector implements SSTableSelector {
     }
 
     @Override
-    public Pair<StorageUnit, Set<StorageUnit>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
-            TreeSet<StorageUnit> nextLevel) {
+    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+            TreeSet<SSTable> nextLevel) {
         if (!currentLevel.inMemory) {
             throw new IllegalStateException();
         }
@@ -40,11 +40,11 @@ class RoundRobinSelector implements SSTableSelector {
     }
 
     @Override
-    public Pair<StorageUnit, Set<StorageUnit>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
-            TreeSet<StorageUnit> nextLevel) {
-        StorageUnit sstable = Utils.getNextMergeSSTable(currentLevel.sstables, currentLevel.lastKey);
+    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+            TreeSet<SSTable> nextLevel) {
+        SSTable sstable = Utils.getNextMergeSSTable(currentLevel.sstables, currentLevel.lastKey);
         currentLevel.lastKey.resetKey(sstable.max());
-        Set<StorageUnit> overlappingSSTables = Utils.findOverlappingSSTables(sstable, nextLevel);
+        Set<SSTable> overlappingSSTables = Utils.findOverlappingSSTables(sstable, nextLevel);
         return Pair.of(sstable, overlappingSSTables);
     }
 }
@@ -56,24 +56,24 @@ class OldestMinLSNSelector implements SSTableSelector {
     }
 
     @Override
-    public Pair<StorageUnit, Set<StorageUnit>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
-            TreeSet<StorageUnit> nextLevel) {
-        SSTable minSSTable = (SSTable) selectOldestSSTable(currentLevel);
+    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+            TreeSet<SSTable> nextLevel) {
+        SSTable minSSTable = selectOldestSSTable(currentLevel);
         if (minSSTable == null) {
             return null;
         } else {
-            Set<StorageUnit> overlappingSSTables = Utils.findOverlappingSSTables(minSSTable, nextLevel);
+            Set<SSTable> overlappingSSTables = Utils.findOverlappingSSTables(minSSTable, nextLevel);
             return Pair.of(minSSTable, overlappingSSTables);
         }
     }
 
-    private StorageUnit selectOldestSSTable(PartitionedLevel level) {
-        StorageUnit minSSTable = null;
+    private SSTable selectOldestSSTable(PartitionedLevel level) {
+        SSTable minSSTable = null;
         long minSeq = Long.MAX_VALUE;
-        for (StorageUnit unit : level.sstables) {
-            SSTable sstable = (SSTable) unit;
-            if (sstable.minSeq < minSeq) {
-                minSeq = sstable.minSeq;
+        for (SSTable sstable : level.sstables) {
+            MemorySSTable memSSTable = (MemorySSTable) sstable;
+            if (memSSTable.minSeq < minSeq) {
+                minSeq = memSSTable.minSeq;
                 minSSTable = sstable;
             }
         }
@@ -89,13 +89,13 @@ class GreedySelector implements SSTableSelector {
     }
 
     @Override
-    public Pair<StorageUnit, Set<StorageUnit>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
-            TreeSet<StorageUnit> nextLevel) {
-        StorageUnit selectedUnit = null;
+    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+            TreeSet<SSTable> nextLevel) {
+        SSTable selectedUnit = null;
         double selectedRatio = 0;
 
-        for (StorageUnit unit : currentLevel.sstables) {
-            Set<StorageUnit> overlappingUnits = Utils.findOverlappingSSTables(unit, nextLevel);
+        for (SSTable unit : currentLevel.sstables) {
+            Set<SSTable> overlappingUnits = Utils.findOverlappingSSTables(unit, nextLevel);
 
             double ratio = (double) Utils.getTotalSize(overlappingUnits) / unit.getSize();
             if (selectedUnit == null || ratio < selectedRatio) {
@@ -103,7 +103,7 @@ class GreedySelector implements SSTableSelector {
                 selectedUnit = unit;
             }
         }
-        Set<StorageUnit> selectedOverlappingUnits = Utils.findOverlappingSSTables(selectedUnit, nextLevel);
+        Set<SSTable> selectedOverlappingUnits = Utils.findOverlappingSSTables(selectedUnit, nextLevel);
         return Pair.of(selectedUnit, selectedOverlappingUnits);
     }
 }

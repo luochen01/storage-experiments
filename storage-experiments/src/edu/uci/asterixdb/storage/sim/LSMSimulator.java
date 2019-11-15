@@ -3,23 +3,24 @@ package edu.uci.asterixdb.storage.sim;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.longs.LongLists;
+import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntLists;
 
 class MemoryConfig {
     final int activeSize;
@@ -53,9 +54,24 @@ class DiskConfig {
     }
 }
 
+class TuningConfig {
+    final int cacheSize;
+    final int pageSize;
+    final int writes;
+    final int reads;
+
+    public TuningConfig(int cacheSize, int pageSize, int writes, int reads) {
+        this.cacheSize = cacheSize;
+        this.pageSize = pageSize;
+        this.writes = writes;
+        this.reads = reads;
+    }
+}
+
 class Config {
     final MemoryConfig memConfig;
     final DiskConfig diskConfig;
+    final TuningConfig tuningConfig;
     final int cardinality;
     final SSTableSelector memSSTableSelector;
     final SSTableSelector diskSSTableSelector;
@@ -64,8 +80,16 @@ class Config {
 
     public Config(MemoryConfig memConfig, DiskConfig diskConfig, int cardinality, SSTableSelector memSSTableSelector,
             SSTableSelector diskSSTableSelector, long minLogLength, long maxLogLength) {
+        this(memConfig, diskConfig, new TuningConfig(Integer.MAX_VALUE, diskConfig.sstableSize, 1, 0), cardinality,
+                memSSTableSelector, diskSSTableSelector, minLogLength, maxLogLength);
+    }
+
+    public Config(MemoryConfig memConfig, DiskConfig diskConfig, TuningConfig tuningConfig, int cardinality,
+            SSTableSelector memSSTableSelector, SSTableSelector diskSSTableSelector, long minLogLength,
+            long maxLogLength) {
         this.memConfig = memConfig;
         this.diskConfig = diskConfig;
+        this.tuningConfig = tuningConfig;
         this.cardinality = cardinality;
         this.memSSTableSelector = memSSTableSelector;
         this.diskSSTableSelector = diskSSTableSelector;
@@ -87,31 +111,48 @@ class GroupSelection {
         this.toIndex = toIndex;
         this.addLevel = addLevel;
     }
+}
+
+class SimulationStats {
+    int numDiskFlushes = 0;
+    long memoryMergeKeys = 0;
+    long diskMergeKeys = 0;
+    int totalMemorySSTables = 0;
+    int totalDiskSSTables = 0;
+    int totalDiskFlushes = 0;
+    int maxDiskFlushesPerLogTruncation = 0;
+    int totalLogTruncations = 0;
+    int totalUnpartitionedMerges = 0;
+    int totalUnpartitionedMergeGroups = 0;
+    int maxMemTableSize = 0;
 
 }
 
-public abstract class LSMSimulator {
+public class LSMSimulator {
     public enum FlushReason {
         MEMORY,
         LOG
     }
 
+    public static boolean ROUND_ROBIN = false;
+
+    protected final KeySSTable mergeRange = new KeySSTable();
+    protected final KeySSTable flushRange = new KeySSTable();
+    protected final KeySSTable searchKey = new KeySSTable();
+
     public static boolean VERBOSE = false;
 
     public static int MEMORY_INTERVAL = 1000;
 
-    protected static final TreeSet<StorageUnit> Empty_TreeSet = new TreeSet<>();
+    protected static final TreeSet<SSTable> Empty_TreeSet = new TreeSet<>();
 
     protected final Random rand = new Random(17);
-    protected final TreeMap<Long, Long> memTableMap;
-    protected long memTableMinSeq = Long.MAX_VALUE;
+    protected final Int2IntSortedMap memTableMap;
+    protected int memTableMinSeq = Integer.MAX_VALUE;
     protected final SSTable memTable;
     protected final List<PartitionedLevel> memoryLevels = new ArrayList<>();
 
-    // protected final PriorityQueue<SSTable> memoryQueue =
-    //new PriorityQueue<>((s1, s2) -> Long.compare(s1.minSeq, s2.minSeq));
     private int totalMemTableSize;
-    protected int maxMemTableSize;
 
     protected final UnpartitionedLevel unpartitionedLevel;
     protected final List<PartitionedLevel> diskLevels = new ArrayList<>();
@@ -119,42 +160,29 @@ public abstract class LSMSimulator {
     protected final Config config;
 
     protected final KeyGenerator keyGen;
-    protected final LinkedList<SSTable> memorySSTs = new LinkedList<>();
-    protected final LinkedList<SSTable> diskSSTs = new LinkedList<>();
-
-    protected long memoryMergeKeys = 0;
-    protected long diskMergeKeys;
+    protected final ArrayDeque<MemorySSTable> memorySSTs = new ArrayDeque<>();
+    protected final ArrayDeque<DiskSSTable> diskSSTs = new ArrayDeque<>();
 
     public static int progress = 1000 * 1000; // 1 million
-    protected int counter = 0;
     protected boolean loading = false;
-    protected int loadKeys = 0;
-    protected int writeKeys = 0;
-    protected int numDiskFlushes = 0;
 
-    protected int totalMemorySSTables = 0;
-    protected int totalDiskSSTables = 0;
-
-    protected long minSeq = 0;
-    protected long nextSeq = 0;
-
-    protected int totalDiskFlushes;
-    protected int maxDiskFlushesPerLogTruncation;
-    protected int totalLogTruncations;
-
-    protected int totalUnpartitionedMerges;
-    protected int totalUnpartitionedMergeGroups;
-
-    protected List<Long> diskMergeKeysList = new ArrayList<>();
+    // logging
+    protected int minSeq = 0;
+    protected int nextSeq = 0;
 
     protected PrintWriter printWriter;
+    protected SimulationStats stats = new SimulationStats();
+
+    protected final LRUCache cache;
+    protected int ops;
 
     public LSMSimulator(KeyGenerator keyGen, Config config) {
         unpartitionedLevel = new UnpartitionedLevel(-1);
         this.keyGen = keyGen;
+        this.cache = new LRUCache(config.tuningConfig.cacheSize, config.tuningConfig.pageSize);
         this.config = config;
-        this.memTableMap = new TreeMap<Long, Long>();
-        this.memTable = new SSTable(config.memConfig.activeSize, true);
+        this.memTableMap = new Int2IntAVLTreeMap();
+        this.memTable = new MemorySSTable(config.memConfig.activeSize);
     }
 
     public void initializeMemoryLog(File file) throws IOException {
@@ -162,72 +190,55 @@ public abstract class LSMSimulator {
     }
 
     public void resetStats() {
-        maxMemTableSize = 0;
-        memoryMergeKeys = 0;
-        diskMergeKeys = 0;
-        writeKeys = 0;
-        numDiskFlushes = 0;
-        diskMergeKeysList.clear();
-
         for (PartitionedLevel level : memoryLevels) {
             level.resetStats();
         }
         unpartitionedLevel.resetStats();
-
-        totalDiskFlushes = 0;
-        maxDiskFlushesPerLogTruncation = 0;
-        totalLogTruncations = 0;
-
-        totalUnpartitionedMerges = 0;
-        totalUnpartitionedMergeGroups = 0;
-
         for (PartitionedLevel level : diskLevels) {
             level.resetStats();
         }
+        stats = new SimulationStats();
+        cache.resetStats();
     }
 
-    public void simulate(int totalKeys) {
+    public void simulate(int totalOps) {
         load();
         resetStats();
-        for (writeKeys = 1; writeKeys <= totalKeys; writeKeys++) {
-            int key = keyGen.nextKey();
-            write(key);
-            if (printWriter != null && writeKeys % MEMORY_INTERVAL == 0) {
-                printWriter.println(writeKeys + "\t" + (nextSeq - minSeq) + "\t" + totalMemTableSize);
+        for (ops = 0; ops < totalOps;) {
+            // do writes
+            for (int writes = 0; writes < config.tuningConfig.writes; writes++, ops++) {
+                write(keyGen.nextKey());
+            }
+            for (int reads = 0; reads < config.tuningConfig.reads; reads++, ops++) {
+                read(keyGen.nextKey());
             }
         }
+
         if (printWriter != null) {
             printWriter.close();
         }
     }
 
-    public void continueRun(int numKeys) {
-        resetStats();
-        for (writeKeys = 1; writeKeys <= numKeys; writeKeys++) {
-            int key = keyGen.nextKey();
-            write(key);
-        }
-    }
-
     protected void load() {
         loading = true;
-        LongList list = new LongArrayList(config.cardinality);
-        for (long i = 0; i < config.cardinality; i++) {
+        IntList list = new IntArrayList(config.cardinality);
+        for (int i = 0; i < config.cardinality; i++) {
             list.add(i);
         }
-        LongLists.shuffle(list, ThreadLocalRandom.current());
-        for (loadKeys = 0; loadKeys < config.cardinality; loadKeys++) {
-            write(list.getLong(loadKeys));
+        IntLists.shuffle(list, rand);
+        for (ops = 0; ops < config.cardinality; ops++) {
+            write(list.getInt(ops));
         }
 
         while (totalMemTableSize > 0 || !memTableMap.isEmpty()) {
             diskFlush(FlushReason.MEMORY);
         }
 
+        cache.resetStats();
         loading = false;
     }
 
-    protected void write(long key) {
+    protected void write(int key) {
         if (memTableMap.isEmpty()) {
             memTableMinSeq = nextSeq;
         }
@@ -238,30 +249,64 @@ public abstract class LSMSimulator {
                 diskFlush(FlushReason.LOG);
                 diskFlushed++;
             }
-            totalLogTruncations++;
-            totalDiskFlushes += diskFlushed;
-            maxDiskFlushesPerLogTruncation = Math.max(maxDiskFlushesPerLogTruncation, diskFlushed);
+            stats.totalLogTruncations++;
+            stats.totalDiskFlushes += diskFlushed;
+            stats.maxDiskFlushesPerLogTruncation = Math.max(stats.maxDiskFlushesPerLogTruncation, diskFlushed);
 
             if (VERBOSE && !loading && diskFlushed > 1) {
-                System.out.println(totalLogTruncations + ": flushed " + diskFlushed + " sstables at once");
+                System.out.println(stats.totalLogTruncations + ": flushed " + diskFlushed + " sstables at once");
             }
         }
 
-        numDiskFlushes += diskFlushed;
+        stats.numDiskFlushes += diskFlushed;
 
         if (memTableMap.size() >= config.memConfig.activeSize) {
             memoryFlush();
         }
+
         checkCounter();
+    }
+
+    protected void read(int key) {
+        checkCounter();
+
+        // check memory
+        if (memTableMap.containsKey(key)) {
+            return;
+        }
+        searchKey.reset();
+        searchKey.resetKey(key);
+        // check memory levels
+        for (int i = 0; i < memoryLevels.size(); i++) {
+            PartitionedLevel level = memoryLevels.get(i);
+            if (Utils.contains(level.sstables, searchKey)) {
+                return;
+            }
+        }
+
+        for (int i = 0; i < unpartitionedLevel.groups.size(); i++) {
+            SSTableGroup group = unpartitionedLevel.groups.get(i);
+            if (Utils.contains(group.sstables, searchKey)) {
+                return;
+            }
+        }
+
+        for (int i = 0; i < diskLevels.size(); i++) {
+            PartitionedLevel level = diskLevels.get(i);
+            if (Utils.contains(level.sstables, searchKey)) {
+                return;
+            }
+        }
+
     }
 
     protected void prepareMemoryFlush() {
         memTable.reset();
-        for (Map.Entry<Long, Long> e : memTableMap.entrySet()) {
-            memTable.add(e.getKey(), e.getValue());
+        for (Int2IntMap.Entry e : memTableMap.int2IntEntrySet()) {
+            memTable.add(e.getIntKey(), e.getIntValue());
         }
         memTableMap.clear();
-        memTableMinSeq = Long.MAX_VALUE;
+        memTableMinSeq = Integer.MAX_VALUE;
 
         increaseMemorySize(memTable.getSize());
     }
@@ -273,12 +318,12 @@ public abstract class LSMSimulator {
             diskFlush(FlushReason.MEMORY);
         } else {
             boolean addLevel = memoryLevels.isEmpty() || memoryLevels.get(0).getSize() > memTable.getSize();
-            Set<StorageUnit> overlappingSSTables = addLevel ? Collections.emptySet()
+            Set<SSTable> overlappingSSTables = addLevel ? Collections.emptySet()
                     : Utils.findOverlappingSSTables(memTable, memoryLevels.get(0).sstables);
 
             MergeIterator iterator = new PartitionedIterator(memTable, overlappingSSTables);
 
-            List<StorageUnit> newSSTables = buildSSTables(iterator, true);
+            List<SSTable> newSSTables = buildSSTables(iterator, true);
 
             freeSSTables(overlappingSSTables);
             decreaseMemorySize(memTable.getSize());
@@ -302,27 +347,19 @@ public abstract class LSMSimulator {
 
     protected void increaseMemorySize(long size) {
         this.totalMemTableSize += size;
-        this.maxMemTableSize = Math.max(maxMemTableSize, totalMemTableSize);
+        stats.maxMemTableSize = Math.max(stats.maxMemTableSize, totalMemTableSize);
     }
 
     protected void decreaseMemorySize(long size) {
         this.totalMemTableSize -= size;
     }
 
-    protected abstract void diskFlush(FlushReason request);
-
-    protected abstract GroupSelection selectGroupToMerge(UnpartitionedLevel unpartitionedLevel,
-            List<PartitionedLevel> partitionedLevels);
-
-    protected abstract void doUnpartitionedMerge(UnpartitionedLevel unpartitionedLevel, List<PartitionedLevel> levels,
-            GroupSelection groupSelection);
-
     protected void updateMinSeq() {
         if (config.maxLogLength > 0) {
             minSeq = Math.min(nextSeq, memTableMinSeq);
             for (PartitionedLevel level : memoryLevels) {
-                for (StorageUnit sstable : level.sstables) {
-                    minSeq = Math.min(minSeq, ((SSTable) sstable).minSeq);
+                for (SSTable sstable : level.sstables) {
+                    minSeq = Math.min(minSeq, ((MemorySSTable) sstable).minSeq);
                 }
             }
         }
@@ -363,7 +400,7 @@ public abstract class LSMSimulator {
         PartitionedLevel next = levels.get(level + 1);
         boolean isMemory = (levels == memoryLevels);
         SSTableSelector selector = isMemory ? config.memSSTableSelector : config.diskSSTableSelector;
-        Pair<StorageUnit, Set<StorageUnit>> pair = selector.selectMerge(this, current, next.sstables);
+        Pair<SSTable, Set<SSTable>> pair = selector.selectMerge(this, current, next.sstables);
 
         if (pair.getRight().isEmpty()) {
             // special case
@@ -379,7 +416,7 @@ public abstract class LSMSimulator {
 
             current.mergedKeys += pair.getLeft().getSize();
             current.overlapingKeys += Utils.getTotalSize(pair.getRight());
-            List<StorageUnit> newSSTables = buildSSTables(iterator, isMemory);
+            List<SSTable> newSSTables = buildSSTables(iterator, isMemory);
 
             int newKeys = Utils.getTotalSize(newSSTables);
             current.resultingKeys += newKeys;
@@ -402,29 +439,29 @@ public abstract class LSMSimulator {
             int increments = (int) next.replace(pair.getRight(), newSSTables);
 
             if (isMemory) {
-                memoryMergeKeys += newKeys;
+                stats.memoryMergeKeys += newKeys;
                 int reduced = pair.getLeft().getSize() - increments;
                 assert reduced >= 0;
                 decreaseMemorySize(reduced);
                 updateMinSeq();
             } else {
-                diskMergeKeys += newKeys;
+                stats.diskMergeKeys += newKeys;
             }
         }
     }
 
     protected String printWriteAmplification(long mergedKeys) {
-        return String.format("%.2f", (double) mergedKeys / (loading ? (loadKeys + 1) : (writeKeys + 1)));
+        return String.format("%.2f", (double) mergedKeys / ops);
     }
 
     public String printAverageFlushesPerLogTruncation() {
-        return Utils.formatDivision(totalDiskFlushes, totalLogTruncations);
+        return Utils.formatDivision(stats.totalDiskFlushes, stats.totalLogTruncations);
     }
 
-    protected List<StorageUnit> buildSSTables(MergeIterator iterator, boolean isMemory) {
+    protected List<SSTable> buildSSTables(MergeIterator iterator, boolean isMemory) {
         KeyEntry entry = new KeyEntry();
         SSTable newSSTable = null;
-        List<StorageUnit> newSSTables = new ArrayList<>();
+        List<SSTable> newSSTables = new ArrayList<>();
         while (iterator.hasNext()) {
             iterator.getNext(entry);
             if (newSSTable == null) {
@@ -433,6 +470,7 @@ public abstract class LSMSimulator {
             }
             newSSTable.add(entry.key, entry.seq);
             if (newSSTable.isFull()) {
+                newSSTable.write();
                 newSSTable = null;
             }
         }
@@ -440,14 +478,15 @@ public abstract class LSMSimulator {
     }
 
     protected SSTable getFreeSSTable(boolean isMemory) {
-        LinkedList<SSTable> ssts = isMemory ? memorySSTs : diskSSTs;
+        ArrayDeque<? extends SSTable> ssts = isMemory ? memorySSTs : diskSSTs;
         SSTable sstable = ssts.peekFirst();
         if (sstable == null) {
-            sstable = new SSTable(isMemory ? config.memConfig.sstableSize : config.diskConfig.sstableSize, isMemory);
             if (isMemory) {
-                totalMemorySSTables++;
+                sstable = new MemorySSTable(config.memConfig.sstableSize);
+                stats.totalMemorySSTables++;
             } else {
-                totalDiskSSTables++;
+                sstable = new DiskSSTable(config.diskConfig.sstableSize, this);
+                stats.totalDiskSSTables++;
             }
         } else {
             assert sstable.isFree;
@@ -458,33 +497,31 @@ public abstract class LSMSimulator {
         return sstable;
     }
 
-    protected void freeSSTable(StorageUnit unit) {
-        SSTable sstable = (SSTable) unit;
-        LinkedList<SSTable> ssts = sstable.isMemory ? memorySSTs : diskSSTs;
-        ssts.add(sstable);
+    protected void freeSSTable(SSTable sstable) {
+        if (sstable instanceof MemorySSTable) {
+            memorySSTs.add((MemorySSTable) sstable);
+        } else {
+            diskSSTs.add((DiskSSTable) sstable);
+        }
         sstable.isFree = true;
     }
 
-    protected void freeSSTables(Collection<? extends StorageUnit> sstables) {
+    protected void freeSSTables(Collection<SSTable> sstables) {
         sstables.forEach(sst -> freeSSTable(sst));
     }
 
     protected void checkCounter() {
-        counter++;
-        if (counter == progress) {
+        if (ops % progress == 0) {
             synchronized (LSMSimulator.class) {
-                System.out.println("max memory table size " + maxMemTableSize);
+                System.out.println("max memory table size " + stats.maxMemTableSize);
                 System.out.println("current memory table size " + totalMemTableSize);
-                System.out.println("total memory sstables " + totalMemorySSTables);
-                System.out.println("total disk sstables " + totalDiskSSTables);
+                System.out.println("total memory sstables " + stats.totalMemorySSTables);
+                System.out.println("total disk sstables " + stats.totalDiskSSTables);
                 System.out.println(String.format("%s: completed %d keys. memory write amp %s, disk write amp %s",
-                        loading ? "Load" : "Update", loading ? loadKeys : writeKeys,
-                        printWriteAmplification(memoryMergeKeys), printWriteAmplification(diskMergeKeys)));
+                        loading ? "Load" : "Update", ops, printWriteAmplification(stats.memoryMergeKeys),
+                        printWriteAmplification(stats.diskMergeKeys)));
                 System.out.println(printLevels());
             }
-            counter = 0;
-
-            diskMergeKeysList.add(diskMergeKeys);
         }
     }
 
@@ -523,7 +560,221 @@ public abstract class LSMSimulator {
         sb.append(Utils.formatDivision(level.overlapingKeys, level.mergedKeys));
         sb.append("/");
         sb.append(Utils.formatDivision(level.resultingKeys, level.mergedKeys));
+    }
 
+    private void diskFlush(FlushReason request) {
+        List<List<SSTable>> sstables = null;
+        int startLevel = -1;
+        boolean flushingMemTable = false;
+        if (memoryLevels.isEmpty()) {
+            flushingMemTable = true;
+            sstables = Collections.singletonList(Collections.singletonList(memTable));
+            if (memTable.getSize() == 0) {
+                prepareMemoryFlush();
+            }
+        } else {
+            if (ROUND_ROBIN) {
+                startLevel = memoryLevels.size() - 1;
+                SSTable sstable = RoundRobinSelector.INSTANCE
+                        .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();
+                sstables = Collections.singletonList(Collections.singletonList(sstable));
+            } else {
+                if (request == FlushReason.MEMORY) {
+                    startLevel = memoryLevels.size() - 1;
+                    SSTable sstable = OldestMinLSNSelector.INSTANCE
+                            .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();
+                    sstables = Collections.singletonList(Collections.singletonList(sstable));
+                } else {
+                    SSTable oldestSSTable = null;
+                    for (int i = 0; i < memoryLevels.size(); i++) {
+                        PartitionedLevel level = memoryLevels.get(i);
+                        for (SSTable sstable : level.sstables) {
+                            if (oldestSSTable == null || sstable.getMinSeq() < oldestSSTable.getMinSeq()) {
+                                oldestSSTable = sstable;
+                                startLevel = i;
+                            }
+                        }
+                    }
+                    assert oldestSSTable.getMinSeq() == minSeq;
+                    sstables = new ArrayList<>();
+                    sstables.add(Collections.singletonList(oldestSSTable));
+                    flushRange.resetRange();
+                    flushRange.updateRange(oldestSSTable);
+                    for (int i = startLevel + 1; i < memoryLevels.size(); i++) {
+                        NavigableSet<SSTable> overlap =
+                                Utils.findOverlappingSSTables(flushRange, memoryLevels.get(i).sstables);
+                        sstables.add(new ArrayList<>(overlap));
+                        if (!overlap.isEmpty()) {
+                            flushRange.updateRange(overlap.first());
+                            flushRange.updateRange(overlap.last());
+                        }
+                    }
+                }
+            }
+
+        }
+
+        MergeIterator iterator = new DiskFlushIterator(sstables);
+
+        List<SSTable> newSSTables = buildSSTables(iterator, false);
+
+        long totalSize = addFlushedSSTable(newSSTables);
+        stats.diskMergeKeys += totalSize;
+
+        int flushSize = 0;
+        for (List<SSTable> list : sstables) {
+            flushSize += Utils.getTotalSize(list);
+        }
+        decreaseMemorySize(flushSize);
+        if (flushingMemTable) {
+            minSeq = nextSeq - 1;
+            memTable.reset();
+        } else {
+            for (List<SSTable> list : sstables) {
+                freeSSTables(list);
+            }
+            boolean cleanup = false;
+            for (int i = 0; i < sstables.size(); i++) {
+                PartitionedLevel level = memoryLevels.get(i + startLevel);
+                for (SSTable unit : sstables.get(i)) {
+                    level.remove(unit);
+                }
+                if (level.sstables.isEmpty()) {
+                    cleanup = true;
+                }
+            }
+            if (cleanup) {
+                memoryLevels.removeIf(t -> t.sstables.isEmpty());
+            }
+        }
+        updateMinSeq();
+
+        scheduleMerge(unpartitionedLevel, diskLevels, config.diskConfig.sizeRatio);
+    }
+
+    private int addFlushedSSTable(List<SSTable> sstables) {
+        int totalSize = 0;
+        for (SSTable sstable : sstables) {
+            SSTableGroup targetGroup = null;
+
+            if (unpartitionedLevel.groups.isEmpty() || unpartitionedLevel.groups.get(0).sstables.contains(sstable)) {
+                targetGroup = new SSTableGroup(Collections.emptyList());
+                unpartitionedLevel.groups.add(0, targetGroup);
+            } else {
+                targetGroup = unpartitionedLevel.groups.get(0);
+                // try to insert as much as possible
+                for (int i = 1; i < unpartitionedLevel.groups.size(); i++) {
+                    SSTableGroup group = unpartitionedLevel.groups.get(i);
+                    if (!group.sstables.contains(sstable)) {
+                        targetGroup = group;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            targetGroup.add(sstable);
+            totalSize += sstable.getSize();
+            unpartitionedLevel.addSize(sstable.getSize());
+        }
+        return totalSize;
+
+    }
+
+    private GroupSelection selectGroupToMerge(UnpartitionedLevel unpartitionedLevel,
+            List<PartitionedLevel> partitionedLevels) {
+        if (unpartitionedLevel == null
+                || unpartitionedLevel.groups.size() <= config.diskConfig.maxUnpartitionedSSTables) {
+            return null;
+        }
+
+        long baseSize = config.diskConfig.useMemorySizeForAddLevel && !memoryLevels.isEmpty()
+                ? memoryLevels.get(memoryLevels.size() - 1).getSize()
+                : config.diskConfig.sstableSize;
+
+        boolean addLevel = partitionedLevels.isEmpty() || Utils.getLevelCapacity(partitionedLevels, 0,
+                config.diskConfig.sizeRatio) > baseSize * config.diskConfig.sizeRatio;
+
+        int groupIndex = unpartitionedLevel.groups.size() - 1;
+        return new GroupSelection(groupIndex, -1, -1, addLevel);
+    }
+
+    private void doUnpartitionedMerge(UnpartitionedLevel unpartitionedLevel, List<PartitionedLevel> levels,
+            GroupSelection groupSelection) {
+        SSTableGroup selectedGroup = selectMinGroupToMerge(unpartitionedLevel);
+        SSTable selectedSSTable = selectedGroup.sstables.first();
+        unpartitionedLevel.remove(selectedGroup, selectedSSTable);
+
+        List<SSTable> mergingSSTables = new ArrayList<>();
+        mergingSSTables.add(selectedSSTable);
+        mergeRange.resetRange();
+        mergeRange.updateRange(selectedSSTable);
+
+        int numGroups = 0;
+        for (int i = 1; i < unpartitionedLevel.groups.size(); i++) {
+            SSTableGroup group = unpartitionedLevel.groups.get(i);
+            if (group == selectedGroup) {
+                numGroups++;
+            } else {
+                NavigableSet<SSTable> set = Utils.findOverlappingSSTables(selectedSSTable, group.sstables);
+                if (!set.isEmpty()) {
+                    mergeRange.updateRange(set.first());
+                    mergeRange.updateRange(set.last());
+                    mergingSSTables.addAll(set);
+                    unpartitionedLevel.remove(group, set);
+                    numGroups++;
+                }
+            }
+        }
+
+        stats.totalUnpartitionedMerges++;
+        stats.totalUnpartitionedMergeGroups += numGroups;
+        if (VERBOSE) {
+            System.out.println(String.format("Merged %d SSTables with %d groups at the unpartitioned level at once",
+                    mergingSSTables.size(), numGroups));
+        }
+
+        unpartitionedLevel.cleanupGroups();
+
+        TreeSet<SSTable> partitionedSSTables = groupSelection.addLevel ? Empty_TreeSet : levels.get(0).sstables;
+        Set<SSTable> nextSSTables = Utils.findOverlappingSSTables(mergeRange, partitionedSSTables);
+        List<SSTable> newSSTables = null;
+        int newKeys = 0;
+        if (nextSSTables.isEmpty() && mergingSSTables.size() == 1) {
+            // simply push
+            newSSTables = Collections.singletonList(mergingSSTables.get(0));
+        } else {
+            MergeIterator unpartitionedIterator = new UnpartitionedIterator(mergingSSTables, nextSSTables);
+            newSSTables = buildSSTables(unpartitionedIterator, false);
+            freeSSTables(mergingSSTables);
+            freeSSTables(nextSSTables);
+
+            newKeys = Utils.getTotalSize(newSSTables);
+            stats.diskMergeKeys += newKeys;
+        }
+
+        if (!loading && VERBOSE) {
+            System.out.println(String.format("Unpartitinoed merge %d sstables %s overlapping with %d/%d",
+                    mergingSSTables.size(), mergingSSTables.toString(), newSSTables.size(), newKeys));
+        }
+
+        if (groupSelection.addLevel) {
+            Utils.addLevel(newSSTables, levels, false);
+        } else {
+            levels.get(0).replace(nextSSTables, newSSTables);
+        }
+    }
+
+    private SSTableGroup selectMinGroupToMerge(UnpartitionedLevel level) {
+        if (level.groups.size() == 1) {
+            return level.groups.get(0);
+        }
+        SSTableGroup group = null;
+        for (int i = 1; i < level.groups.size(); i++) {
+            if (group == null || level.groups.get(i).sstables.size() < group.sstables.size()) {
+                group = level.groups.get(i);
+            }
+        }
+        return group;
     }
 
 }

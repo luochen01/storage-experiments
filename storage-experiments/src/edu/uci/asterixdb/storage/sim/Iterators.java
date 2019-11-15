@@ -7,8 +7,8 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 class KeyEntry {
-    long key;
-    long seq;
+    int key;
+    int seq;
 }
 
 interface MergeIterator {
@@ -18,35 +18,39 @@ interface MergeIterator {
 }
 
 class PQEntry implements Comparable<PQEntry> {
-    final Iterator<StorageUnit> sstableIterator;
+    final Iterator<SSTable> sstableIterator;
 
     SSTable sstable;
     private int keyIndex;
 
     final int pos;
 
-    public PQEntry(Collection<StorageUnit> treeSet, int pos) {
+    public PQEntry(Collection<SSTable> treeSet, int pos) {
         sstableIterator = treeSet.iterator();
         if (sstableIterator.hasNext()) {
-            sstable = (SSTable) sstableIterator.next();
+            sstable = sstableIterator.next();
         } else {
             sstable = null;
         }
         this.pos = pos;
+
+        treeSet.forEach(t -> t.readAll());
     }
 
-    public PQEntry(StorageUnit sstable, int pos) {
-        this.sstable = (SSTable) sstable;
+    public PQEntry(SSTable sstable, int pos) {
+        this.sstable = sstable;
         this.sstableIterator = null;
         this.pos = pos;
+
+        sstable.readAll();
     }
 
-    public long getKey() {
-        return sstable.keys[keyIndex];
+    public int getKey() {
+        return sstable.getKey(keyIndex);
     }
 
-    public long getSeq() {
-        return sstable.seqs[keyIndex];
+    public int getSeq() {
+        return sstable.getSeq(keyIndex);
     }
 
     public void consumeKey() {
@@ -54,7 +58,7 @@ class PQEntry implements Comparable<PQEntry> {
         if (keyIndex == sstable.getSize()) {
             keyIndex = 0;
             if (sstableIterator != null && sstableIterator.hasNext()) {
-                sstable = (SSTable) sstableIterator.next();
+                sstable = sstableIterator.next();
             } else {
                 sstable = null;
             }
@@ -109,31 +113,29 @@ abstract class AbstractIterator implements MergeIterator {
 
 class DiskFlushIterator extends AbstractIterator {
 
-    public DiskFlushIterator(List<List<StorageUnit>> sstables) {
+    public DiskFlushIterator(List<List<SSTable>> sstables) {
         int pos = 0;
-        for (List<StorageUnit> list : sstables) {
+        for (List<SSTable> list : sstables) {
             queue.add(new PQEntry(list, pos++));
         }
     }
 }
 
 class UnpartitionedIterator extends AbstractIterator {
-
-    public UnpartitionedIterator(List<StorageUnit> unpartitioned, Set<StorageUnit> partitioned) {
+    public UnpartitionedIterator(List<SSTable> unpartitioned, Set<SSTable> partitioned) {
         int pos = 0;
-        for (StorageUnit sstable : unpartitioned) {
+        for (SSTable sstable : unpartitioned) {
             queue.add(new PQEntry(sstable, pos++));
         }
         if (!partitioned.isEmpty()) {
             queue.add(new PQEntry(partitioned, pos++));
         }
     }
-
 }
 
 class PartitionedIterator extends AbstractIterator {
 
-    public PartitionedIterator(StorageUnit currentLevel, Set<StorageUnit> nextLevel) {
+    public PartitionedIterator(SSTable currentLevel, Set<SSTable> nextLevel) {
         queue.add(new PQEntry(currentLevel, 0));
         if (!nextLevel.isEmpty()) {
             queue.add(new PQEntry(nextLevel, 1));

@@ -1,18 +1,65 @@
 package edu.uci.asterixdb.storage.sim;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-interface StorageUnit extends Comparable<StorageUnit> {
-    long min();
+abstract class SSTable implements Comparable<SSTable> {
+    final int[] keys;
+    protected int numKeys;
+    boolean isFree;
 
-    long max();
+    public int getSize() {
+        return numKeys;
+    }
 
-    int getSize();
+    public int min() {
+        return keys[0];
+    }
+
+    public int getKey(int index) {
+        return keys[index];
+    }
+
+    public int getSeq(int index) {
+        return 0;
+    }
+
+    public int getMinSeq() {
+        return 0;
+    }
+
+    public void readAll() {
+        // no op
+    }
+
+    public int max() {
+        return keys[numKeys - 1];
+    }
+
+    public SSTable(int capacity) {
+        this.keys = new int[capacity];
+    }
+
+    public void reset() {
+        numKeys = 0;
+    }
+
+    public boolean isFull() {
+        return numKeys >= keys.length;
+    }
+
+    public void write() {
+
+    }
+
+    public abstract void add(int key, int seq);
+
+    public abstract boolean contains(int key);
 
     @Override
-    default int compareTo(StorageUnit o) {
+    public int compareTo(SSTable o) {
         if (max() < o.min()) {
             return -1;
         } else if (min() > o.max()) {
@@ -21,69 +68,46 @@ interface StorageUnit extends Comparable<StorageUnit> {
             return 0;
         }
     }
+
 }
 
-class SSTable implements StorageUnit {
-    final boolean isMemory;
-    final long[] keys;
-    final long[] seqs;
-    long minSeq;
-    private int numKeys;
-    boolean isFree;
+class MemorySSTable extends SSTable {
+    final int[] seqs;
+    int minSeq;
 
-    public SSTable(int capacity, boolean isMemory) {
-        numKeys = 0;
-        this.keys = new long[capacity];
-        this.seqs = new long[capacity];
-
-        this.isMemory = isMemory;
+    public MemorySSTable(int capacity) {
+        super(capacity);
+        this.seqs = new int[capacity];
     }
 
+    @Override
+    public int getSeq(int index) {
+        return seqs[index];
+    }
+
+    @Override
     public void reset() {
-        this.numKeys = 0;
-        this.minSeq = Long.MAX_VALUE;
+        super.reset();
+        this.minSeq = Integer.MAX_VALUE;
     }
 
-    public void resetKey(long key) {
-        this.numKeys = 1;
-        this.keys[0] = key;
+    @Override
+    public boolean contains(int key) {
+        return Arrays.binarySearch(seqs, 0, numKeys, key) >= 0;
     }
 
-    public void resetRange() {
-        this.numKeys = 2;
-        this.keys[0] = Long.MAX_VALUE;
-        this.keys[1] = Long.MIN_VALUE;
-    }
-
-    public void updateRange(StorageUnit sstable) {
-        if (this.numKeys != 2) {
-            throw new IllegalStateException();
-        }
-        this.keys[0] = Math.min(this.keys[0], sstable.min());
-        this.keys[1] = Math.max(this.keys[1], sstable.max());
-    }
-
-    public void add(long key, long seq) {
+    @Override
+    public void add(int key, int seq) {
         keys[numKeys] = key;
         seqs[numKeys] = seq;
         assert seq >= 0;
-
         numKeys++;
         minSeq = Math.min(minSeq, seq);
     }
 
+    @Override
     public boolean isFull() {
         return numKeys >= keys.length;
-    }
-
-    @Override
-    public long min() {
-        return keys[0];
-    }
-
-    @Override
-    public long max() {
-        return keys[numKeys - 1];
     }
 
     @Override
@@ -92,13 +116,136 @@ class SSTable implements StorageUnit {
     }
 
     @Override
+    public int getMinSeq() {
+        return minSeq;
+    }
+
+    @Override
     public String toString() {
         return "[" + min() + "," + max() + "]";
     }
 }
 
-class SSTableGroup implements StorageUnit {
-    final TreeSet<StorageUnit> sstables = new TreeSet<StorageUnit>();
+class DiskSSTable extends SSTable {
+    final Page[] pages;
+    final Page[] bfPages;
+    final LSMSimulator sim;
+
+    public DiskSSTable(int capacity, LSMSimulator sim) {
+        super(capacity);
+        pages = new Page[Utils.ceil(capacity, sim.config.tuningConfig.pageSize)];
+        for (int i = 0; i < pages.length; i++) {
+            pages[i] = new Page();
+        }
+        // suppose each key is 1KB. each page is 1KB * pageSize
+        // each key has 10 bits (10/8 bytes).
+        this.bfPages = new Page[Utils.getBloomFilterPages(capacity, sim.config.tuningConfig.pageSize)];
+        for (int i = 0; i < bfPages.length; i++) {
+            this.bfPages[i] = new Page();
+        }
+        this.sim = sim;
+    }
+
+    @Override
+    public boolean contains(int key) {
+        int bfIndex = (int) ((double) (key - min()) / (max() - min() + 1) * bfPages.length);
+        sim.cache.pin(bfPages[bfIndex]);
+
+        int index = Arrays.binarySearch(keys, 0, numKeys, key);
+        if (index >= 0) {
+            sim.cache.pin(pages[index / sim.cache.getPageSize()]);
+            return true;
+        } else {
+            index = -index - 1;
+            if (sim.rand.nextInt(100) == 0) {
+                sim.cache.pin(pages[index / numKeys]);
+            }
+            return false;
+        }
+    }
+
+    @Override
+    public void add(int key, int seq) {
+        keys[numKeys++] = key;
+    }
+
+    @Override
+    public void write() {
+        sim.cache.write(getNumPages());
+        sim.cache.write(getNumBFPages());
+    }
+
+    // for merge
+    @Override
+    public void readAll() {
+        int numPages = getNumPages();
+        for (int i = 0; i < numPages; i++) {
+            sim.cache.read(pages[i]);
+        }
+    }
+
+    public int getNumPages() {
+        return Utils.ceil(numKeys, sim.cache.getPageSize());
+    }
+
+    public int getNumBFPages() {
+        return Utils.getBloomFilterPages(numKeys, sim.cache.getPageSize());
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+        int numPages = getNumPages();
+        for (int i = 0; i < numPages; i++) {
+            sim.cache.evict(pages[i]);
+        }
+        int numBFPages = getNumBFPages();
+        for (int i = 0; i < numBFPages; i++) {
+            sim.cache.evict(bfPages[i]);
+        }
+    }
+
+}
+
+class KeySSTable extends SSTable {
+
+    public KeySSTable() {
+        super(2);
+    }
+
+    public void resetKey(int key) {
+        this.numKeys = 1;
+        this.keys[0] = key;
+    }
+
+    public void resetRange() {
+        this.numKeys = 2;
+        this.keys[0] = Integer.MAX_VALUE;
+        this.keys[1] = Integer.MIN_VALUE;
+    }
+
+    public void updateRange(SSTable sstable) {
+        if (this.numKeys != 2) {
+            throw new IllegalStateException();
+        }
+        this.keys[0] = Math.min(this.keys[0], sstable.min());
+        this.keys[1] = Math.max(this.keys[1], sstable.max());
+    }
+
+    @Override
+    public void add(int key, int seq) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean contains(int key) {
+        throw new UnsupportedOperationException();
+    }
+
+}
+
+class SSTableGroup {
+    final TreeSet<SSTable> sstables = new TreeSet<SSTable>();
     private long min = Long.MAX_VALUE;
     private long max = Long.MIN_VALUE;
     private int size = 0;
@@ -111,7 +258,7 @@ class SSTableGroup implements StorageUnit {
         sstables.forEach(t -> add(t));
     }
 
-    public void add(StorageUnit sstable) {
+    public void add(SSTable sstable) {
         boolean result = sstables.add(sstable);
         assert result == true;
         this.min = Math.min(min, sstable.min());
@@ -119,7 +266,7 @@ class SSTableGroup implements StorageUnit {
         this.size += sstable.getSize();
     }
 
-    public int remove(Set<StorageUnit> sstables) {
+    public int remove(Set<SSTable> sstables) {
         int totalSize = Utils.getTotalSize(sstables);
         int oldSize = this.sstables.size();
         int removeSize = sstables.size();
@@ -134,7 +281,7 @@ class SSTableGroup implements StorageUnit {
         return totalSize;
     }
 
-    public int remove(StorageUnit sstable) {
+    public int remove(SSTable sstable) {
         sstables.remove(sstable);
         this.size -= sstable.getSize();
         return sstable.getSize();
@@ -146,17 +293,6 @@ class SSTableGroup implements StorageUnit {
         sstables.clear();
     }
 
-    @Override
-    public long min() {
-        return min;
-    }
-
-    @Override
-    public long max() {
-        return max;
-    }
-
-    @Override
     public int getSize() {
         return size;
     }
@@ -165,7 +301,7 @@ class SSTableGroup implements StorageUnit {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{");
-        for (StorageUnit sstable : sstables) {
+        for (SSTable sstable : sstables) {
             sb.append(sstable);
         }
         sb.append("}");

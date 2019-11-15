@@ -9,7 +9,7 @@ abstract class Level {
     final boolean inMemory;
     int level;
     private long size = 0;
-    SSTable lastKey = new SSTable(1, false);
+    KeySSTable lastKey = new KeySSTable();
 
     long mergedKeys = 0;
     long overlapingKeys = 0;
@@ -47,36 +47,36 @@ abstract class Level {
 
 class PartitionedLevel extends Level {
 
-    final TreeSet<StorageUnit> sstables = new TreeSet<>();
+    final TreeSet<SSTable> sstables = new TreeSet<>();
 
     public PartitionedLevel(int level, boolean isMemory) {
         super(level, isMemory);
     }
 
-    public void remove(StorageUnit sstable) {
+    public void remove(SSTable sstable) {
         if (!sstables.remove(sstable)) {
             throw new IllegalStateException("removing non-existing sstable " + sstable);
         }
         decrementSize(sstable.getSize());
     }
 
-    public void add(StorageUnit sstable) {
+    public void add(SSTable sstable) {
         if (!sstables.add(sstable)) {
             throw new IllegalStateException("adding duplicated sstable " + sstable);
         }
         addSize(sstable.getSize());
     }
 
-    public long replace(Set<StorageUnit> oldSet, List<StorageUnit> newList) {
+    public long replace(Set<SSTable> oldSet, List<SSTable> newList) {
         long oldSize = getSize();
         remove(oldSet);
         newList.forEach(t -> add(t));
         return getSize() - oldSize;
     }
 
-    private void remove(Set<StorageUnit> oldSet) {
+    private void remove(Set<SSTable> oldSet) {
         int totalSize = 0;
-        for (StorageUnit unit : oldSet) {
+        for (SSTable unit : oldSet) {
             totalSize += unit.getSize();
         }
         decrementSize(totalSize);
@@ -113,12 +113,12 @@ class UnpartitionedLevel extends Level {
         group.clear();
     }
 
-    public void remove(SSTableGroup group, Set<StorageUnit> sstables) {
+    public void remove(SSTableGroup group, Set<SSTable> sstables) {
         int removedSize = group.remove(sstables);
         decrementSize(removedSize);
     }
 
-    public void remove(SSTableGroup group, StorageUnit sstable) {
+    public void remove(SSTableGroup group, SSTable sstable) {
         int removedSize = group.remove(sstable);
         decrementSize(removedSize);
     }
