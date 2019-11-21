@@ -1,6 +1,10 @@
 package edu.uci.asterixdb.storage.sim;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -26,6 +30,18 @@ abstract class Level {
         return size;
     }
 
+    public void serialize(DataOutput output) throws IOException {
+        output.writeInt(level);
+        output.writeLong(size);
+        output.writeInt(lastKey.getKey(0));
+    }
+
+    public void deserialize(DataInput input, LSMSimulator sim) throws IOException {
+        level = input.readInt();
+        size = input.readLong();
+        lastKey.resetKey(input.readInt());
+    }
+
     public void addSize(int value) {
         assert value >= 0;
         size += value;
@@ -41,6 +57,40 @@ abstract class Level {
         this.mergedKeys = 0;
         this.overlapingKeys = 0;
         this.resultingKeys = 0;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (inMemory ? 1231 : 1237);
+        result = prime * result + ((lastKey == null) ? 0 : lastKey.hashCode());
+        result = prime * result + level;
+        result = prime * result + (int) (size ^ (size >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Level other = (Level) obj;
+        if (inMemory != other.inMemory)
+            return false;
+        if (lastKey == null) {
+            if (other.lastKey != null)
+                return false;
+        } else if (!lastKey.equals(other.lastKey))
+            return false;
+        if (level != other.level)
+            return false;
+        if (size != other.size)
+            return false;
+        return true;
     }
 
 }
@@ -89,6 +139,52 @@ class PartitionedLevel extends Level {
 
     }
 
+    @Override
+    public void serialize(DataOutput output) throws IOException {
+        super.serialize(output);
+        output.writeInt(sstables.size());
+        for (SSTable sstable : sstables) {
+            sstable.serialize(output);
+        }
+    }
+
+    @Override
+    public void deserialize(DataInput input, LSMSimulator sim) throws IOException {
+        super.deserialize(input, sim);
+        int num = input.readInt();
+        sstables.clear();
+        for (int i = 0; i < num; i++) {
+            SSTable sstable = sim.getFreeSSTable(false, level);
+            sstable.deserialize(input, level);
+            sstables.add(sstable);
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((sstables == null) ? 0 : sstables.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PartitionedLevel other = (PartitionedLevel) obj;
+        if (sstables == null) {
+            if (other.sstables != null)
+                return false;
+        } else if (!sstables.equals(other.sstables))
+            return false;
+        return true;
+    }
+
 }
 
 class UnpartitionedLevel extends Level {
@@ -102,6 +198,27 @@ class UnpartitionedLevel extends Level {
     public void add(SSTableGroup group) {
         groups.add(group);
         addSize(group.getSize());
+    }
+
+    @Override
+    public void serialize(DataOutput output) throws IOException {
+        super.serialize(output);
+        output.writeInt(groups.size());
+        for (SSTableGroup group : groups) {
+            group.serialize(output);
+        }
+    }
+
+    @Override
+    public void deserialize(DataInput input, LSMSimulator sim) throws IOException {
+        super.deserialize(input, sim);
+        int num = input.readInt();
+        groups.clear();
+        for (int i = 0; i < num; i++) {
+            SSTableGroup group = new SSTableGroup(Collections.emptyList());
+            group.deserialize(input, level, sim);
+            groups.add(group);
+        }
     }
 
     public void addGroups(List<SSTableGroup> newGroups) {
@@ -125,6 +242,31 @@ class UnpartitionedLevel extends Level {
 
     public void cleanupGroups() {
         groups.removeIf(t -> t.sstables.isEmpty());
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((groups == null) ? 0 : groups.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        UnpartitionedLevel other = (UnpartitionedLevel) obj;
+        if (groups == null) {
+            if (other.groups != null)
+                return false;
+        } else if (!groups.equals(other.groups))
+            return false;
+        return true;
     }
 
 }

@@ -1,14 +1,28 @@
 package edu.uci.asterixdb.storage.sim;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import edu.uci.asterixdb.storage.sim.Page.PageState;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+
 abstract class SSTable implements Comparable<SSTable> {
     final int[] keys;
+    final Int2IntMap keyMap = new Int2IntOpenHashMap();
     protected int numKeys;
     boolean isFree;
+    int level;
+
+    public SSTable(int capacity) {
+        this.keys = new int[capacity];
+        keyMap.defaultReturnValue(-1);
+    }
 
     public int getSize() {
         return numKeys;
@@ -26,6 +40,10 @@ abstract class SSTable implements Comparable<SSTable> {
         return 0;
     }
 
+    public boolean isCached(int keyIndex) {
+        return true;
+    }
+
     public int getMinSeq() {
         return 0;
     }
@@ -38,23 +56,40 @@ abstract class SSTable implements Comparable<SSTable> {
         return keys[numKeys - 1];
     }
 
-    public SSTable(int capacity) {
-        this.keys = new int[capacity];
+    public void reset(int level) {
+        numKeys = 0;
+        keyMap.clear();
+        this.level = level;
     }
 
-    public void reset() {
-        numKeys = 0;
+    public void deletePages() {
+
     }
 
     public boolean isFull() {
         return numKeys >= keys.length;
     }
 
-    public void write() {
+    public void endBulkLoad() {
 
     }
 
-    public abstract void add(int key, int seq);
+    public void serialize(DataOutput output) throws IOException {
+        output.writeInt(numKeys);
+        for (int i = 0; i < numKeys; i++) {
+            output.writeInt(keys[i]);
+        }
+    }
+
+    public void deserialize(DataInput input, int level) throws IOException {
+        reset(level);
+        int keys = input.readInt();
+        for (int i = 0; i < keys; i++) {
+            add(input.readInt(), 0, false, true);
+        }
+    }
+
+    public abstract void add(int key, int seq, boolean cached, boolean load);
 
     public abstract boolean contains(int key);
 
@@ -67,6 +102,40 @@ abstract class SSTable implements Comparable<SSTable> {
         } else {
             return 0;
         }
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (isFree ? 1231 : 1237);
+        result = prime * result + ((keyMap == null) ? 0 : keyMap.hashCode());
+        result = prime * result + Arrays.hashCode(keys);
+        result = prime * result + numKeys;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        SSTable other = (SSTable) obj;
+        if (isFree != other.isFree)
+            return false;
+        if (keyMap == null) {
+            if (other.keyMap != null)
+                return false;
+        } else if (!keyMap.equals(other.keyMap))
+            return false;
+        if (!Arrays.equals(keys, other.keys))
+            return false;
+        if (numKeys != other.numKeys)
+            return false;
+        return true;
     }
 
 }
@@ -86,20 +155,21 @@ class MemorySSTable extends SSTable {
     }
 
     @Override
-    public void reset() {
-        super.reset();
+    public void reset(int level) {
+        super.reset(level);
         this.minSeq = Integer.MAX_VALUE;
     }
 
     @Override
     public boolean contains(int key) {
-        return Arrays.binarySearch(seqs, 0, numKeys, key) >= 0;
+        return keyMap.containsKey(key);
     }
 
     @Override
-    public void add(int key, int seq) {
+    public void add(int key, int seq, boolean cached, boolean load) {
         keys[numKeys] = key;
         seqs[numKeys] = seq;
+        keyMap.put(key, numKeys);
         assert seq >= 0;
         numKeys++;
         minSeq = Math.min(minSeq, seq);
@@ -130,6 +200,7 @@ class DiskSSTable extends SSTable {
     final Page[] pages;
     final Page[] bfPages;
     final LSMSimulator sim;
+    final boolean[] cached;
 
     public DiskSSTable(int capacity, LSMSimulator sim) {
         super(capacity);
@@ -137,6 +208,7 @@ class DiskSSTable extends SSTable {
         for (int i = 0; i < pages.length; i++) {
             pages[i] = new Page();
         }
+        cached = new boolean[pages.length];
         // suppose each key is 1KB. each page is 1KB * pageSize
         // each key has 10 bits (10/8 bytes).
         this.bfPages = new Page[Utils.getBloomFilterPages(capacity, sim.config.tuningConfig.pageSize)];
@@ -148,29 +220,52 @@ class DiskSSTable extends SSTable {
 
     @Override
     public boolean contains(int key) {
-        int bfIndex = (int) ((double) (key - min()) / (max() - min() + 1) * bfPages.length);
+        assert !isFree;
+        int bfIndex = (int) ((double) (key - min()) / (max() - min() + 1) * getNumBFPages());
         sim.cache.pin(bfPages[bfIndex]);
 
-        int index = Arrays.binarySearch(keys, 0, numKeys, key);
+        int index = keyMap.get(key);
         if (index >= 0) {
-            sim.cache.pin(pages[index / sim.cache.getPageSize()]);
+            sim.cache.pin(pages[index / sim.config.tuningConfig.pageSize]);
             return true;
         } else {
-            index = -index - 1;
             if (sim.rand.nextInt(100) == 0) {
-                sim.cache.pin(pages[index / numKeys]);
+                int pageIndex = (int) ((double) (key - min()) / (max() - min() + 1) * getNumPages());
+                sim.cache.pin(pages[pageIndex]);
             }
             return false;
         }
     }
 
     @Override
-    public void add(int key, int seq) {
-        keys[numKeys++] = key;
+    public void add(int key, int seq, boolean cached, boolean load) {
+        int index = numKeys;
+        keys[index] = key;
+        keyMap.put(key, index);
+        numKeys++;
+        if (!load && pages[index / sim.config.tuningConfig.pageSize].state != PageState.CACHED) {
+            boolean pin = false;
+            switch (sim.config.tuningConfig.cachePolicy) {
+                case ADAPTIVE:
+                    pin = cached || level < sim.diskLevels.size() - 1;
+                    break;
+                case BYPASS:
+                    pin = false;
+                    break;
+                case WRITE_BACK:
+                    pin = true;
+                    break;
+                default:
+                    break;
+            }
+            if (pin) {
+                sim.cache.mergeReturnPage(pages[index / sim.config.tuningConfig.pageSize]);
+            }
+        }
     }
 
     @Override
-    public void write() {
+    public void endBulkLoad() {
         sim.cache.write(getNumPages());
         sim.cache.write(getNumBFPages());
     }
@@ -180,28 +275,34 @@ class DiskSSTable extends SSTable {
     public void readAll() {
         int numPages = getNumPages();
         for (int i = 0; i < numPages; i++) {
-            sim.cache.read(pages[i]);
+            cached[i] = pages[i].state == PageState.CACHED;
+            sim.cache.mergeReadPage(pages[i]);
         }
     }
 
     public int getNumPages() {
-        return Utils.ceil(numKeys, sim.cache.getPageSize());
+        return Utils.ceil(numKeys, sim.config.tuningConfig.pageSize);
     }
 
     public int getNumBFPages() {
-        return Utils.getBloomFilterPages(numKeys, sim.cache.getPageSize());
+        return Utils.getBloomFilterPages(numKeys, sim.config.tuningConfig.pageSize);
     }
 
     @Override
-    public void reset() {
-        super.reset();
+    public boolean isCached(int keyIndex) {
+        return cached[keyIndex / sim.config.tuningConfig.pageSize];
+    }
+
+    @Override
+    public void deletePages() {
+        super.deletePages();
         int numPages = getNumPages();
         for (int i = 0; i < numPages; i++) {
-            sim.cache.evict(pages[i]);
+            sim.cache.delete(pages[i]);
         }
         int numBFPages = getNumBFPages();
         for (int i = 0; i < numBFPages; i++) {
-            sim.cache.evict(bfPages[i]);
+            sim.cache.delete(bfPages[i]);
         }
     }
 
@@ -233,7 +334,7 @@ class KeySSTable extends SSTable {
     }
 
     @Override
-    public void add(int key, int seq) {
+    public void add(int key, int seq, boolean cached, boolean load) {
         throw new UnsupportedOperationException();
     }
 
@@ -246,8 +347,8 @@ class KeySSTable extends SSTable {
 
 class SSTableGroup {
     final TreeSet<SSTable> sstables = new TreeSet<SSTable>();
-    private long min = Long.MAX_VALUE;
-    private long max = Long.MIN_VALUE;
+    private int min = Integer.MAX_VALUE;
+    private int max = Integer.MIN_VALUE;
     private int size = 0;
 
     public SSTableGroup(SSTable sstable) {
@@ -256,6 +357,29 @@ class SSTableGroup {
 
     public SSTableGroup(List<SSTable> sstables) {
         sstables.forEach(t -> add(t));
+    }
+
+    public void serialize(DataOutput output) throws IOException {
+        output.writeInt(min);
+        output.writeInt(max);
+        output.writeInt(size);
+        output.writeInt(sstables.size());
+        for (SSTable sstable : sstables) {
+            sstable.serialize(output);
+        }
+    }
+
+    public void deserialize(DataInput input, int level, LSMSimulator sim) throws IOException {
+        min = input.readInt();
+        max = input.readInt();
+        size = input.readInt();
+        int num = input.readInt();
+        sstables.clear();
+        for (int i = 0; i < num; i++) {
+            SSTable sstable = sim.getFreeSSTable(false, level);
+            sstable.deserialize(input, level);
+            sstables.add(sstable);
+        }
     }
 
     public void add(SSTable sstable) {
@@ -306,6 +430,40 @@ class SSTableGroup {
         }
         sb.append("}");
         return sb.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + max;
+        result = prime * result + min;
+        result = prime * result + size;
+        result = prime * result + ((sstables == null) ? 0 : sstables.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        SSTableGroup other = (SSTableGroup) obj;
+        if (max != other.max)
+            return false;
+        if (min != other.min)
+            return false;
+        if (size != other.size)
+            return false;
+        if (sstables == null) {
+            if (other.sstables != null)
+                return false;
+        } else if (!sstables.equals(other.sstables))
+            return false;
+        return true;
     }
 
 }

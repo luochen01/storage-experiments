@@ -1,6 +1,12 @@
 package edu.uci.asterixdb.storage.sim;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
@@ -15,6 +21,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import edu.uci.asterixdb.storage.sim.LSMSimulator.CachePolicy;
 import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
@@ -55,16 +62,23 @@ class DiskConfig {
 }
 
 class TuningConfig {
-    final int cacheSize;
+    int cacheSize;
+    final int simulateSize;
     final int pageSize;
     final int writes;
     final int reads;
+    final CachePolicy cachePolicy;
+    final int tuningCycle;
 
-    public TuningConfig(int cacheSize, int pageSize, int writes, int reads) {
+    public TuningConfig(int cacheSize, int simulateSize, int pageSize, int writes, int reads, CachePolicy cachePolicy,
+            int tuningCycle) {
         this.cacheSize = cacheSize;
+        this.simulateSize = simulateSize;
         this.pageSize = pageSize;
         this.writes = writes;
         this.reads = reads;
+        this.cachePolicy = cachePolicy;
+        this.tuningCycle = tuningCycle;
     }
 }
 
@@ -80,8 +94,10 @@ class Config {
 
     public Config(MemoryConfig memConfig, DiskConfig diskConfig, int cardinality, SSTableSelector memSSTableSelector,
             SSTableSelector diskSSTableSelector, long minLogLength, long maxLogLength) {
-        this(memConfig, diskConfig, new TuningConfig(Integer.MAX_VALUE, diskConfig.sstableSize, 1, 0), cardinality,
-                memSSTableSelector, diskSSTableSelector, minLogLength, maxLogLength);
+        this(memConfig, diskConfig,
+                new TuningConfig(Integer.MAX_VALUE, Integer.MAX_VALUE, diskConfig.sstableSize, 1, 0,
+                        CachePolicy.ADAPTIVE, Integer.MAX_VALUE),
+                cardinality, memSSTableSelector, diskSSTableSelector, minLogLength, maxLogLength);
     }
 
     public Config(MemoryConfig memConfig, DiskConfig diskConfig, TuningConfig tuningConfig, int cardinality,
@@ -114,24 +130,29 @@ class GroupSelection {
 }
 
 class SimulationStats {
-    int numDiskFlushes = 0;
+    int numMemoryFlushes;
+    int numLogFlushes;
     long memoryMergeKeys = 0;
     long diskMergeKeys = 0;
     int totalMemorySSTables = 0;
     int totalDiskSSTables = 0;
-    int totalDiskFlushes = 0;
     int maxDiskFlushesPerLogTruncation = 0;
     int totalLogTruncations = 0;
     int totalUnpartitionedMerges = 0;
     int totalUnpartitionedMergeGroups = 0;
     int maxMemTableSize = 0;
-
 }
 
 public class LSMSimulator {
     public enum FlushReason {
         MEMORY,
         LOG
+    }
+
+    public enum CachePolicy {
+        WRITE_BACK,
+        BYPASS,
+        ADAPTIVE
     }
 
     public static boolean ROUND_ROBIN = false;
@@ -159,7 +180,8 @@ public class LSMSimulator {
 
     protected final Config config;
 
-    protected final KeyGenerator keyGen;
+    protected final KeyGenerator writeGen;
+    protected final KeyGenerator readGen;
     protected final ArrayDeque<MemorySSTable> memorySSTs = new ArrayDeque<>();
     protected final ArrayDeque<DiskSSTable> diskSSTs = new ArrayDeque<>();
 
@@ -174,12 +196,15 @@ public class LSMSimulator {
     protected SimulationStats stats = new SimulationStats();
 
     protected final LRUCache cache;
-    protected int ops;
+    protected int reads;
+    protected int writes;
 
-    public LSMSimulator(KeyGenerator keyGen, Config config) {
+    public LSMSimulator(KeyGenerator writeGen, KeyGenerator readGen, Config config) {
         unpartitionedLevel = new UnpartitionedLevel(-1);
-        this.keyGen = keyGen;
-        this.cache = new LRUCache(config.tuningConfig.cacheSize, config.tuningConfig.pageSize);
+        this.writeGen = writeGen;
+        this.readGen = readGen;
+        this.cache = new LRUCache(config.tuningConfig.cacheSize / config.tuningConfig.pageSize,
+                config.tuningConfig.simulateSize / config.tuningConfig.pageSize);
         this.config = config;
         this.memTableMap = new Int2IntAVLTreeMap();
         this.memTable = new MemorySSTable(config.memConfig.activeSize);
@@ -201,16 +226,54 @@ public class LSMSimulator {
         cache.resetStats();
     }
 
+    public void deserialize(File file) throws IOException {
+        DataInputStream input = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+        int card = input.readInt();
+        if (config.cardinality != card) {
+            input.close();
+            throw new IllegalStateException(
+                    "Mismatched cardinalities. Expected " + config.cardinality + " actual " + card);
+        }
+
+        unpartitionedLevel.deserialize(input, this);
+        int numLevels = input.readInt();
+        diskLevels.clear();
+        for (int i = 0; i < numLevels; i++) {
+            PartitionedLevel level = new PartitionedLevel(i, false);
+            level.deserialize(input, this);
+            diskLevels.add(level);
+        }
+        input.close();
+    }
+
     public void simulate(int totalOps) {
-        load();
         resetStats();
-        for (ops = 0; ops < totalOps;) {
+        reads = 0;
+        writes = 0;
+
+        int counter = 0;
+        long lastMergeDiskReads = 0;
+        long lastQueryDiskReads = 0;
+        long lastDiskWrites = 0;
+
+        while (writes < totalOps) {
             // do writes
-            for (int writes = 0; writes < config.tuningConfig.writes; writes++, ops++) {
-                write(keyGen.nextKey());
+            for (int i = 0; i < config.tuningConfig.writes; i++, writes++) {
+                write(writeGen.nextKey());
             }
-            for (int reads = 0; reads < config.tuningConfig.reads; reads++, ops++) {
-                read(keyGen.nextKey());
+            for (int i = 0; i < config.tuningConfig.reads; i++, reads++) {
+                read(readGen.nextKey());
+            }
+            counter += config.tuningConfig.writes;
+            if (counter > config.tuningConfig.tuningCycle) {
+                System.out.println((cache.getMergeDiskReads() - lastMergeDiskReads) + "\t"
+                        + (cache.getQueryDiskReads() - lastQueryDiskReads) + "\t"
+                        + (cache.getDiskWrites() - lastDiskWrites));
+                counter = 0;
+
+                lastMergeDiskReads = cache.getMergeDiskReads();
+                lastQueryDiskReads = cache.getQueryDiskReads();
+                lastDiskWrites = cache.getDiskWrites();
             }
         }
 
@@ -219,15 +282,17 @@ public class LSMSimulator {
         }
     }
 
-    protected void load() {
+    public void load(File file) throws IOException {
         loading = true;
         IntList list = new IntArrayList(config.cardinality);
         for (int i = 0; i < config.cardinality; i++) {
             list.add(i);
         }
         IntLists.shuffle(list, rand);
-        for (ops = 0; ops < config.cardinality; ops++) {
-            write(list.getInt(ops));
+        reads = 0;
+        writes = 0;
+        for (; writes < config.cardinality; writes++) {
+            write(list.getInt(writes));
         }
 
         while (totalMemTableSize > 0 || !memTableMap.isEmpty()) {
@@ -236,6 +301,19 @@ public class LSMSimulator {
 
         cache.resetStats();
         loading = false;
+
+        // persist
+        DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
+        // for verification
+        output.writeInt(config.cardinality);
+        unpartitionedLevel.serialize(output);
+        output.writeInt(diskLevels.size());
+        for (int i = 0; i < diskLevels.size(); i++) {
+            diskLevels.get(i).serialize(output);
+        }
+
+        output.close();
+
     }
 
     protected void write(int key) {
@@ -250,15 +328,12 @@ public class LSMSimulator {
                 diskFlushed++;
             }
             stats.totalLogTruncations++;
-            stats.totalDiskFlushes += diskFlushed;
             stats.maxDiskFlushesPerLogTruncation = Math.max(stats.maxDiskFlushesPerLogTruncation, diskFlushed);
 
             if (VERBOSE && !loading && diskFlushed > 1) {
                 System.out.println(stats.totalLogTruncations + ": flushed " + diskFlushed + " sstables at once");
             }
         }
-
-        stats.numDiskFlushes += diskFlushed;
 
         if (memTableMap.size() >= config.memConfig.activeSize) {
             memoryFlush();
@@ -274,7 +349,7 @@ public class LSMSimulator {
         if (memTableMap.containsKey(key)) {
             return;
         }
-        searchKey.reset();
+        searchKey.reset(-1);
         searchKey.resetKey(key);
         // check memory levels
         for (int i = 0; i < memoryLevels.size(); i++) {
@@ -301,9 +376,9 @@ public class LSMSimulator {
     }
 
     protected void prepareMemoryFlush() {
-        memTable.reset();
+        memTable.reset(-1);
         for (Int2IntMap.Entry e : memTableMap.int2IntEntrySet()) {
-            memTable.add(e.getIntKey(), e.getIntValue());
+            memTable.add(e.getIntKey(), e.getIntValue(), false, false);
         }
         memTableMap.clear();
         memTableMinSeq = Integer.MAX_VALUE;
@@ -323,7 +398,7 @@ public class LSMSimulator {
 
             MergeIterator iterator = new PartitionedIterator(memTable, overlappingSSTables);
 
-            List<SSTable> newSSTables = buildSSTables(iterator, true);
+            List<SSTable> newSSTables = buildSSTables(iterator, true, -1);
 
             freeSSTables(overlappingSSTables);
             decreaseMemorySize(memTable.getSize());
@@ -342,7 +417,7 @@ public class LSMSimulator {
                 diskFlush(FlushReason.MEMORY);
             }
         }
-        memTable.reset();
+        memTable.reset(-1);
     }
 
     protected void increaseMemorySize(long size) {
@@ -416,7 +491,7 @@ public class LSMSimulator {
 
             current.mergedKeys += pair.getLeft().getSize();
             current.overlapingKeys += Utils.getTotalSize(pair.getRight());
-            List<SSTable> newSSTables = buildSSTables(iterator, isMemory);
+            List<SSTable> newSSTables = buildSSTables(iterator, isMemory, next.level);
 
             int newKeys = Utils.getTotalSize(newSSTables);
             current.resultingKeys += newKeys;
@@ -451,33 +526,33 @@ public class LSMSimulator {
     }
 
     protected String printWriteAmplification(long mergedKeys) {
-        return String.format("%.2f", (double) mergedKeys / ops);
+        return String.format("%.2f", (double) mergedKeys / writes);
     }
 
     public String printAverageFlushesPerLogTruncation() {
-        return Utils.formatDivision(stats.totalDiskFlushes, stats.totalLogTruncations);
+        return Utils.formatDivision(stats.numLogFlushes, stats.totalLogTruncations);
     }
 
-    protected List<SSTable> buildSSTables(MergeIterator iterator, boolean isMemory) {
+    protected List<SSTable> buildSSTables(MergeIterator iterator, boolean isMemory, int level) {
         KeyEntry entry = new KeyEntry();
         SSTable newSSTable = null;
         List<SSTable> newSSTables = new ArrayList<>();
         while (iterator.hasNext()) {
             iterator.getNext(entry);
             if (newSSTable == null) {
-                newSSTable = getFreeSSTable(isMemory);
+                newSSTable = getFreeSSTable(isMemory, level);
                 newSSTables.add(newSSTable);
             }
-            newSSTable.add(entry.key, entry.seq);
+            newSSTable.add(entry.key, entry.seq, entry.cached, false);
             if (newSSTable.isFull()) {
-                newSSTable.write();
+                newSSTable.endBulkLoad();
                 newSSTable = null;
             }
         }
         return newSSTables;
     }
 
-    protected SSTable getFreeSSTable(boolean isMemory) {
+    protected SSTable getFreeSSTable(boolean isMemory, int level) {
         ArrayDeque<? extends SSTable> ssts = isMemory ? memorySSTs : diskSSTs;
         SSTable sstable = ssts.peekFirst();
         if (sstable == null) {
@@ -492,7 +567,7 @@ public class LSMSimulator {
             assert sstable.isFree;
             ssts.removeFirst();
         }
-        sstable.reset();
+        sstable.reset(level);
         sstable.isFree = false;
         return sstable;
     }
@@ -503,6 +578,7 @@ public class LSMSimulator {
         } else {
             diskSSTs.add((DiskSSTable) sstable);
         }
+        sstable.deletePages();
         sstable.isFree = true;
     }
 
@@ -511,14 +587,14 @@ public class LSMSimulator {
     }
 
     protected void checkCounter() {
-        if (ops % progress == 0) {
+        if (writes + reads > 0 && (writes + reads) % progress == 0) {
             synchronized (LSMSimulator.class) {
                 System.out.println("max memory table size " + stats.maxMemTableSize);
                 System.out.println("current memory table size " + totalMemTableSize);
                 System.out.println("total memory sstables " + stats.totalMemorySSTables);
                 System.out.println("total disk sstables " + stats.totalDiskSSTables);
                 System.out.println(String.format("%s: completed %d keys. memory write amp %s, disk write amp %s",
-                        loading ? "Load" : "Update", ops, printWriteAmplification(stats.memoryMergeKeys),
+                        loading ? "Load" : "Update", (writes + reads), printWriteAmplification(stats.memoryMergeKeys),
                         printWriteAmplification(stats.diskMergeKeys)));
                 System.out.println(printLevels());
             }
@@ -580,11 +656,14 @@ public class LSMSimulator {
                 sstables = Collections.singletonList(Collections.singletonList(sstable));
             } else {
                 if (request == FlushReason.MEMORY) {
+                    stats.numMemoryFlushes++;
                     startLevel = memoryLevels.size() - 1;
                     SSTable sstable = OldestMinLSNSelector.INSTANCE
                             .selectMerge(this, memoryLevels.get(startLevel), Empty_TreeSet).getLeft();
                     sstables = Collections.singletonList(Collections.singletonList(sstable));
+
                 } else {
+                    stats.numLogFlushes++;
                     SSTable oldestSSTable = null;
                     for (int i = 0; i < memoryLevels.size(); i++) {
                         PartitionedLevel level = memoryLevels.get(i);
@@ -616,7 +695,7 @@ public class LSMSimulator {
 
         MergeIterator iterator = new DiskFlushIterator(sstables);
 
-        List<SSTable> newSSTables = buildSSTables(iterator, false);
+        List<SSTable> newSSTables = buildSSTables(iterator, false, unpartitionedLevel.level);
 
         long totalSize = addFlushedSSTable(newSSTables);
         stats.diskMergeKeys += totalSize;
@@ -628,7 +707,7 @@ public class LSMSimulator {
         decreaseMemorySize(flushSize);
         if (flushingMemTable) {
             minSeq = nextSeq - 1;
-            memTable.reset();
+            memTable.reset(-1);
         } else {
             for (List<SSTable> list : sstables) {
                 freeSSTables(list);
@@ -744,7 +823,7 @@ public class LSMSimulator {
             newSSTables = Collections.singletonList(mergingSSTables.get(0));
         } else {
             MergeIterator unpartitionedIterator = new UnpartitionedIterator(mergingSSTables, nextSSTables);
-            newSSTables = buildSSTables(unpartitionedIterator, false);
+            newSSTables = buildSSTables(unpartitionedIterator, false, 0);
             freeSSTables(mergingSSTables);
             freeSSTables(nextSSTables);
 
@@ -775,6 +854,18 @@ public class LSMSimulator {
             }
         }
         return group;
+    }
+
+    public void updateMemoryComponentSize(int newSize) {
+        config.memConfig.totalMemSize = newSize;
+        while (totalMemTableSize > config.memConfig.totalMemSize) {
+            diskFlush(FlushReason.MEMORY);
+        }
+    }
+
+    public void updateBufferCacheSize(int newSize) {
+        config.tuningConfig.cacheSize = newSize;
+        cache.adjustCapacity(newSize / config.tuningConfig.pageSize);
     }
 
 }

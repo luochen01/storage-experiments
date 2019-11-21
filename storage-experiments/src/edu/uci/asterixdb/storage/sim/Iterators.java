@@ -9,6 +9,7 @@ import java.util.Set;
 class KeyEntry {
     int key;
     int seq;
+    boolean cached;
 }
 
 interface MergeIterator {
@@ -53,6 +54,10 @@ class PQEntry implements Comparable<PQEntry> {
         return sstable.getSeq(keyIndex);
     }
 
+    public boolean isCached() {
+        return sstable.isCached(keyIndex);
+    }
+
     public void consumeKey() {
         keyIndex++;
         if (keyIndex == sstable.getSize()) {
@@ -94,6 +99,7 @@ abstract class AbstractIterator implements MergeIterator {
         PQEntry peek = queue.peek();
         entry.key = peek.getKey();
         entry.seq = peek.getSeq();
+        entry.cached = peek.isCached();
 
         while (!queue.isEmpty() && queue.peek().getKey() == entry.key) {
             consumeMin();

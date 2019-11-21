@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
-public class MemoryTuner {
+public class MemoryTunerTest {
 
     private double kp = 1024 * 10;
 
@@ -72,9 +72,6 @@ public class MemoryTuner {
 
         double cacheMemory = totalMemory / 2;
         double componentMemory = totalMemory / 2;
-
-        double pCacheError = 0;
-        double pComponentError = 0;
 
         List<Double> cacheMemories = new ArrayList<>();
         List<Double> componentMemories = new ArrayList<>();
@@ -162,7 +159,7 @@ public class MemoryTuner {
     }
 
     public static void main(String[] args) {
-        MemoryTuner tuner = new MemoryTuner();
+        MemoryTunerTest tuner = new MemoryTunerTest();
         tuner.control(500);
         tuner.bruteForce();
     }

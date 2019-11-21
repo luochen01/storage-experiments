@@ -1,9 +1,18 @@
 package edu.uci.asterixdb.storage.sim;
 
+import edu.uci.asterixdb.storage.sim.Page.PageState;
+
 class Page {
+
+    public enum PageState {
+        CACHED,
+        CACHED_SIMULATE,
+        NONE
+    }
+
     Page prev = null;
     Page next = null;
-    boolean cached = false;
+    PageState state = PageState.NONE;
 
     public Page() {
     }
@@ -11,79 +20,95 @@ class Page {
 }
 
 public class LRUCache {
-    private Page head = new Page();
-    private Page tail = new Page();
+    private final DoubleLinkedList cacheList = new DoubleLinkedList();
+    private final DoubleLinkedList simulateList = new DoubleLinkedList();
 
-    private int usage;
-    private int capacity;
-    private final int pageSize;
+    private int cacheCapacity;
+    private int simulateCapacity;
 
-    private long diskReads;
+    private long queryReads;
+    private long queryDiskReads;
+    private long mergeReads;
+    private long mergeDiskReads;
     private long diskWrites;
 
-    public LRUCache(int capacity, int pageSize) {
-        this.capacity = capacity;
-        this.pageSize = pageSize;
-        head.next = tail;
-        tail.prev = head;
+    private long savedQueryDiskReads;
+    private long savedMergeDiskReads;
+
+    public LRUCache(int cacheCapacity, int simulateCapacity) {
+        this.cacheCapacity = cacheCapacity;
+        this.simulateCapacity = simulateCapacity;
     }
 
-    public int getPageSize() {
-        return pageSize;
-    }
-
-    private void insert(Page page) {
-        Page next = head.next;
-
-        head.next = page;
-        page.prev = head;
-
-        page.next = next;
-        next.prev = page;
-    }
-
-    private void delete(Page page) {
-        Page prev = page.prev;
-        Page next = page.next;
-        assert prev != null;
-        prev.next = next;
-        next.prev = prev;
-
-        page.prev = null;
-        page.next = null;
-    }
-
-    public void evict(Page page) {
-        if (page.cached) {
-            delete(page);
-            page.cached = false;
-            usage--;
+    public void delete(Page page) {
+        switch (page.state) {
+            case CACHED:
+                cacheList.delete(page);
+                break;
+            case CACHED_SIMULATE:
+                simulateList.delete(page);
+                break;
+            default:
+                break;
         }
-
+        page.state = PageState.NONE;
     }
 
     public void pin(Page page) {
-        if (page.cached) {
-            delete(page);
-            insert(page);
-        } else {
-            diskReads++;
-            insert(page);
-            page.cached = true;
-            if (usage == capacity) {
-                Page last = tail.prev;
-                delete(last);
-                last.cached = false;
-            } else {
-                usage++;
-            }
+        switch (page.state) {
+            case CACHED:
+                cacheList.makeHead(page);
+                break;
+            case CACHED_SIMULATE:
+                queryDiskReads++;
+                savedQueryDiskReads++;
+                simulateList.delete(page);
+                cacheList.insert(page);
+                ensureCacheCapacity();
+                break;
+            case NONE:
+                queryDiskReads++;
+                cacheList.insert(page);
+                ensureCacheCapacity();
+                break;
+        }
+        queryReads++;
+        page.state = PageState.CACHED;
+    }
+
+    public void ensureCacheCapacity() {
+        while (cacheList.getSize() > cacheCapacity) {
+            Page page = cacheList.deleteLast();
+            simulateList.insert(page);
+            page.state = PageState.CACHED_SIMULATE;
+        }
+        while (simulateList.getSize() > simulateCapacity) {
+            Page page = simulateList.deleteLast();
+            page.state = PageState.NONE;
         }
     }
 
-    public void read(Page page) {
-        if (!page.cached) {
-            diskReads++;
+    public void mergeReturnPage(Page page) {
+        assert page.state == PageState.NONE;
+        cacheList.insert(page);
+        page.state = PageState.CACHED;
+        ensureCacheCapacity();
+    }
+
+    public void mergeReadPage(Page page) {
+        switch (page.state) {
+            case CACHED:
+                break;
+            case CACHED_SIMULATE:
+                mergeDiskReads++;
+                savedMergeDiskReads++;
+                break;
+            case NONE:
+                mergeDiskReads++;
+                break;
         }
+        mergeReads++;
+
     }
 
     public void write(int numPages) {
@@ -91,38 +116,58 @@ public class LRUCache {
     }
 
     public void adjustCapacity(int newCapacity) {
-        while (capacity > newCapacity) {
-            delete(tail.prev);
-            capacity--;
-        }
-        capacity = newCapacity;
+        cacheCapacity = newCapacity;
+        ensureCacheCapacity();
     }
 
-    public Page get(int index) {
-        Page p = head.next;
-        for (int i = 0; p != tail; i++, p = p.next) {
-            if (i == index) {
-                return p;
-            }
-        }
-        return null;
+    public Page getPage(int index) {
+        return cacheList.get(index);
     }
 
-    public long getDiskReads() {
-        return diskReads;
+    public long getQueryDiskReads() {
+        return queryDiskReads;
+    }
+
+    public long getMergeDiskReads() {
+        return mergeDiskReads;
     }
 
     public long getDiskWrites() {
         return diskWrites;
     }
 
-    public int getUsage() {
-        return usage;
+    public long getSavedMergeDiskReads() {
+        return savedMergeDiskReads;
+    }
+
+    public long getSavedQueryDiskReads() {
+        return savedQueryDiskReads;
+    }
+
+    public long getMergeReads() {
+        return mergeReads;
+    }
+
+    public long getQueryReads() {
+        return queryReads;
     }
 
     public void resetStats() {
-        this.diskReads = 0;
+        this.savedMergeDiskReads = 0;
+        this.savedQueryDiskReads = 0;
+        this.queryDiskReads = 0;
+        this.mergeDiskReads = 0;
+        this.queryReads = 0;
+        this.mergeReads = 0;
         this.diskWrites = 0;
+    }
+
+    public int getCacheSize() {
+        return cacheList.getSize();
+    }
+
+    public int getSimulateCacheSize() {
+        return simulateList.getSize();
     }
 
 }

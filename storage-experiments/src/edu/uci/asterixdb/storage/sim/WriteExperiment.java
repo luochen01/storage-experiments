@@ -38,15 +38,16 @@ class WriteExperiment extends Experiment {
                     card, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
         }
 
-        KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator(), new ZipfGenerator() };
+        KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator() };
 
         List<Map<Integer, String>> maps = new ArrayList<>();
         List<Future<?>> futures = new ArrayList<>();
 
         //LSMSimulatorHorizontal.ROUND_ROBIN = true;
         for (KeyGenerator keyGen : keyGens) {
-            parallelSimulations(partitionedConfigs, keyGen, "partitioned", memories, maps, futures, false);
-            parallelSimulations(btreeConfigs, keyGen, "full", memories, maps, futures, false);
+            parallelSimulations(partitionedConfigs, keyGen, keyGen, "partitioned", memories, maps, futures, false,
+                    null);
+            parallelSimulations(btreeConfigs, keyGen, keyGen, "full", memories, maps, futures, false, null);
         }
         futures.forEach(f -> {
             try {
@@ -79,7 +80,7 @@ class WriteExperiment extends Experiment {
         List<Future<?>> futures = new ArrayList<>();
 
         for (KeyGenerator keyGen : keyGens) {
-            parallelSimulations(configs, keyGen, "memory", memories, maps, futures, true);
+            parallelSimulations(configs, keyGen, keyGen, "memory", memories, maps, futures, true, null);
         }
         futures.forEach(f -> {
             try {
@@ -109,14 +110,14 @@ class WriteExperiment extends Experiment {
                     GreedySelector.INSTANCE, GreedySelector.INSTANCE, log, log));
         }
 
-        KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator(), new ZipfGenerator() };
+        KeyGenerator[] keyGens = new KeyGenerator[] { new UniformGenerator() };
         List<Map<Integer, String>> maps = new ArrayList<>();
         List<Future<?>> futures = new ArrayList<>();
 
         for (KeyGenerator keyGen : keyGens) {
-            parallelSimulations(roundRobinConfigs, keyGen, "round-robin", logs, maps, futures, false);
-            parallelSimulations(oldestSeqConfigs, keyGen, "oldest-seq", logs, maps, futures, false);
-            parallelSimulations(greedyConfigs, keyGen, "greedy", logs, maps, futures, false);
+            parallelSimulations(roundRobinConfigs, keyGen, keyGen, "round-robin", logs, maps, futures, false, null);
+            parallelSimulations(oldestSeqConfigs, keyGen, keyGen, "oldest-seq", logs, maps, futures, false, null);
+            parallelSimulations(greedyConfigs, keyGen, keyGen, "greedy", logs, maps, futures, false, null);
         }
         futures.forEach(f -> {
             try {
@@ -162,8 +163,9 @@ class WriteExperiment extends Experiment {
         List<Future<?>> futures = new ArrayList<>();
 
         for (KeyGenerator keyGen : keyGens) {
-            parallelSimulations(configs64, keyGen, "64K", params, maps, futures, false);
-            parallelSimulations(configs64RoundRobin, keyGen, "64K-round-robin", params, maps, futures, false);
+            parallelSimulations(configs64, keyGen, keyGen, "64K", params, maps, futures, false, null);
+            parallelSimulations(configs64RoundRobin, keyGen, keyGen, "64K-round-robin", params, maps, futures, false,
+                    null);
 
             //parallelSimulations(configs256, keyGen, "256K", params, maps, futures);
             //parallelSimulations(configs1024, keyGen, "1024K", params, maps, futures);
@@ -204,7 +206,8 @@ class WriteExperiment extends Experiment {
         for (KeyGenerator keyGen : keyGens) {
             // parallelSimulations(staticHybridConfigs, keyGen, "static", memories, maps, futures);
             //parallelSimulations(dynamicConfigs, keyGen, "dynamic", memories, maps, futures);
-            parallelSimulations(staticRoundRobinConfigs, keyGen, "static", memories, maps, futures, false);
+            parallelSimulations(staticRoundRobinConfigs, keyGen, keyGen, "static", memories, maps, futures, false,
+                    null);
         }
         futures.forEach(f -> {
             try {
