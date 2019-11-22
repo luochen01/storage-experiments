@@ -15,8 +15,8 @@ public class LSMSimulatorSerDeserTest {
 
         int card = 100000;
         Config config = new Config(new MemoryConfig(64, 4096, 128, 10, true), new DiskConfig(128, 10, 1, false),
-                new TuningConfig(4096, 64, 4, 1, 1, CachePolicy.ADAPTIVE, Integer.MAX_VALUE), card,
-                GreedySelector.INSTANCE, GreedySelector.INSTANCE, 0, 0);
+                new TuningConfig(4096, 64, 4, 1, 1, 1, 1, CachePolicy.ADAPTIVE, Integer.MAX_VALUE, Integer.MAX_VALUE),
+                card, GreedySelector.INSTANCE, GreedySelector.INSTANCE, 0, 0);
 
         UniformGenerator gen = new UniformGenerator();
         gen.initCard(card);

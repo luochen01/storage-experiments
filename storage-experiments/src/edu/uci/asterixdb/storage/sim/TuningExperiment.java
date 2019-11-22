@@ -12,15 +12,17 @@ import edu.uci.asterixdb.storage.sim.LSMSimulator.CachePolicy;
 class TuningExperiment extends Experiment {
     public static final int PAGE_SIZE = 4;
     public static final int SIMULATE_CACHE_SIZE = 65536;
+    public static final int MIN_MEMORY_SIZE = 32 * 1024;
 
     public static void main(String[] args) throws IOException {
         //runPaper();
-        runCachePolicy();
-        //debugCachePolicy();
+        //runCachePolicy();
+        runTuner();
     }
 
-    private static void debugCachePolicy() throws IOException {
+    public static void runTuner() throws IOException {
         LSMSimulator.progress = Integer.MAX_VALUE;
+        SIM_FACTOR = 10;
 
         executor.setCorePoolSize(1);
 
@@ -32,23 +34,26 @@ class TuningExperiment extends Experiment {
         //long log = Integer.MAX_VALUE;
         int memory = 4 * 1024 * 1024; // 4G
 
-        Integer[] writeMems = new Integer[] { 512 * 1024 };
-        //Integer[] writeMems = new Integer[] { 3 * 1024 * 1024 };
+        Integer[] writeMems = new Integer[] { 4000 * 1024 };
+        //Integer[] writeMems = new Integer[] { 2 * 1024 * 1024 };
 
         int reads = 1;
         int writes = 1;
 
+        double writeWeight = 1;
+        double readWeight = 1;
+
         int tuningCycle = (int) log;
+        long excludedCycles = 0;
         for (int mem : writeMems) {
-            adaptiveConfigs.add(new Config(
-                    new MemoryConfig(8192, mem, 8192, 10, true), disk, new TuningConfig(memory - mem,
-                            SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, CachePolicy.ADAPTIVE, tuningCycle),
+            adaptiveConfigs.add(new Config(new MemoryConfig(8192, mem, 8192, 10, true), disk,
+                    new TuningConfig(memory - mem, SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, writeWeight,
+                            readWeight, CachePolicy.ADAPTIVE, tuningCycle, MIN_MEMORY_SIZE, true, excludedCycles),
                     CARD, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
         }
 
-        //KeyGenerator[] writeGens = new KeyGenerator[] { new UniformGenerator() };
-
-        KeyGenerator[] writeGens = new KeyGenerator[] { new ScrambleZipfGenerator() };
+        KeyGenerator[] writeGens = new KeyGenerator[] { new UniformGenerator() };
+        KeyGenerator[] readGens = new KeyGenerator[] { new ScrambleZipfGenerator() };
 
         List<Map<Integer, String>> maps = new ArrayList<>();
         List<Future<?>> futures = new ArrayList<>();
@@ -56,8 +61,8 @@ class TuningExperiment extends Experiment {
         File file = new File("tuning_db");
 
         for (int i = 0; i < writeGens.length; i++) {
-            parallelSimulations(adaptiveConfigs, writeGens[i], writeGens[i], "adaptive", writeMems, maps, futures,
-                    false, file);
+            parallelSimulations(adaptiveConfigs, writeGens[i], readGens[i], "adaptive", writeMems, maps, futures, false,
+                    file);
         }
 
         futures.forEach(f -> {
@@ -91,18 +96,20 @@ class TuningExperiment extends Experiment {
         int reads = 1;
         int writes = 1;
 
+        double weight = 1;
+
         for (int mem : writeMems) {
-            bypassConfigs.add(new Config(
-                    new MemoryConfig(8192, mem, 8192, 10, true), disk, new TuningConfig(memory - mem,
-                            SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, CachePolicy.BYPASS, Integer.MAX_VALUE),
+            bypassConfigs.add(new Config(new MemoryConfig(8192, mem, 8192, 10, true), disk,
+                    new TuningConfig(memory - mem, SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, weight, weight,
+                            CachePolicy.BYPASS, Integer.MAX_VALUE, MIN_MEMORY_SIZE, false, 0),
                     CARD, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
-            adaptiveConfigs.add(new Config(
-                    new MemoryConfig(8192, mem, 8192, 10, true), disk, new TuningConfig(memory - mem,
-                            SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, CachePolicy.ADAPTIVE, Integer.MAX_VALUE),
+            adaptiveConfigs.add(new Config(new MemoryConfig(8192, mem, 8192, 10, true), disk,
+                    new TuningConfig(memory - mem, SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, weight, weight,
+                            CachePolicy.ADAPTIVE, Integer.MAX_VALUE, MIN_MEMORY_SIZE, false, 0),
                     CARD, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
             writebackConfigs.add(new Config(new MemoryConfig(8192, mem, 8192, 10, true), disk,
-                    new TuningConfig(memory - mem, SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads,
-                            CachePolicy.WRITE_BACK, Integer.MAX_VALUE),
+                    new TuningConfig(memory - mem, SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, weight, weight,
+                            CachePolicy.WRITE_BACK, Integer.MAX_VALUE, MIN_MEMORY_SIZE, false, 0),
                     CARD, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
         }
 
@@ -151,11 +158,12 @@ class TuningExperiment extends Experiment {
 
         int reads = 4;
         int writes = 1;
+        double weight = 1;
 
         for (int mem : writeMems) {
-            partitionedConfigs.add(new Config(
-                    new MemoryConfig(8192, mem, 8192, 10, true), disk, new TuningConfig(memory - mem,
-                            SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, CachePolicy.ADAPTIVE, Integer.MAX_VALUE),
+            partitionedConfigs.add(new Config(new MemoryConfig(8192, mem, 8192, 10, true), disk,
+                    new TuningConfig(memory - mem, SIMULATE_CACHE_SIZE, PAGE_SIZE, writes, reads, weight, weight,
+                            CachePolicy.ADAPTIVE, Integer.MAX_VALUE, MIN_MEMORY_SIZE, false, 0),
                     CARD, HybridSelector.INSTANCE, GreedySelector.INSTANCE, log, log));
         }
 

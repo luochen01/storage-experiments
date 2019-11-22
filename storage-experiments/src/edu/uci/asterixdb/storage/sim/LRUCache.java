@@ -55,6 +55,7 @@ public class LRUCache {
     }
 
     public void pin(Page page) {
+        queryReads++;
         switch (page.state) {
             case CACHED:
                 cacheList.makeHead(page);
@@ -64,16 +65,16 @@ public class LRUCache {
                 savedQueryDiskReads++;
                 simulateList.delete(page);
                 cacheList.insert(page);
+                page.state = PageState.CACHED;
                 ensureCacheCapacity();
                 break;
             case NONE:
                 queryDiskReads++;
                 cacheList.insert(page);
+                page.state = PageState.CACHED;
                 ensureCacheCapacity();
                 break;
         }
-        queryReads++;
-        page.state = PageState.CACHED;
     }
 
     public void ensureCacheCapacity() {
@@ -96,6 +97,7 @@ public class LRUCache {
     }
 
     public void mergeReadPage(Page page) {
+        mergeReads++;
         switch (page.state) {
             case CACHED:
                 break;
@@ -107,7 +109,6 @@ public class LRUCache {
                 mergeDiskReads++;
                 break;
         }
-        mergeReads++;
 
     }
 

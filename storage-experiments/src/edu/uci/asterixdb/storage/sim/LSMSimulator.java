@@ -67,18 +67,29 @@ class TuningConfig {
     final int pageSize;
     final int writes;
     final int reads;
+    final double readWeight;
+    final double writeWeight;
     final CachePolicy cachePolicy;
     final int tuningCycle;
+    final long excludedCycles;
+    final int minMemorySize;
+    final boolean enabled;
 
-    public TuningConfig(int cacheSize, int simulateSize, int pageSize, int writes, int reads, CachePolicy cachePolicy,
-            int tuningCycle) {
+    public TuningConfig(int cacheSize, int simulateSize, int pageSize, int writes, int reads, double writeWeight,
+            double readWeight, CachePolicy cachePolicy, int reportCycle, int minMemorySize, boolean enabled,
+            long excludedCycles) {
         this.cacheSize = cacheSize;
         this.simulateSize = simulateSize;
         this.pageSize = pageSize;
         this.writes = writes;
         this.reads = reads;
+        this.writeWeight = writeWeight;
+        this.readWeight = readWeight;
         this.cachePolicy = cachePolicy;
-        this.tuningCycle = tuningCycle;
+        this.tuningCycle = reportCycle;
+        this.minMemorySize = minMemorySize;
+        this.enabled = enabled;
+        this.excludedCycles = excludedCycles;
     }
 }
 
@@ -95,8 +106,8 @@ class Config {
     public Config(MemoryConfig memConfig, DiskConfig diskConfig, int cardinality, SSTableSelector memSSTableSelector,
             SSTableSelector diskSSTableSelector, long minLogLength, long maxLogLength) {
         this(memConfig, diskConfig,
-                new TuningConfig(Integer.MAX_VALUE, Integer.MAX_VALUE, diskConfig.sstableSize, 1, 0,
-                        CachePolicy.ADAPTIVE, Integer.MAX_VALUE),
+                new TuningConfig(Integer.MAX_VALUE, Integer.MAX_VALUE, diskConfig.sstableSize, 1, 0, 1, 1,
+                        CachePolicy.ADAPTIVE, Integer.MAX_VALUE, Integer.MAX_VALUE, false, 0),
                 cardinality, memSSTableSelector, diskSSTableSelector, minLogLength, maxLogLength);
     }
 
@@ -141,6 +152,8 @@ class SimulationStats {
     int totalUnpartitionedMerges = 0;
     int totalUnpartitionedMergeGroups = 0;
     int maxMemTableSize = 0;
+
+    long totalFlushedSize;
 }
 
 public class LSMSimulator {
@@ -198,6 +211,7 @@ public class LSMSimulator {
     protected final LRUCache cache;
     protected int reads;
     protected int writes;
+    protected final MemoryTuner tuner;
 
     public LSMSimulator(KeyGenerator writeGen, KeyGenerator readGen, Config config) {
         unpartitionedLevel = new UnpartitionedLevel(-1);
@@ -208,6 +222,7 @@ public class LSMSimulator {
         this.config = config;
         this.memTableMap = new Int2IntAVLTreeMap();
         this.memTable = new MemorySSTable(config.memConfig.activeSize);
+        this.tuner = new MemoryTuner(this);
     }
 
     public void initializeMemoryLog(File file) throws IOException {
@@ -250,8 +265,9 @@ public class LSMSimulator {
         resetStats();
         reads = 0;
         writes = 0;
-
-        int counter = 0;
+        long lastWrites = 0;
+        long lastOps = 0;
+        long lastMinSeq = 0;
         long lastMergeDiskReads = 0;
         long lastQueryDiskReads = 0;
         long lastDiskWrites = 0;
@@ -264,16 +280,29 @@ public class LSMSimulator {
             for (int i = 0; i < config.tuningConfig.reads; i++, reads++) {
                 read(readGen.nextKey());
             }
-            counter += config.tuningConfig.writes;
-            if (counter > config.tuningConfig.tuningCycle) {
-                System.out.println((cache.getMergeDiskReads() - lastMergeDiskReads) + "\t"
-                        + (cache.getQueryDiskReads() - lastQueryDiskReads) + "\t"
-                        + (cache.getDiskWrites() - lastDiskWrites));
-                counter = 0;
-
+            if (minSeq > lastMinSeq + config.tuningConfig.tuningCycle
+                    && writes > lastWrites + config.tuningConfig.tuningCycle) {
+                if (writes / config.tuningConfig.tuningCycle <= 1) {
+                    System.out.println("writes\tmerge reads\tquery reads\twrites\ttotal");
+                }
+                double numOps = (reads + writes) - lastOps;
+                double mergeReads = (cache.getMergeDiskReads() - lastMergeDiskReads) / numOps;
+                double queryReads = (cache.getQueryDiskReads() - lastQueryDiskReads) / numOps;
+                double diskWrites = (cache.getDiskWrites() - lastDiskWrites) / numOps;
+                double overall = (mergeReads + queryReads) * config.tuningConfig.readWeight
+                        + diskWrites * config.tuningConfig.writeWeight;
+                System.out.println(String.format("%d\t%.2f\t%.2f\t%.2f\t%.2f", writes, mergeReads, queryReads,
+                        diskWrites, overall));
                 lastMergeDiskReads = cache.getMergeDiskReads();
                 lastQueryDiskReads = cache.getQueryDiskReads();
                 lastDiskWrites = cache.getDiskWrites();
+                lastOps = reads + writes;
+                if (config.tuningConfig.enabled && minSeq > config.tuningConfig.excludedCycles) {
+                    tuner.tune();
+                }
+                lastMinSeq = minSeq;
+                lastWrites = writes;
+
             }
         }
 
@@ -690,7 +719,6 @@ public class LSMSimulator {
                     }
                 }
             }
-
         }
 
         MergeIterator iterator = new DiskFlushIterator(sstables);
@@ -705,6 +733,7 @@ public class LSMSimulator {
             flushSize += Utils.getTotalSize(list);
         }
         decreaseMemorySize(flushSize);
+        stats.totalFlushedSize += flushSize;
         if (flushingMemTable) {
             minSeq = nextSeq - 1;
             memTable.reset(-1);

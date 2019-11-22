@@ -82,6 +82,27 @@ class ZipfGenerator implements KeyGenerator {
 
 }
 
+public class Gen {
+
+    public static void main(String[] args) {
+        int[] nums = new int[1000];
+
+        int total = 10000;
+
+        ZipfGenerator gen = new ZipfGenerator();
+        gen.initCard(nums.length);
+        for (int i = 0; i < total; i++) {
+            nums[gen.nextKey()]++;
+        }
+        double sum = 0;
+        for (int i = 0; i < nums.length; i++) {
+            sum += (double) nums[i] / total;
+            System.out.println(i + "\t" + (double) nums[i] / total + "\t" + sum);
+        }
+
+    }
+}
+
 class ScrambleZipfGenerator implements KeyGenerator {
     private ZipfDistribution zipf;
     private final RandomGenerator gen;

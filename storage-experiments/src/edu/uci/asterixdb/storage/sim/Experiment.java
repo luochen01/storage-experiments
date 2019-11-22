@@ -29,6 +29,8 @@ class Experiment {
     public static final ThreadPoolExecutor executor =
             new ThreadPoolExecutor(NUM_THREADS, NUM_THREADS, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
 
+    public static int SIM_FACTOR = 1;
+
     public static void loadSimulation(Config config, File file, KeyGenerator gen) throws IOException {
         gen.initCard(config.cardinality);
         LSMSimulator sim = new LSMSimulator(gen, gen, config);
@@ -66,7 +68,7 @@ class Experiment {
                 }
                 try {
                     sim.deserialize(file);
-                    sim.simulate(config.cardinality);
+                    sim.simulate(config.cardinality * SIM_FACTOR);
                     SimulationStats stats = sim.stats;
                     results.put(index,
                             param + "\t" + sim.printWriteAmplification(stats.memoryMergeKeys) + "\t"
