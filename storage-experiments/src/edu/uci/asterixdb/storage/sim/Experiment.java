@@ -2,6 +2,7 @@ package edu.uci.asterixdb.storage.sim;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -10,20 +11,69 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
+class ExperimentSet {
+    final String name;
+    Map<Integer, ExperimentResult> results = Collections.synchronizedMap(new HashMap<>());
+    List<Future<?>> futures = new ArrayList<>();
+
+    public ExperimentSet(String name) {
+        this.name = name;
+    }
+
+    public void await() {
+        futures.forEach(f -> {
+            try {
+                f.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+}
+
+class ExperimentResult {
+    Object param;
+    String memoryAmp;
+    String diskAmp;
+    String averageDiskFlushes;
+    int maxDiskFlushes;
+    long mergeDiskReads;
+    long queryDiskReads;
+    long diskWrites;
+
+    long mergeReads;
+    long queryReads;
+
+    long savedMergeDiskReads;
+    long savedQueryDiskReads;
+
+    public long getReads() {
+        return mergeReads + queryReads;
+    }
+
+    public long getDiskReads() {
+        return mergeDiskReads + queryDiskReads;
+    }
+
+    public long getSavedDiskReads() {
+        return savedMergeDiskReads + savedQueryDiskReads;
+    }
+
+    public double getCacheMissRatio() {
+        return (double) getDiskReads() / getReads();
+    }
+}
 
 class Experiment {
-    public static final MemoryConfig SMALL_MEMORY = new MemoryConfig(64, 1 * 1024, 64, 10, true);
-    public static final DiskConfig SMALL_DISK = new DiskConfig(64, 10, 2, false);
-    public static final int SMALL_CARD = 1 * 1000 * 1000;
-    public static final Config SMALL_CONF = new Config(SMALL_MEMORY, SMALL_DISK, SMALL_CARD,
-            RoundRobinSelector.INSTANCE, RoundRobinSelector.INSTANCE, 0, 0);
-
-    public static final MemoryConfig BTREE_MEMORY = new MemoryConfig(100 * 1024 / 3 * 2, 100 * 1024, 4096, 10, false);
-    public static final MemoryConfig MERGE_MEMORY = new MemoryConfig(4 * 1024, 100 * 1024, 4096, 10, true);
-    public static final DiskConfig DISK = new DiskConfig(4096, 10, 0, false);
-    public static final int CARD = 10 * 1024 * 1024;
-    public static final Config CONF =
-            new Config(MERGE_MEMORY, DISK, CARD, RoundRobinSelector.INSTANCE, RoundRobinSelector.INSTANCE, 0, 0);
+    public static final MemoryConfig MEMORY_CONFIG = new MemoryConfig(4 * 1024, 4096, 10, true);
+    public static final DiskConfig DISK = new DiskConfig(10, 0);
+    public static final int CARDINALITY = 10 * 1024 * 1024;
+    public static final LSMConfig LSM_CONFIG = new LSMConfig(MEMORY_CONFIG, DISK, CARDINALITY);
+    public static final TuningConfig TUNING_CONFIG =
+            new TuningConfig(512 * 1024, 512 * 1024, 32 * 1024, 4, 1, 1, 1024 * 1024, 32 * 1024, true);
+    public static final Config CONF = new Config(new LSMConfig[] { LSM_CONFIG }, null, 8192, 8192, 1024 * 1024);
 
     public static int NUM_THREADS = 4;
     public static final ThreadPoolExecutor executor =
@@ -31,62 +81,67 @@ class Experiment {
 
     public static int SIM_FACTOR = 1;
 
-    public static void loadSimulation(Config config, File file, KeyGenerator gen) throws IOException {
-        gen.initCard(config.cardinality);
-        LSMSimulator sim = new LSMSimulator(gen, gen, config);
+    public static void loadSimulation(Config config, File file) throws IOException {
+        Simulator sim = new Simulator(config);
         sim.load(file);
         System.out.println("Completed data loading");
     }
 
-    public static void parallelSimulations(List<Config> configs, KeyGenerator writeGen, KeyGenerator readGen,
-            String name, Object[] params, List<Map<Integer, String>> resultMaps, List<Future<?>> futures,
-            boolean collectMemoryLog, File file) {
-        Map<Integer, String> results = Collections.synchronizedMap(new HashMap<>());
-        resultMaps.add(results);
-        results.put(0, writeGen + "/" + readGen + "\t" + name);
-        results.put(1,
-                "param\tmemory amp\tdisk ampt\tmemory size\taverage disk flushes\tmax disk flushes\tdisk reads\tdisk writes");
+    public static ExperimentSet parallelSimulations(List<Config> configs, SimulateWorkload workload, Object[] params,
+            boolean collectTuningLog, File file) {
+        ExperimentSet set = new ExperimentSet(workload.name);
         for (int i = 0; i < configs.size(); i++) {
             Config config = configs.get(i);
-            final KeyGenerator newWriteGen = writeGen.clone();
-            final KeyGenerator newReadGen = readGen.clone();
-            final int index = i + 2;
             final Object param = params[i];
+            final int index = i;
+            SimulateWorkload newWorkload = workload.clone();
             Future<?> future = executor.submit(() -> {
-                System.out.println(String.format("starting %s/%s + %s + %s", newWriteGen.toString(),
-                        newReadGen.toString(), name, param.toString()));
-                newWriteGen.initCard(config.cardinality);
-                newReadGen.initCard(config.cardinality);
-                LSMSimulator sim = new LSMSimulator(newWriteGen, newReadGen, config);
-                if (collectMemoryLog) {
+                System.out.println(String.format("starting %s-%s", newWorkload.name, param));
+                Simulator sim = new Simulator(config);
+                if (collectTuningLog) {
                     try {
-                        sim.initializeMemoryLog(new File(newWriteGen.toString() + "-" + newReadGen.toString() + "-"
-                                + name + "-" + param.toString() + ".log"));
+                        sim.initializeTuningLog(new File(newWorkload.name + "-" + param.toString()
+                                + (config.tuningConfig.enabled ? "-tune" : "") + ".log"));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
                 try {
-                    sim.deserialize(file);
-                    sim.simulate(config.cardinality * SIM_FACTOR);
+                    sim.simulate(newWorkload);
                     SimulationStats stats = sim.stats;
-                    results.put(index,
-                            param + "\t" + sim.printWriteAmplification(stats.memoryMergeKeys) + "\t"
-                                    + sim.printWriteAmplification(stats.diskMergeKeys) + "\t" + stats.maxMemTableSize
-                                    + "\t" + sim.printAverageFlushesPerLogTruncation() + "\t"
-                                    + stats.maxDiskFlushesPerLogTruncation + "\t" + sim.cache.getMergeDiskReads() + "\t"
-                                    + sim.cache.getQueryDiskReads() + "\t" + sim.cache.getDiskWrites());
+                    ExperimentResult result = new ExperimentResult();
+                    result.param = param;
+                    result.memoryAmp = sim.printWriteAmplification(stats.memoryMergeKeys);
+                    result.diskAmp = sim.printWriteAmplification(stats.diskMergeKeys);
+                    result.averageDiskFlushes = sim.printAverageFlushesPerLogTruncation();
+                    result.maxDiskFlushes = stats.maxDiskFlushesPerLogTruncation;
+                    result.mergeDiskReads = sim.cache.getMergeDiskReads();
+                    result.queryDiskReads = sim.cache.getQueryDiskReads();
+                    result.diskWrites = sim.cache.getDiskWrites();
+                    result.savedMergeDiskReads = sim.cache.getSavedMergeDiskReads();
+                    result.savedQueryDiskReads = sim.cache.getSavedQueryDiskReads();
+                    result.mergeReads = sim.cache.getMergeReads();
+                    result.queryReads = sim.cache.getQueryReads();
+                    set.results.put(index, result);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             });
-            futures.add(future);
+            set.futures.add(future);
         }
+        return set;
     }
 
-    public static void printMap(Map<Integer, String> map) {
-        for (int i = 0; i < map.size(); i++) {
-            System.out.println(map.get(i));
+    public static void printExperiments(List<ExperimentSet> list, String header,
+            Function<ExperimentResult, String> processor) {
+        list.forEach(set -> set.await());
+
+        for (ExperimentSet set : list) {
+            System.out.println(set.name);
+            System.out.println(header);
+            for (int i = 0; i < set.results.size(); i++) {
+                System.out.println(processor.apply(set.results.get(i)));
+            }
         }
     }
 

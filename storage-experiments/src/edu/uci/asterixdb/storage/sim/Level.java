@@ -13,7 +13,6 @@ abstract class Level {
     final boolean inMemory;
     int level;
     private long size = 0;
-    KeySSTable lastKey = new KeySSTable();
 
     long mergedKeys = 0;
     long overlapingKeys = 0;
@@ -22,8 +21,6 @@ abstract class Level {
     public Level(int level, boolean inMemory) {
         this.level = level;
         this.inMemory = inMemory;
-
-        lastKey.resetKey(-1);
     }
 
     public long getSize() {
@@ -33,13 +30,11 @@ abstract class Level {
     public void serialize(DataOutput output) throws IOException {
         output.writeInt(level);
         output.writeLong(size);
-        output.writeInt(lastKey.getKey(0));
     }
 
-    public void deserialize(DataInput input, LSMSimulator sim) throws IOException {
+    public void deserialize(DataInput input, Simulator sim, SimulatedLSM lsm) throws IOException {
         level = input.readInt();
         size = input.readLong();
-        lastKey.resetKey(input.readInt());
     }
 
     public void addSize(int value) {
@@ -64,7 +59,6 @@ abstract class Level {
         final int prime = 31;
         int result = 1;
         result = prime * result + (inMemory ? 1231 : 1237);
-        result = prime * result + ((lastKey == null) ? 0 : lastKey.hashCode());
         result = prime * result + level;
         result = prime * result + (int) (size ^ (size >>> 32));
         return result;
@@ -80,11 +74,6 @@ abstract class Level {
             return false;
         Level other = (Level) obj;
         if (inMemory != other.inMemory)
-            return false;
-        if (lastKey == null) {
-            if (other.lastKey != null)
-                return false;
-        } else if (!lastKey.equals(other.lastKey))
             return false;
         if (level != other.level)
             return false;
@@ -149,12 +138,12 @@ class PartitionedLevel extends Level {
     }
 
     @Override
-    public void deserialize(DataInput input, LSMSimulator sim) throws IOException {
-        super.deserialize(input, sim);
+    public void deserialize(DataInput input, Simulator sim, SimulatedLSM lsm) throws IOException {
+        super.deserialize(input, sim, lsm);
         int num = input.readInt();
         sstables.clear();
         for (int i = 0; i < num; i++) {
-            SSTable sstable = sim.getFreeSSTable(false, level);
+            SSTable sstable = sim.getFreeSSTable(lsm, false, level);
             sstable.deserialize(input, level);
             sstables.add(sstable);
         }
@@ -210,13 +199,13 @@ class UnpartitionedLevel extends Level {
     }
 
     @Override
-    public void deserialize(DataInput input, LSMSimulator sim) throws IOException {
-        super.deserialize(input, sim);
+    public void deserialize(DataInput input, Simulator sim, SimulatedLSM lsm) throws IOException {
+        super.deserialize(input, sim, lsm);
         int num = input.readInt();
         groups.clear();
         for (int i = 0; i < num; i++) {
             SSTableGroup group = new SSTableGroup(Collections.emptyList());
-            group.deserialize(input, level, sim);
+            group.deserialize(input, level, sim, lsm);
             groups.add(group);
         }
     }

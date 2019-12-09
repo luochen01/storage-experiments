@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import edu.uci.asterixdb.storage.sim.Page.PageState;
+import edu.uci.asterixdb.storage.sim.cache.Page;
+import edu.uci.asterixdb.storage.sim.cache.Page.PageState;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 
@@ -18,6 +19,7 @@ abstract class SSTable implements Comparable<SSTable> {
     protected int numKeys;
     boolean isFree;
     int level;
+    protected SimulatedLSM lsm;
 
     public SSTable(int capacity) {
         this.keys = new int[capacity];
@@ -70,7 +72,7 @@ abstract class SSTable implements Comparable<SSTable> {
         return numKeys >= keys.length;
     }
 
-    public void endBulkLoad() {
+    public void endBulkLoad(boolean isFlush) {
 
     }
 
@@ -199,10 +201,10 @@ class MemorySSTable extends SSTable {
 class DiskSSTable extends SSTable {
     final Page[] pages;
     final Page[] bfPages;
-    final LSMSimulator sim;
+    final Simulator sim;
     final boolean[] cached;
 
-    public DiskSSTable(int capacity, LSMSimulator sim) {
+    public DiskSSTable(int capacity, Simulator sim) {
         super(capacity);
         pages = new Page[Utils.ceil(capacity, sim.config.tuningConfig.pageSize)];
         for (int i = 0; i < pages.length; i++) {
@@ -222,16 +224,16 @@ class DiskSSTable extends SSTable {
     public boolean contains(int key) {
         assert !isFree;
         int bfIndex = (int) ((double) (key - min()) / (max() - min() + 1) * getNumBFPages());
-        sim.cache.pin(bfPages[bfIndex]);
+        sim.cache.access(bfPages[bfIndex]);
 
         int index = keyMap.get(key);
         if (index >= 0) {
-            sim.cache.pin(pages[index / sim.config.tuningConfig.pageSize]);
+            sim.cache.access(pages[index / sim.config.tuningConfig.pageSize]);
             return true;
         } else {
             if (sim.rand.nextInt(100) == 0) {
                 int pageIndex = (int) ((double) (key - min()) / (max() - min() + 1) * getNumPages());
-                sim.cache.pin(pages[pageIndex]);
+                sim.cache.access(pages[pageIndex]);
             }
             return false;
         }
@@ -244,30 +246,22 @@ class DiskSSTable extends SSTable {
         keyMap.put(key, index);
         numKeys++;
         if (!load && pages[index / sim.config.tuningConfig.pageSize].state != PageState.CACHED) {
-            boolean pin = false;
-            switch (sim.config.tuningConfig.cachePolicy) {
-                case ADAPTIVE:
-                    pin = cached || level < sim.diskLevels.size() - 1;
-                    break;
-                case BYPASS:
-                    pin = false;
-                    break;
-                case WRITE_BACK:
-                    pin = true;
-                    break;
-                default:
-                    break;
-            }
-            if (pin) {
+            if (cached || level < lsm.diskLevels.size() - 1) {
                 sim.cache.mergeReturnPage(pages[index / sim.config.tuningConfig.pageSize]);
             }
         }
     }
 
     @Override
-    public void endBulkLoad() {
-        sim.cache.write(getNumPages());
-        sim.cache.write(getNumBFPages());
+    public void endBulkLoad(boolean isFlush) {
+        if (isFlush) {
+            sim.cache.flushWrite(getNumPages());
+            sim.cache.flushWrite(getNumBFPages());
+        } else {
+            sim.cache.mergeWrite(getNumPages());
+            sim.cache.mergeWrite(getNumBFPages());
+        }
+
     }
 
     // for merge
@@ -369,14 +363,14 @@ class SSTableGroup {
         }
     }
 
-    public void deserialize(DataInput input, int level, LSMSimulator sim) throws IOException {
+    public void deserialize(DataInput input, int level, Simulator sim, SimulatedLSM lsm) throws IOException {
         min = input.readInt();
         max = input.readInt();
         size = input.readInt();
         int num = input.readInt();
         sstables.clear();
         for (int i = 0; i < num; i++) {
-            SSTable sstable = sim.getFreeSSTable(false, level);
+            SSTable sstable = sim.getFreeSSTable(lsm, false, level);
             sstable.deserialize(input, level);
             sstables.add(sstable);
         }

@@ -6,7 +6,7 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 
 interface SSTableSelector {
-    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+    public Pair<SSTable, Set<SSTable>> selectMerge(SimulatedLSM lsm, PartitionedLevel currentLevel,
             TreeSet<SSTable> nextLevel);
 }
 
@@ -18,35 +18,18 @@ class HybridSelector implements SSTableSelector {
     }
 
     @Override
-    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+    public Pair<SSTable, Set<SSTable>> selectMerge(SimulatedLSM lsm, PartitionedLevel currentLevel,
             TreeSet<SSTable> nextLevel) {
         if (!currentLevel.inMemory) {
             throw new IllegalStateException();
         }
-        if (currentLevel.level == sim.memoryLevels.size() - 1) {
-            return OldestMinLSNSelector.INSTANCE.selectMerge(sim, currentLevel, nextLevel);
+        if (currentLevel.level == lsm.memoryLevels.size() - 1) {
+            return OldestMinLSNSelector.INSTANCE.selectMerge(lsm, currentLevel, nextLevel);
         } else {
-            return GreedySelector.INSTANCE.selectMerge(sim, currentLevel, nextLevel);
+            return GreedySelector.INSTANCE.selectMerge(lsm, currentLevel, nextLevel);
         }
     }
 
-}
-
-class RoundRobinSelector implements SSTableSelector {
-    public static final RoundRobinSelector INSTANCE = new RoundRobinSelector();
-
-    private RoundRobinSelector() {
-
-    }
-
-    @Override
-    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
-            TreeSet<SSTable> nextLevel) {
-        SSTable sstable = Utils.getNextMergeSSTable(currentLevel.sstables, currentLevel.lastKey);
-        currentLevel.lastKey.resetKey(sstable.max());
-        Set<SSTable> overlappingSSTables = Utils.findOverlappingSSTables(sstable, nextLevel);
-        return Pair.of(sstable, overlappingSSTables);
-    }
 }
 
 class OldestMinLSNSelector implements SSTableSelector {
@@ -56,7 +39,7 @@ class OldestMinLSNSelector implements SSTableSelector {
     }
 
     @Override
-    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+    public Pair<SSTable, Set<SSTable>> selectMerge(SimulatedLSM lsm, PartitionedLevel currentLevel,
             TreeSet<SSTable> nextLevel) {
         SSTable minSSTable = selectOldestSSTable(currentLevel);
         if (minSSTable == null) {
@@ -89,7 +72,7 @@ class GreedySelector implements SSTableSelector {
     }
 
     @Override
-    public Pair<SSTable, Set<SSTable>> selectMerge(LSMSimulator sim, PartitionedLevel currentLevel,
+    public Pair<SSTable, Set<SSTable>> selectMerge(SimulatedLSM lsm, PartitionedLevel currentLevel,
             TreeSet<SSTable> nextLevel) {
         SSTable selectedUnit = null;
         double selectedRatio = 0;

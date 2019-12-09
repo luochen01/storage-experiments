@@ -1,10 +1,15 @@
 package edu.uci.asterixdb.storage.sim;
 
+import java.io.IOException;
 import java.util.Random;
 
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.knowm.xchart.BitmapEncoder;
+import org.knowm.xchart.BitmapEncoder.BitmapFormat;
+import org.knowm.xchart.QuickChart;
+import org.knowm.xchart.XYChart;
 
 import com.yahoo.ycsb.Utils;
 
@@ -51,6 +56,41 @@ class UniformGenerator implements KeyGenerator {
     public UniformGenerator clone() {
         return new UniformGenerator(rand.nextInt());
     }
+}
+
+class RangeSkewGenerator implements KeyGenerator {
+    private final int hot;
+    private final Random rand;
+    private int card;
+
+    public RangeSkewGenerator(int hot) {
+        this(hot, 17);
+    }
+
+    public RangeSkewGenerator(int hot, long seed) {
+        this.hot = hot;
+        rand = new Random(seed);
+
+    }
+
+    @Override
+    public RangeSkewGenerator clone() {
+        return new RangeSkewGenerator(hot, rand.nextLong());
+    }
+
+    @Override
+    public void initCard(int card) {
+        this.card = card;
+    }
+
+    @Override
+    public int nextKey() {
+        if (rand.nextInt(100) < hot) {
+            return rand.nextInt(card / 2);
+        } else {
+            return rand.nextInt(card / 2) + card;
+        }
+    }
 
 }
 
@@ -84,22 +124,31 @@ class ZipfGenerator implements KeyGenerator {
 
 public class Gen {
 
-    public static void main(String[] args) {
-        int[] nums = new int[1000];
+    public static void main(String[] args) throws IOException {
+        double[] keys = new double[1000];
+        for (int i = 0; i < keys.length; i++) {
+            keys[i] = i + 1;
+        }
+        double[] nums = new double[keys.length];
 
-        int total = 10000;
+        int total = 100000;
 
         ZipfGenerator gen = new ZipfGenerator();
         gen.initCard(nums.length);
         for (int i = 0; i < total; i++) {
-            nums[gen.nextKey()]++;
+            nums[gen.nextKey()] += (1.0 / total);
         }
-        double sum = 0;
-        for (int i = 0; i < nums.length; i++) {
-            sum += (double) nums[i] / total;
-            System.out.println(i + "\t" + (double) nums[i] / total + "\t" + sum);
+        double[] sums = new double[nums.length];
+        sums[0] = nums[0];
+        for (int i = 1; i < nums.length; i++) {
+            sums[i] += sums[i - 1] + nums[i];
         }
+        XYChart chart = QuickChart.getChart("Cumulative Distribution Function", "key", "CDF", "y(x)", keys, sums);
 
+        BitmapEncoder.saveBitmapWithDPI(chart, "./cdf.png", BitmapFormat.PNG, 300);
+
+        chart = QuickChart.getChart("Probability Density Function", "key", "PDF", "y(x)", keys, nums);
+        BitmapEncoder.saveBitmapWithDPI(chart, "./pdf.png", BitmapFormat.PNG, 300);
     }
 }
 
@@ -115,7 +164,7 @@ class ScrambleZipfGenerator implements KeyGenerator {
     }
 
     public ScrambleZipfGenerator() {
-        this.seed = 17;
+        this.seed = 171;
         this.gen = new JDKRandomGenerator(seed);
     }
 
@@ -133,7 +182,7 @@ class ScrambleZipfGenerator implements KeyGenerator {
 
     @Override
     public String toString() {
-        return "scrable-zipf";
+        return "scrablezipf";
     }
 
     @Override
