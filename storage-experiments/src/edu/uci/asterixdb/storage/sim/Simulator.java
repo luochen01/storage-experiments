@@ -27,7 +27,7 @@ class MemoryConfig {
     final int sizeRatio;
     final boolean enableMemoryMerge;
 
-    public MemoryConfig(int activeSize, int totalMemSize, int sizeRatio, boolean enableMemoryMerge) {
+    public MemoryConfig(int activeSize, int sizeRatio, boolean enableMemoryMerge) {
         super();
         this.activeSize = activeSize;
         this.sizeRatio = sizeRatio;
@@ -71,6 +71,7 @@ class TuningConfig {
 
     public TuningConfig(int writeMemSize, int cacheSize, int simulateSize, int pageSize, double writeWeight,
             double readWeight, int tuningCycle, int minMemorySize, boolean enabled) {
+        this.writeMemSize = writeMemSize;
         this.cacheSize = cacheSize;
         this.simulateSize = simulateSize;
         this.pageSize = pageSize;
@@ -127,6 +128,11 @@ class Workload {
         this.workloads = workloads;
     }
 
+    public Workload(int totalOps, LSMWorkload workload) {
+        this.totalOps = totalOps;
+        this.workloads = new LSMWorkload[] { workload };
+    }
+
     @Override
     public Workload clone() {
         LSMWorkload[] workloads = new LSMWorkload[this.workloads.length];
@@ -147,6 +153,10 @@ class SimulateWorkload {
         this.name = name;
         this.file = file;
         this.workloads = workloads;
+    }
+
+    public SimulateWorkload(String name, File file, Workload workload) {
+        this(name, file, new Workload[] { workload });
     }
 
     @Override
@@ -284,7 +294,7 @@ public class Simulator {
                 list.add(k);
             }
             IntLists.shuffle(list, rand);
-            for (int k = 0; k < lsmConfig.cardinality; k++) {
+            for (int k = 0; k < lsmConfig.cardinality; k++, writes++) {
                 write(lsmTrees[i], list.getInt(k));
             }
         }
@@ -313,7 +323,7 @@ public class Simulator {
                 for (int i = 0; i < workload.workloads.length; i++) {
                     LSMWorkload lsmWorkload = workload.workloads[i];
                     for (int w = 0; w < lsmWorkload.writes; w++, writes++) {
-                        write(lsmTrees[i], nextSeq++);
+                        write(lsmTrees[i], lsmWorkload.writeGen.nextKey());
                     }
                     for (int r = 0; r < lsmWorkload.reads; r++, reads++) {
                         read(lsmTrees[i], lsmWorkload.readGen.nextKey());
@@ -395,13 +405,23 @@ public class Simulator {
     }
 
     protected void diskFlush(FlushReason reason) {
+        SimulatedLSM lsm = getMinSeqLSM();
+        lsm.diskFlush(reason);
+    }
+
+    protected void recomputeMinSeq() {
+        SimulatedLSM lsm = getMinSeqLSM();
+        minSeq = lsm.minSeq;
+    }
+
+    private SimulatedLSM getMinSeqLSM() {
         SimulatedLSM minLSM = lsmTrees[0];
         for (int i = 1; i < lsmTrees.length; i++) {
             if (lsmTrees[i].minSeq < minLSM.minSeq) {
                 minLSM = lsmTrees[i];
             }
         }
-        minLSM.diskFlush(reason);
+        return minLSM;
     }
 
     protected String printWriteAmplification(long mergedKeys) {
@@ -460,7 +480,6 @@ public class Simulator {
                 for (SimulatedLSM lsm : lsmTrees) {
                     System.out.println(lsm.printLevels());
                 }
-
             }
         }
     }

@@ -172,6 +172,9 @@ class SimulatedLSM {
                 minSeq = Math.min(minSeq, ((MemorySSTable) sstable).minSeq);
             }
         }
+
+        simulator.recomputeMinSeq();
+
     }
 
     protected void scheduleMerge(UnpartitionedLevel unpartitionedLevel, List<PartitionedLevel> levels, int sizeRatio) {

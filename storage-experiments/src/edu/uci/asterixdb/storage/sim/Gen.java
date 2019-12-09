@@ -13,27 +13,30 @@ import org.knowm.xchart.XYChart;
 
 import com.yahoo.ycsb.Utils;
 
+class SeedGenerator {
+    private static int SEED = 0;
+
+    public static int getSeed() {
+        return SEED++;
+    }
+}
+
 interface KeyGenerator {
+
     public int nextKey();
 
     public void initCard(int card);
 
     public KeyGenerator clone();
+
 }
 
 class UniformGenerator implements KeyGenerator {
     private final Random rand;
-    private final int seed;
     private int card;
 
     public UniformGenerator() {
-        seed = 17;
-        rand = new Random(seed);
-    }
-
-    public UniformGenerator(int seed) {
-        this.seed = seed;
-        rand = new Random(seed);
+        rand = new Random(SeedGenerator.getSeed());
     }
 
     @Override
@@ -54,7 +57,7 @@ class UniformGenerator implements KeyGenerator {
 
     @Override
     public UniformGenerator clone() {
-        return new UniformGenerator(rand.nextInt());
+        return new UniformGenerator();
     }
 }
 
@@ -64,18 +67,13 @@ class RangeSkewGenerator implements KeyGenerator {
     private int card;
 
     public RangeSkewGenerator(int hot) {
-        this(hot, 17);
-    }
-
-    public RangeSkewGenerator(int hot, long seed) {
         this.hot = hot;
-        rand = new Random(seed);
-
+        rand = new Random(SeedGenerator.getSeed());
     }
 
     @Override
     public RangeSkewGenerator clone() {
-        return new RangeSkewGenerator(hot, rand.nextLong());
+        return new RangeSkewGenerator(hot);
     }
 
     @Override
@@ -155,17 +153,10 @@ public class Gen {
 class ScrambleZipfGenerator implements KeyGenerator {
     private ZipfDistribution zipf;
     private final RandomGenerator gen;
-    private final int seed;
     private int cardinality;
 
-    public ScrambleZipfGenerator(int seed) {
-        this.gen = new JDKRandomGenerator(seed);
-        this.seed = seed;
-    }
-
     public ScrambleZipfGenerator() {
-        this.seed = 171;
-        this.gen = new JDKRandomGenerator(seed);
+        this.gen = new JDKRandomGenerator(SeedGenerator.getSeed());
     }
 
     @Override
@@ -187,6 +178,6 @@ class ScrambleZipfGenerator implements KeyGenerator {
 
     @Override
     public ScrambleZipfGenerator clone() {
-        return new ScrambleZipfGenerator(gen.nextInt());
+        return new ScrambleZipfGenerator();
     }
 }

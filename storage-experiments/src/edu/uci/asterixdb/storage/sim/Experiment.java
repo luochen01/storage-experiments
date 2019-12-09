@@ -67,7 +67,7 @@ class ExperimentResult {
 }
 
 class Experiment {
-    public static final MemoryConfig MEMORY_CONFIG = new MemoryConfig(4 * 1024, 4096, 10, true);
+    public static final MemoryConfig MEMORY_CONFIG = new MemoryConfig(4 * 1024, 10, true);
     public static final DiskConfig DISK = new DiskConfig(10, 0);
     public static final int CARDINALITY = 10 * 1024 * 1024;
     public static final LSMConfig LSM_CONFIG = new LSMConfig(MEMORY_CONFIG, DISK, CARDINALITY);
