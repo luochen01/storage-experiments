@@ -18,14 +18,17 @@ public class SecondaryIndexExperiment {
         this.endpoint = endpoint;
     }
 
-    public void run(int clients) throws Exception {
+    public void run(boolean invoke, int clients) throws Exception {
         for (int i = 0; i < clients; i++) {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     while (true) {
-                        String query =
-                                "invoke function tpch.primary_key(" + ThreadLocalRandom.current().nextInt() + ");";
+
+                        String query = "tpch.primary_key(" + ThreadLocalRandom.current().nextInt() + ");";
+                        if (invoke) {
+                            query = "invoke function " + query;
+                        }
                         try {
                             AsterixUtil.executeQuery(query);
                         } catch (Exception e) {
@@ -40,6 +43,8 @@ public class SecondaryIndexExperiment {
     }
 
     public static void main(String[] args) throws Exception {
+        boolean invoke = Boolean.valueOf(args[0]);
+        int threads = Integer.valueOf(args[1]);
         URI endpoint = new URI("http://seaborgium.ics.uci.edu:19002/query/service");
         //URI endpoint = new URI("http://localhost:19002/query/service");
         AsterixUtil.init(endpoint);
@@ -57,7 +62,7 @@ public class SecondaryIndexExperiment {
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(task, 0, 1000);
         SecondaryIndexExperiment experiment = new SecondaryIndexExperiment(endpoint);
-        experiment.run(16);
+        experiment.run(invoke, threads);
     }
 
 }
