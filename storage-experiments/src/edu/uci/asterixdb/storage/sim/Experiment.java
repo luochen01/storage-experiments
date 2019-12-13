@@ -88,7 +88,7 @@ class Experiment {
     }
 
     public static ExperimentSet parallelSimulations(List<Config> configs, SimulateWorkload workload, Object[] params,
-            boolean collectTuningLog, File file) {
+            boolean collectTuningLog) {
         ExperimentSet set = new ExperimentSet(workload.name);
         for (int i = 0; i < configs.size(); i++) {
             Config config = configs.get(i);

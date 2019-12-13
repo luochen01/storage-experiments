@@ -260,6 +260,9 @@ class DiskSSTable extends SSTable {
         } else {
             sim.cache.mergeWrite(getNumPages());
             sim.cache.mergeWrite(getNumBFPages());
+
+            lsm.stats.mergeDiskWrites += getNumPages();
+            lsm.stats.mergeDiskWrites += getNumBFPages();
         }
 
     }

@@ -1,88 +1,88 @@
 package edu.uci.asterixdb.storage.experiments;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 public class Solution {
-
-    static class Pair {
-        int i;
-        int j;
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + i;
-            result = prime * result + j;
-            return result;
+    public int mergeStones(int[] stones, int K) {
+        if ((stones.length - 1) % (K - 1) != 0) {
+            return -1;
         }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Pair other = (Pair) obj;
-            if (i != other.i)
-                return false;
-            if (j != other.j)
-                return false;
-            return true;
+        int[] sums = new int[stones.length];
+        sums[0] = stones[0];
+        for (int i = 1; i < stones.length; i++) {
+            sums[i] = sums[i - 1] + stones[i];
         }
-
-        public Pair(int i, int j) {
-            this.i = i;
-            this.j = j;
-        }
-
+        int[][] dp = new int[stones.length][stones.length];
+        return solve(dp, sums, K, 0, dp.length - 1);
     }
 
-    public static int countMatches(List<String> grid1, List<String> grid2) {
-        List<Set<Pair>> regions1 = collectRegions(grid1);
-        List<Set<Pair>> regions2 = collectRegions(grid2);
-        int count = 0;
-        for (Set<Pair> region1 : regions1) {
-            if (regions2.contains(region1)) {
-                count++;
+    private int solve(int[][] dp, int[] sums, int K, int from, int to) {
+        int len = (to - from + 1);
+        if (len <= 1) {
+            return 0;
+        }
+        if ((len - 1) % (K - 1) != 0) {
+            return -1;
+        }
+
+        if (dp[from][to] != 0) {
+            return dp[from][to];
+        }
+
+        int min = Integer.MAX_VALUE;
+
+        int[] splits = new int[K - 1];
+        for (int i = 0; i < splits.length; i++) {
+            splits[i] = from + i + 1;
+        }
+        while (true) {
+            int cost = compute(dp, sums, K, from, to, splits);
+            if (cost >= 0) {
+                min = Math.min(cost, min);
+            }
+
+            if (!increment(splits, from, to, K)) {
+                break;
             }
         }
-        return count;
+
+        dp[from][to] = min + getSum(sums, from, to);
+        return dp[from][to];
     }
 
-    private static List<Set<Pair>> collectRegions(List<String> grid) {
-        boolean[][] visited = new boolean[grid.size()][grid.get(0).length()];
-        List<Set<Pair>> regions = new ArrayList<>();
-        for (int i = 0; i < grid.size(); i++) {
-            String str = grid.get(i);
-            for (int j = 0; j < str.length(); j++) {
-                if (!visited[i][j] && str.charAt(j) == '1') {
-                    Set<Pair> region = new HashSet<>();
-                    collectRegion(grid, i, j, visited, region);
-                    regions.add(region);
+    private int compute(int[][] dp, int[] sums, int K, int from, int to, int[] splits) {
+        int sum = solve(dp, sums, K, from, splits[0] - 1);
+        for (int i = 0; i < splits.length - 1; i++) {
+            int begin = splits[i];
+            int end = splits[i + 1] - 1;
+            sum += solve(dp, sums, K, begin, end);
+        }
+        sum += solve(dp, sums, K, splits[splits.length - 1], to);
+        return sum;
+    }
+
+    private int getSum(int[] sums, int i, int j) {
+        if (i == 0) {
+            return sums[j];
+        } else {
+            return sums[j] - sums[i - 1];
+        }
+    }
+
+    private boolean increment(int[] splits, int from, int to, int K) {
+        for (int i = splits.length - 1; i >= 0; i--) {
+            if (splits[i] + (splits.length - i - 1) < to) {
+                splits[i] += (K - 1);
+                for (int j = i + 1; j < splits.length; j++) {
+                    splits[j] = splits[j - 1] + 1;
                 }
+                return true;
             }
         }
-        return regions;
+        return false;
     }
 
-    private static void collectRegion(List<String> grid, int i, int j, boolean[][] visited, Set<Pair> region) {
-        if (i < 0 || j < 0 || i >= grid.size() || j >= grid.get(i).length() || visited[i][j]) {
-            return;
-        }
-        visited[i][j] = true;
-        if (grid.get(i).charAt(j) == '1') {
-            region.add(new Pair(i, j));
-            collectRegion(grid, i + 1, j, visited, region);
-            collectRegion(grid, i - 1, j, visited, region);
-            collectRegion(grid, i, j + 1, visited, region);
-            collectRegion(grid, i, j - 1, visited, region);
-        }
-    }
+    public static void main(String[] args) {
 
+        System.out.println(
+                new Solution().mergeStones(new int[] { 36, 2, 61, 30, 74, 35, 65, 31, 43, 92, 15, 11, 22 }, 5));
+    }
 }

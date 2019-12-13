@@ -2,6 +2,9 @@ package edu.uci.asterixdb.storage.sim;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 class TuningExperiment extends Experiment {
     public static final int PAGE_SIZE = 4;
@@ -15,30 +18,51 @@ class TuningExperiment extends Experiment {
     private static int simulateSize = (int) (memory * 0.001);
 
     public static void main(String[] args) throws IOException {
-        runSingle();
+        executor.setCorePoolSize(4);
+        runDouble(true);
+        runDouble(false);
+
+        executor.shutdown();
     }
 
-    private static void runSingle() throws IOException {
+    private static void runDouble(boolean opt) throws IOException {
+        MemoryTuner.OPT_MULTI_LSM = opt;
         int cardinality = 10 * 1024 * 1024;
         MemoryConfig memoryConfig = new MemoryConfig(8 * 1024, 10, true);
         DiskConfig diskConfig = new DiskConfig(10, 0);
-        LSMConfig lsmConfig = new LSMConfig(memoryConfig, diskConfig, cardinality);
+        LSMConfig lsmConfig1 = new LSMConfig(memoryConfig, diskConfig, cardinality / 20);
+        LSMConfig lsmConfig2 = new LSMConfig(memoryConfig, diskConfig, cardinality / 20 * 19);
         TuningConfig tuningConfig =
                 new TuningConfig(32 * 1024, 992 * 1024, 32 * 1024, 4, 1, 1, 1024 * 1024, 32 * 1024, true);
-        Config config = new Config(new LSMConfig[] { lsmConfig }, tuningConfig, 8192, 8192, 1024 * 1024);
+        Integer[] params = new Integer[] { 0 };
+        // use two identical LSM-trees
+        Config config = new Config(new LSMConfig[] { lsmConfig1, lsmConfig2 }, tuningConfig, 8192, 8192, 1024 * 1024);
 
-        File file = new File("lsm_single");
+        File file = new File("lsm_double");
         if (!file.exists()) {
             Simulator sim = new Simulator(config);
             sim.load(file);
         }
-        Simulator sim = new Simulator(config);
 
         KeyGenerator writeGen = new ScrambleZipfGenerator();
         KeyGenerator readGen = new ScrambleZipfGenerator();
-        Workload workload = new Workload(cardinality, new LSMWorkload(1, 1, writeGen, readGen));
-        SimulateWorkload simWorkload = new SimulateWorkload("lsm_single", file, workload);
-        sim.simulate(simWorkload);
+
+        int writes = 4;
+        Integer[] skewOps = new Integer[] { 1, 4, 19 };
+        //Integer[] skewOps = new Integer[] { 19 };
+
+        List<ExperimentSet> experiments = new ArrayList<>();
+
+        for (int skew : skewOps) {
+            Workload workload = new Workload(cardinality * 2,
+                    new LSMWorkload[] { new LSMWorkload(skew * writes, skew, writeGen, readGen),
+                            new LSMWorkload(1 * writes, skew, writeGen, readGen) });
+            SimulateWorkload simWorkload =
+                    new SimulateWorkload("skew-" + skew + (opt ? "-opt" : "-simple"), file, workload);
+            experiments.add(parallelSimulations(Collections.singletonList(config), simWorkload, params, true));
+        }
+
+        experiments.forEach(t -> t.await());
 
     }
 

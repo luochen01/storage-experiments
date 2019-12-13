@@ -12,7 +12,7 @@ import java.util.TreeSet;
 abstract class Level {
     final boolean inMemory;
     int level;
-    private long size = 0;
+    private int size = 0;
 
     long mergedKeys = 0;
     long overlapingKeys = 0;
@@ -23,18 +23,18 @@ abstract class Level {
         this.inMemory = inMemory;
     }
 
-    public long getSize() {
+    public int getSize() {
         return size;
     }
 
     public void serialize(DataOutput output) throws IOException {
         output.writeInt(level);
-        output.writeLong(size);
+        output.writeInt(size);
     }
 
     public void deserialize(DataInput input, Simulator sim, SimulatedLSM lsm) throws IOException {
         level = input.readInt();
-        size = input.readLong();
+        size = input.readInt();
     }
 
     public void addSize(int value) {
@@ -60,7 +60,7 @@ abstract class Level {
         int result = 1;
         result = prime * result + (inMemory ? 1231 : 1237);
         result = prime * result + level;
-        result = prime * result + (int) (size ^ (size >>> 32));
+        result = prime * result + (size ^ (size >>> 32));
         return result;
     }
 

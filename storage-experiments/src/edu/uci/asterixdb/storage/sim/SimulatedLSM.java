@@ -17,6 +17,27 @@ import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 
+class LSMStats {
+    int mergeDiskWrites;
+    int logFlushes;
+    int memoryFlushes;
+
+    double totalRatio;
+    int numRatios;
+
+    public double getAverageRatio() {
+        return totalRatio / numRatios;
+    }
+
+    public void reset() {
+        this.mergeDiskWrites = 0;
+        this.logFlushes = 0;
+        this.memoryFlushes = 0;
+        this.totalRatio = 0;
+        this.numRatios = 0;
+    }
+}
+
 class SimulatedLSM {
 
     protected final KeySSTable mergeRange = new KeySSTable();
@@ -32,6 +53,7 @@ class SimulatedLSM {
     protected final UnpartitionedLevel unpartitionedLevel;
     protected final List<PartitionedLevel> diskLevels = new ArrayList<>();
     protected final LSMConfig config;
+    protected final LSMStats stats = new LSMStats();
 
     protected int minSeq = 0;
 
@@ -305,6 +327,21 @@ class SimulatedLSM {
     }
 
     public void diskFlush(FlushReason request) {
+        stats.numRatios++;
+        double ratio = (double) getWriteMemory() / simulator.usedWriteMem;
+        stats.totalRatio += Math.min(Math.max(ratio, 0.01), 1.0);
+
+        switch (request) {
+            case MEMORY:
+                simulator.stats.numMemoryFlushes++;
+                stats.memoryFlushes++;
+                break;
+            case LOG:
+                simulator.stats.numLogFlushes++;
+                stats.logFlushes++;
+            default:
+                break;
+        }
         List<List<SSTable>> sstables = null;
         int startLevel = -1;
         boolean flushingMemTable = false;
@@ -316,7 +353,6 @@ class SimulatedLSM {
             }
         } else {
             if (request == FlushReason.MEMORY) {
-                simulator.stats.numMemoryFlushes++;
                 startLevel = memoryLevels.size() - 1;
                 SSTable sstable = OldestMinLSNSelector.INSTANCE
                         .selectMerge(this, memoryLevels.get(startLevel), Simulator.Empty_TreeSet).getLeft();
@@ -338,7 +374,6 @@ class SimulatedLSM {
                 sstables.add(Collections.singletonList(oldestSSTable));
                 flushRange.resetRange();
                 flushRange.updateRange(oldestSSTable);
-                simulator.stats.numLogFlushes++;
                 for (int i = startLevel + 1; i < memoryLevels.size(); i++) {
                     NavigableSet<SSTable> overlap =
                             Utils.findOverlappingSSTables(flushRange, memoryLevels.get(i).sstables);
@@ -389,6 +424,14 @@ class SimulatedLSM {
         updateMinSeq();
 
         scheduleMerge(unpartitionedLevel, diskLevels, config.diskConfig.sizeRatio);
+    }
+
+    private int getWriteMemory() {
+        int memory = 0;
+        for (int i = 0; i < memoryLevels.size(); i++) {
+            memory += memoryLevels.get(i).getSize();
+        }
+        return memory;
     }
 
     private int addFlushedSSTable(List<SSTable> sstables) {

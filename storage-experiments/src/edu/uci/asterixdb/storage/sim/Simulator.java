@@ -59,8 +59,8 @@ class LSMConfig {
 }
 
 class TuningConfig {
-    int writeMemSize;
-    int cacheSize;
+    final int initWriteMemSize;
+    final int initCacheSize;
     final int simulateSize;
     final int pageSize;
     final double readWeight;
@@ -71,8 +71,8 @@ class TuningConfig {
 
     public TuningConfig(int writeMemSize, int cacheSize, int simulateSize, int pageSize, double writeWeight,
             double readWeight, int tuningCycle, int minMemorySize, boolean enabled) {
-        this.writeMemSize = writeMemSize;
-        this.cacheSize = cacheSize;
+        this.initWriteMemSize = writeMemSize;
+        this.initCacheSize = cacheSize;
         this.simulateSize = simulateSize;
         this.pageSize = pageSize;
         this.writeWeight = writeWeight;
@@ -81,6 +81,7 @@ class TuningConfig {
         this.minMemorySize = minMemorySize;
         this.enabled = enabled;
     }
+
 }
 
 class Config {
@@ -98,6 +99,7 @@ class Config {
         this.diskSSTableSize = diskSSTableSize;
         this.maxLogLength = maxLogLength;
     }
+
 }
 
 class LSMWorkload {
@@ -236,7 +238,7 @@ public class Simulator {
     protected final ArrayDeque<MemorySSTable> memorySSTs = new ArrayDeque<>();
     protected final ArrayDeque<DiskSSTable> diskSSTs = new ArrayDeque<>();
 
-    public static int progress = 1000 * 1000; // 1 million
+    public static int progress = Integer.MAX_VALUE; // 1 million
     protected boolean loading = false;
 
     protected int usedWriteMem;
@@ -254,6 +256,9 @@ public class Simulator {
     protected final Config config;
     protected final SimulatedLSM[] lsmTrees;
 
+    protected int writeMemSize;
+    protected int cacheSize;
+
     public Simulator(Config config) {
         this.config = config;
         lsmTrees = new SimulatedLSM[config.lsmConfigs.length];
@@ -261,8 +266,9 @@ public class Simulator {
             lsmTrees[i] = new SimulatedLSM(this, config.lsmConfigs[i]);
         }
 
-        ICache cache =
-                new OptimizedClockCache(config.tuningConfig.cacheSize / config.tuningConfig.pageSize, PageState.CACHED);
+        this.writeMemSize = config.tuningConfig.initWriteMemSize;
+        this.cacheSize = config.tuningConfig.initCacheSize;
+        ICache cache = new OptimizedClockCache(cacheSize / config.tuningConfig.pageSize, PageState.CACHED);
         ICache simulateCache = new OptimizedClockCache(config.tuningConfig.simulateSize / config.tuningConfig.pageSize,
                 PageState.CACHED_SIMULATE);
         this.cache = new Cache(cache, simulateCache);
@@ -315,6 +321,10 @@ public class Simulator {
         writes = 0;
         long lastWrites = 0;
         long lastMinSeq = 0;
+        long lastOps = 0;
+        long lastMergeDiskReads = 0;
+        long lastQueryDiskReads = 0;
+        long lastDiskWrites = 0;
 
         long totalOps = 0;
         for (Workload workload : simulateWorkload.workloads) {
@@ -329,19 +339,37 @@ public class Simulator {
                         read(lsmTrees[i], lsmWorkload.readGen.nextKey());
                     }
                 }
-
                 // check tuning
                 if (minSeq > lastMinSeq + config.tuningConfig.tuningCycle
                         && writes > lastWrites + config.tuningConfig.tuningCycle) {
+                    if (writes / config.tuningConfig.tuningCycle <= 1) {
+                        String line = "writes\tmerge reads\tquery reads\twrites\ttotal\twrite\tcache";
+                        System.out.println(line);
+                        tuningPrintWriter.println(line);
+                    }
+                    double numOps = (reads + writes) - lastOps;
+                    double mergeReads = (cache.getMergeDiskReads() - lastMergeDiskReads) / numOps;
+                    double queryReads = (cache.getQueryDiskReads() - lastQueryDiskReads) / numOps;
+                    double diskWrites = (cache.getDiskWrites() - lastDiskWrites) / numOps;
+                    double overall = (mergeReads + queryReads) * config.tuningConfig.readWeight
+                            + diskWrites * config.tuningConfig.writeWeight;
+                    String line = String.format("%d\t%.2f\t%.2f\t%.2f\t%.2f\t%d\t%d", writes, mergeReads, queryReads,
+                            diskWrites, overall, writeMemSize, cacheSize);
+                    System.out.println(line);
+                    tuningPrintWriter.println(line);
+                    tuningPrintWriter.flush();
+                    lastMergeDiskReads = cache.getMergeDiskReads();
+                    lastQueryDiskReads = cache.getQueryDiskReads();
+                    lastDiskWrites = cache.getDiskWrites();
+                    lastOps = reads + writes;
+
                     if (config.tuningConfig.enabled) {
                         tuner.tune();
                     }
-
                     lastMinSeq = minSeq;
                     lastWrites = writes;
                 }
             }
-
         }
 
         if (tuningPrintWriter != null) {
@@ -394,7 +422,7 @@ public class Simulator {
             }
         }
         // do memory flush
-        while (usedWriteMem >= config.tuningConfig.writeMemSize) {
+        while (usedWriteMem >= writeMemSize) {
             diskFlush(FlushReason.MEMORY);
         }
     }
@@ -485,14 +513,14 @@ public class Simulator {
     }
 
     public void updateMemoryComponentSize(int newSize) {
-        config.tuningConfig.writeMemSize = newSize;
-        while (usedWriteMem > config.tuningConfig.writeMemSize) {
+        writeMemSize = newSize;
+        while (usedWriteMem > writeMemSize) {
             diskFlush(FlushReason.MEMORY);
         }
     }
 
     public void updateBufferCacheSize(int newSize) {
-        config.tuningConfig.cacheSize = newSize;
+        cacheSize = newSize;
         cache.resize(newSize / config.tuningConfig.pageSize, p -> {
         });
     }

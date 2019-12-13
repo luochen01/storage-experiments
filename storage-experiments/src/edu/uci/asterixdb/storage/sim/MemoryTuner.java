@@ -31,6 +31,8 @@ class Point {
 }
 
 class MemoryTuner {
+    public static boolean OPT_MULTI_LSM = true;
+
     public static final double MIN_PERCENT = 0.005;
     public static final double INITIAL_PERCENT = 0.05;
     public static final double MAX_PERCENT = 0.1;
@@ -44,7 +46,7 @@ class MemoryTuner {
 
     public MemoryTuner(Simulator simulator) {
         this.simulator = simulator;
-        this.totalMem = simulator.config.tuningConfig.writeMemSize + simulator.config.tuningConfig.cacheSize;
+        this.totalMem = simulator.config.tuningConfig.initWriteMemSize + simulator.config.tuningConfig.initCacheSize;
 
     }
 
@@ -59,7 +61,7 @@ class MemoryTuner {
                 + simulator.config.tuningConfig.readWeight
                         * (simulator.cache.getDiskReads() - lastMergeDiskReads - lastQueryDiskReads));
 
-        Point p = new Point(simulator.config.tuningConfig.writeMemSize, totalDerivative);
+        Point p = new Point(simulator.writeMemSize, totalDerivative);
         if (memoryComponentHistory.remove(p)) {
             memoryComponentHistory.add(p);
         } else {
@@ -78,26 +80,24 @@ class MemoryTuner {
         }
         delta = Math.min(delta, totalMem * MAX_PERCENT);
 
-        long oldMemoryComponentSize = simulator.config.tuningConfig.writeMemSize;
-        long oldBufferCacheSize = simulator.config.tuningConfig.cacheSize;
+        long oldMemoryComponentSize = simulator.writeMemSize;
+        long oldBufferCacheSize = simulator.cacheSize;
 
         double costChange = Math.abs(delta * totalDerivative);
         if (delta > totalMem * MIN_PERCENT && costChange / totalCost > MIN_COST_CHANGE) {
             if (totalDerivative < 0) {
-                delta = Math.min(delta,
-                        simulator.config.tuningConfig.cacheSize - simulator.config.tuningConfig.minMemorySize);
+                delta = Math.min(delta, simulator.cacheSize - simulator.config.tuningConfig.minMemorySize);
                 // we can make more saving by allocating more memory
-                simulator.config.tuningConfig.cacheSize -= delta;
-                simulator.updateBufferCacheSize(simulator.config.tuningConfig.cacheSize);
-                simulator.config.tuningConfig.writeMemSize += delta;
-                simulator.updateMemoryComponentSize(simulator.config.tuningConfig.writeMemSize);
+                simulator.cacheSize -= delta;
+                simulator.updateBufferCacheSize(simulator.cacheSize);
+                simulator.writeMemSize += delta;
+                simulator.updateMemoryComponentSize(simulator.writeMemSize);
             } else {
-                delta = Math.min(delta,
-                        simulator.config.tuningConfig.writeMemSize - simulator.config.tuningConfig.minMemorySize);
-                simulator.config.tuningConfig.writeMemSize -= delta;
-                simulator.updateMemoryComponentSize(simulator.config.tuningConfig.writeMemSize);
-                simulator.config.tuningConfig.cacheSize += delta;
-                simulator.updateBufferCacheSize(simulator.config.tuningConfig.cacheSize);
+                delta = Math.min(delta, simulator.writeMemSize - simulator.config.tuningConfig.minMemorySize);
+                simulator.writeMemSize -= delta;
+                simulator.updateMemoryComponentSize(simulator.writeMemSize);
+                simulator.cacheSize += delta;
+                simulator.updateBufferCacheSize(simulator.cacheSize);
             }
         }
 
@@ -105,9 +105,8 @@ class MemoryTuner {
                 "writes: %d, min lsn: %d, log flushes: %d, memory flushes: %d, Dwrite: %.2f, Dread: %.2f, Dtotal: %.2f, delta: %.2f, cost/total cost: %.2f/%.2f, memory component size: %d->%d, buffer cache size: %d->%d",
                 simulator.writes, simulator.minSeq, (simulator.stats.numLogFlushes - lastLogFlushes),
                 (simulator.stats.numMemoryFlushes - lastMemoryFlushes), writeDerivative, readDerivative,
-                totalDerivative, delta, costChange, totalCost, oldMemoryComponentSize,
-                simulator.config.tuningConfig.writeMemSize, oldBufferCacheSize,
-                simulator.config.tuningConfig.cacheSize));
+                totalDerivative, delta, costChange, totalCost, oldMemoryComponentSize, simulator.writeMemSize,
+                oldBufferCacheSize, simulator.cacheSize));
         resetStats();
     }
 
@@ -133,35 +132,64 @@ class MemoryTuner {
     private long lastWrites;
 
     private double computeDiskWriteDerivative() {
-        double delta = simulator.config.tuningConfig.simulateSize;
+        if (OPT_MULTI_LSM) {
+            return optDiskWriteDerivative();
+        } else {
+            return simpleDiskWriteDerivative();
+        }
+    }
 
+    private double simpleDiskWriteDerivative() {
         double mergeDiskWrites = normalize(simulator.cache.getMergeDiskWrites() - lastMergeDiskWrites);
 
         double numMemoryFlushes = simulator.stats.numMemoryFlushes - lastMemoryFlushes;
         double numLogFlushes = simulator.stats.numLogFlushes - lastLogFlushes;
 
-        double totalT = 0;
         double D = 0;
         for (SimulatedLSM lsm : simulator.lsmTrees) {
             double size = lsm.diskLevels.get(lsm.diskLevels.size() - 1).getSize();
-            totalT += (size * lsm.config.diskConfig.sizeRatio);
             D += size;
         }
 
-        double T = totalT / D;
-
-        double N = mergeDiskWrites / writeCost(simulator.config.tuningConfig.writeMemSize, D, T);
-
         double scaleFactor = numMemoryFlushes / (numMemoryFlushes + numLogFlushes);
+        double x = simulator.writeMemSize;
 
-        double derivative = scaleFactor * N * (writeCost(simulator.config.tuningConfig.writeMemSize + delta, D, T)
-                - writeCost(simulator.config.tuningConfig.writeMemSize, D, T)) / delta;
+        double derivative = -scaleFactor * mergeDiskWrites / x / Math.log(D / x);
 
         if (derivative > 0) {
             System.out.println("WARNING: wrong write benefit " + derivative);
         }
-
         return derivative;
+    }
+
+    private double optDiskWriteDerivative() {
+        double totalDerivative = 0;
+
+        for (int i = 0; i < simulator.lsmTrees.length; i++) {
+            SimulatedLSM lsm = simulator.lsmTrees[i];
+
+            double mergeDiskWrites = normalize(lsm.stats.mergeDiskWrites);
+            if (mergeDiskWrites < 0.00001) {
+                continue;
+            }
+            double numMemoryFlushes = lsm.stats.memoryFlushes;
+            double numLogFlushes = lsm.stats.logFlushes;
+
+            double D = lsm.diskLevels.get(lsm.diskLevels.size() - 1).getSize();
+
+            double scaleFactor = (lsm.stats.memoryFlushes + lsm.stats.logFlushes) == 0 ? 0
+                    : numMemoryFlushes / (numMemoryFlushes + numLogFlushes);
+            double a = lsm.stats.getAverageRatio();
+            double x = simulator.writeMemSize;
+
+            double derivative = -scaleFactor * mergeDiskWrites / x / Math.log(D / (a * x));
+
+            if (derivative > 0) {
+                System.out.println("WARNING: wrong write benefit " + derivative);
+            }
+            totalDerivative += derivative;
+        }
+        return totalDerivative;
     }
 
     private double normalize(double value) {
@@ -197,6 +225,10 @@ class MemoryTuner {
         lastMergeDiskReads = simulator.cache.getMergeDiskReads();
         lastQueryDiskReads = simulator.cache.getQueryDiskReads();
         lastWrites = simulator.writes;
+
+        for (SimulatedLSM lsm : simulator.lsmTrees) {
+            lsm.stats.reset();
+        }
     }
 
     public static void main(String[] args) throws IOException {
