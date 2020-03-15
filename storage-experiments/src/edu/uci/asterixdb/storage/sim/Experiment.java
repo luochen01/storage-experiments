@@ -41,8 +41,9 @@ class ExperimentResult {
     int maxDiskFlushes;
     long mergeDiskReads;
     long queryDiskReads;
-    long diskWrites;
-
+    long diskFlushWrites;
+    long diskMergeWrites;
+    int fullFlushes;
     long mergeReads;
     long queryReads;
 
@@ -64,6 +65,10 @@ class ExperimentResult {
     public double getCacheMissRatio() {
         return (double) getDiskReads() / getReads();
     }
+
+    public long getDiskWrites() {
+        return diskMergeWrites + diskFlushWrites;
+    }
 }
 
 class Experiment {
@@ -72,8 +77,8 @@ class Experiment {
     public static final int CARDINALITY = 10 * 1024 * 1024;
     public static final LSMConfig LSM_CONFIG = new LSMConfig(MEMORY_CONFIG, DISK, CARDINALITY);
     public static final TuningConfig TUNING_CONFIG =
-            new TuningConfig(512 * 1024, 512 * 1024, 32 * 1024, 4, 1, 1, 1024 * 1024, 32 * 1024, true);
-    public static final Config CONF = new Config(new LSMConfig[] { LSM_CONFIG }, null, 8192, 8192, 1024 * 1024);
+            new TuningConfig(512 * 1024, 512 * 1024, 32 * 1024, 4, 4, 1, 1, 1024 * 1024, 32 * 1024, true);
+    public static final Config CONF = new Config(new LSMConfig[] { LSM_CONFIG }, null, 8192, 8192, 1024 * 1024, 0.0);
 
     public static int NUM_THREADS = 4;
     public static final ThreadPoolExecutor executor =
@@ -117,11 +122,13 @@ class Experiment {
                     result.maxDiskFlushes = stats.maxDiskFlushesPerLogTruncation;
                     result.mergeDiskReads = sim.cache.getMergeDiskReads();
                     result.queryDiskReads = sim.cache.getQueryDiskReads();
-                    result.diskWrites = sim.cache.getDiskWrites();
+                    result.diskFlushWrites = sim.cache.getFlushDiskWrites();
+                    result.diskMergeWrites = sim.cache.getMergeDiskWrites();
                     result.savedMergeDiskReads = sim.cache.getSavedMergeDiskReads();
                     result.savedQueryDiskReads = sim.cache.getSavedQueryDiskReads();
                     result.mergeReads = sim.cache.getMergeReads();
                     result.queryReads = sim.cache.getQueryReads();
+                    result.fullFlushes = sim.stats.fullFlushes;
                     set.results.put(index, result);
                 } catch (IOException e) {
                     e.printStackTrace();

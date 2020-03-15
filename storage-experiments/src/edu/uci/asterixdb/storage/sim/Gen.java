@@ -4,14 +4,12 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.commons.math3.distribution.ZipfDistribution;
-import org.apache.commons.math3.random.JDKRandomGenerator;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.knowm.xchart.BitmapEncoder;
 import org.knowm.xchart.BitmapEncoder.BitmapFormat;
 import org.knowm.xchart.QuickChart;
 import org.knowm.xchart.XYChart;
 
-import com.yahoo.ycsb.Utils;
+import com.yahoo.ycsb.generator.ScrambledZipfianGenerator;
 
 class SeedGenerator {
     private static int SEED = 0;
@@ -151,24 +149,19 @@ public class Gen {
 }
 
 class ScrambleZipfGenerator implements KeyGenerator {
-    private ZipfDistribution zipf;
-    private final RandomGenerator gen;
-    private int cardinality;
+    private ScrambledZipfianGenerator gen;
 
     public ScrambleZipfGenerator() {
-        this.gen = new JDKRandomGenerator(SeedGenerator.getSeed());
     }
 
     @Override
     public void initCard(int card) {
-        this.cardinality = card;
-        this.zipf = new ZipfDistribution(gen, cardinality, 0.99);
+        this.gen = new ScrambledZipfianGenerator(card);
     }
 
     @Override
     public int nextKey() {
-        int value = zipf.sample();
-        return (int) (Utils.fnvhash64(value) % cardinality);
+        return gen.nextValue().intValue();
     }
 
     @Override

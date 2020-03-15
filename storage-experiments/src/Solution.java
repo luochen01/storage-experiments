@@ -1,71 +1,97 @@
+import java.util.Arrays;
 
-public class Solution {
-    public int mergeStones(int[] stones, int K) {
-        if ((stones.length - 1) % (K - 1) != 0) {
-            return -1;
+class Solution {
+
+    private final int[] mapping = new int[26];
+    private int sumLeft;
+    private int sumRight;
+    private int maxLength;
+    private final boolean[] used = new boolean[10];
+
+    public boolean isSolvable(String[] words, String result) {
+        Arrays.fill(mapping, -1);
+        Arrays.fill(used, false);
+        maxLength = result.length();
+        sumLeft = sumRight = 0;
+        for (String word : words) {
+            maxLength = Math.max(maxLength, word.length());
         }
-        int[] sums = new int[stones.length];
-        sums[0] = stones[0];
-        for (int i = 1; i < stones.length; i++) {
-            sums[i] = sums[i - 1] + stones[i];
+        if (result.length() < maxLength) {
+            return false;
         }
-        int[][] dp = new int[stones.length][stones.length];
-        return solve(dp, sums, K, 0, dp.length - 1);
+
+        return solve(0, 0, words, result);
     }
 
-    private int solve(int[][] dp, int[] sums, int K, int from, int to) {
-        int len = (to - from + 1);
-        if (len <= 1) {
-            return 0;
+    private boolean solve(int index, int pos, String[] words, String result) {
+        System.out.println(index + "\t" + pos + "\t" + sumLeft + "\t" + sumRight);
+        if (pos >= maxLength) {
+            return sumLeft == sumRight;
         }
-        if (dp[from][to] != 0) {
-            return dp[from][to];
-        }
-
-        int min = Integer.MAX_VALUE;
-
-        int[] splits = new int[K - 1];
-        for (int i = 0; i < splits.length; i++) {
-            splits[i] = from + i + 1;
-        }
-        while (true) {
-            int cost = 0;
-            cost += solve(dp, sums, K, from, splits[0] - 1);
-            for (int i = 0; i < splits.length - 1; i++) {
-                int begin = splits[i];
-                int end = splits[i + 1] - 1;
-                cost += solve(dp, sums, K, begin, end);
-            }
-            cost += solve(dp, sums, K, splits[splits.length - 1], to);
-            min = Math.min(cost, min);
-
-            if (!increment(splits, from, to, K)) {
-                break;
-            }
-        }
-
-        dp[from][to] = min + getSum(sums, from, to);
-        return dp[from][to];
-    }
-
-    private int getSum(int[] sums, int i, int j) {
-        if (i == 0) {
-            return sums[j];
-        } else {
-            return sums[j] - sums[i - 1];
-        }
-    }
-
-    private boolean increment(int[] splits, int from, int to, int K) {
-        for (int i = splits.length - 1; i >= 0; i--) {
-            if (splits[i] + (splits.length - i - 1) < to) {
-                splits[i]++;
-                for (int j = i + 1; j < splits.length; j++) {
-                    splits[j] = splits[j - 1] + 1;
+        // check index
+        if (index < words.length) {
+            String word = words[index];
+            if (pos >= word.length()) {
+                return solve(index + 1, pos, words, result);
+            } else {
+                char c = word.charAt(word.length() - pos - 1);
+                if (mapping[c - 'A'] != -1) {
+                    // already mapped
+                    sumLeft += (mapping[c - 'A'] * (int) Math.pow(10, pos));
+                    if (solve(index + 1, pos, words, result)) {
+                        return true;
+                    } else {
+                        sumLeft -= (mapping[c - 'A'] * (int) Math.pow(10, pos));
+                        return false;
+                    }
+                } else {
+                    for (int i = 0; i <= 9; i++) {
+                        if (!used[i]) {
+                            used[i] = true;
+                            mapping[c - 'A'] = i;
+                            sumLeft += (i * (int) Math.pow(10, pos));
+                            if (solve(index + 1, pos, words, result)) {
+                                return true;
+                            }
+                            mapping[c - 'A'] = -1;
+                            used[i] = false;
+                            sumLeft -= (i * (int) Math.pow(10, pos));
+                        }
+                    }
                 }
-                return true;
+            }
+        } else {
+            // check the result
+            char c = result.charAt(result.length() - pos - 1);
+            if (mapping[c - 'A'] != -1) {
+                sumRight += (mapping[c - 'A'] * (int) Math.pow(10, pos));
+                if ((sumLeft % (int) Math.pow(10, pos + 1)) == sumRight && solve(0, pos + 1, words, result)) {
+                    return true;
+                } else {
+                    sumRight -= (mapping[c - 'A'] * (int) Math.pow(10, pos));
+                    return false;
+                }
+            } else {
+                int start = (pos == result.length() - 1) ? 1 : 0;
+                for (int i = start; i <= 9; i++) {
+                    if (!used[i]) {
+                        used[i] = true;
+                        mapping[c - 'A'] = i;
+                        sumRight += (i * (int) Math.pow(10, pos));
+                        if ((sumLeft % (int) Math.pow(10, pos + 1)) == sumRight && solve(0, pos + 1, words, result)) {
+                            return true;
+                        }
+                        mapping[c - 'A'] = -1;
+                        used[i] = false;
+                        sumRight -= (i * (int) Math.pow(10, pos));
+                    }
+                }
             }
         }
         return false;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new Solution().isSolvable(new String[] { "AB", "CD", "EF" }, "GHJI"));
     }
 }

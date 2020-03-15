@@ -40,6 +40,8 @@ class LSMStats {
 
 class SimulatedLSM {
 
+    private static final TreeSet<SSTable> EMPTY_LEVEL = new TreeSet<>();
+
     protected final KeySSTable mergeRange = new KeySSTable();
     protected final KeySSTable flushRange = new KeySSTable();
     protected final KeySSTable searchKey = new KeySSTable();
@@ -100,15 +102,16 @@ class SimulatedLSM {
         }
     }
 
-    public void write(int key, int seq) {
+    public boolean write(int key, int seq) {
         if (memTableMap.isEmpty()) {
             memTableMinSeq = seq;
         }
-        memTableMap.put(key, seq);
+        int old = memTableMap.put(key, seq);
 
         if (memTableMap.size() >= config.memConfig.activeSize) {
             memoryFlush();
         }
+        return old != memTableMap.defaultReturnValue();
     }
 
     protected void read(int key) {
@@ -233,9 +236,10 @@ class SimulatedLSM {
         PartitionedLevel current = levels.get(level);
         PartitionedLevel next = levels.get(level + 1);
         boolean isMemory = (levels == memoryLevels);
-        SSTableSelector selector = isMemory ? HybridSelector.INSTANCE : GreedySelector.INSTANCE;
+        SSTableSelector selector = isMemory ? RoundRobinSelector.INSTANCE : GreedySelector.INSTANCE;
         Pair<SSTable, Set<SSTable>> pair = selector.selectMerge(this, current, next.sstables);
 
+        current.lastKey = pair.getKey().getMaxKey();
         if (pair.getRight().isEmpty()) {
             // special case
             current.remove(pair.getLeft());
@@ -326,65 +330,76 @@ class SimulatedLSM {
         return newSSTables;
     }
 
-    public void diskFlush(FlushReason request) {
+    public long diskFlush(FlushReason request, boolean fullFlush) {
         stats.numRatios++;
         double ratio = (double) getWriteMemory() / simulator.usedWriteMem;
         stats.totalRatio += Math.min(Math.max(ratio, 0.01), 1.0);
 
-        switch (request) {
-            case MEMORY:
-                simulator.stats.numMemoryFlushes++;
-                stats.memoryFlushes++;
-                break;
-            case LOG:
-                simulator.stats.numLogFlushes++;
-                stats.logFlushes++;
-            default:
-                break;
-        }
         List<List<SSTable>> sstables = null;
         int startLevel = -1;
         boolean flushingMemTable = false;
+        long flushedSize = 0;
         if (memoryLevels.isEmpty()) {
             flushingMemTable = true;
             sstables = Collections.singletonList(Collections.singletonList(memTable));
             if (memTable.getSize() == 0) {
                 prepareMemoryFlush();
             }
-        } else {
-            if (request == FlushReason.MEMORY) {
-                startLevel = memoryLevels.size() - 1;
-                SSTable sstable = OldestMinLSNSelector.INSTANCE
-                        .selectMerge(this, memoryLevels.get(startLevel), Simulator.Empty_TreeSet).getLeft();
-                sstables = Collections.singletonList(Collections.singletonList(sstable));
-
-            } else {
-                SSTable oldestSSTable = null;
-                for (int i = 0; i < memoryLevels.size(); i++) {
-                    PartitionedLevel level = memoryLevels.get(i);
-                    for (SSTable sstable : level.sstables) {
-                        if (oldestSSTable == null || sstable.getMinSeq() < oldestSSTable.getMinSeq()) {
-                            oldestSSTable = sstable;
-                            startLevel = i;
-                        }
-                    }
+        } else if (fullFlush) {
+            sstables = new ArrayList<>(memoryLevels.size());
+            for (int i = 0; i < memoryLevels.size(); i++) {
+                PartitionedLevel level = memoryLevels.get(i);
+                if (!level.sstables.isEmpty()) {
+                    sstables.add(new ArrayList<>(level.sstables));
+                    flushedSize += level.getSize();
                 }
-                assert oldestSSTable.getMinSeq() == minSeq;
-                sstables = new ArrayList<>();
-                sstables.add(Collections.singletonList(oldestSSTable));
-                flushRange.resetRange();
-                flushRange.updateRange(oldestSSTable);
-                for (int i = startLevel + 1; i < memoryLevels.size(); i++) {
-                    NavigableSet<SSTable> overlap =
-                            Utils.findOverlappingSSTables(flushRange, memoryLevels.get(i).sstables);
-                    simulator.stats.numLogFlushes += overlap.size();
-                    sstables.add(new ArrayList<>(overlap));
-                    if (!overlap.isEmpty()) {
-                        flushRange.updateRange(overlap.first());
-                        flushRange.updateRange(overlap.last());
+            }
+        } else if (request == FlushReason.LOG) {
+            SSTable oldestSSTable = null;
+            for (int i = 0; i < memoryLevels.size(); i++) {
+                PartitionedLevel level = memoryLevels.get(i);
+                for (SSTable sstable : level.sstables) {
+                    if (oldestSSTable == null || sstable.getMinSeq() < oldestSSTable.getMinSeq()) {
+                        oldestSSTable = sstable;
+                        startLevel = i;
                     }
                 }
             }
+            assert oldestSSTable.getMinSeq() == minSeq;
+            sstables = new ArrayList<>();
+            sstables.add(Collections.singletonList(oldestSSTable));
+            flushedSize += oldestSSTable.getSize();
+            flushRange.resetRange();
+            flushRange.updateRange(oldestSSTable);
+            for (int i = startLevel + 1; i < memoryLevels.size(); i++) {
+                NavigableSet<SSTable> overlap = Utils.findOverlappingSSTables(flushRange, memoryLevels.get(i).sstables);
+                simulator.stats.numLogFlushes += overlap.size();
+                sstables.add(new ArrayList<>(overlap));
+                if (!overlap.isEmpty()) {
+                    flushRange.updateRange(overlap.first());
+                    flushRange.updateRange(overlap.last());
+                }
+                flushedSize += Utils.getTotalSize(overlap);
+            }
+        } else {
+            startLevel = memoryLevels.size() - 1;
+            Pair<SSTable, Set<SSTable>> pair =
+                    RoundRobinSelector.INSTANCE.selectMerge(this, memoryLevels.get(startLevel), EMPTY_LEVEL);
+            sstables = Collections.singletonList(Collections.singletonList(pair.getKey()));
+            memoryLevels.get(startLevel).lastKey = pair.getKey().getMaxKey();
+            flushedSize = pair.getKey().getSize();
+        }
+
+        switch (request) {
+            case MEMORY:
+                simulator.stats.numMemoryFlushes += flushedSize;
+                stats.memoryFlushes += flushedSize;
+                break;
+            case LOG:
+                simulator.stats.numLogFlushes += flushedSize;
+                stats.logFlushes += flushedSize;
+            default:
+                break;
         }
 
         MergeIterator iterator = new DiskFlushIterator(sstables);
@@ -398,11 +413,14 @@ class SimulatedLSM {
         for (List<SSTable> list : sstables) {
             flushSize += Utils.getTotalSize(list);
         }
+
         decreaseMemorySize(flushSize);
         simulator.stats.totalFlushedSize += flushSize;
         if (flushingMemTable) {
             minSeq = simulator.nextSeq - 1;
             memTable.reset(-1);
+        } else if (fullFlush) {
+            memoryLevels.clear();
         } else {
             for (List<SSTable> list : sstables) {
                 simulator.freeSSTables(list);
@@ -424,6 +442,7 @@ class SimulatedLSM {
         updateMinSeq();
 
         scheduleMerge(unpartitionedLevel, diskLevels, config.diskConfig.sizeRatio);
+        return flushedSize;
     }
 
     private int getWriteMemory() {

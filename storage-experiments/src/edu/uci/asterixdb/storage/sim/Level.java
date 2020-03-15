@@ -87,6 +87,7 @@ abstract class Level {
 class PartitionedLevel extends Level {
 
     final TreeSet<SSTable> sstables = new TreeSet<>();
+    int lastKey = -1;
 
     public PartitionedLevel(int level, boolean isMemory) {
         super(level, isMemory);

@@ -28,7 +28,6 @@ class MemoryConfig {
     final boolean enableMemoryMerge;
 
     public MemoryConfig(int activeSize, int sizeRatio, boolean enableMemoryMerge) {
-        super();
         this.activeSize = activeSize;
         this.sizeRatio = sizeRatio;
         this.enableMemoryMerge = enableMemoryMerge;
@@ -62,19 +61,21 @@ class TuningConfig {
     final int initWriteMemSize;
     final int initCacheSize;
     final int simulateSize;
-    final int pageSize;
+    final int pageKB;
+    final int keysPerPage;
     final double readWeight;
     final double writeWeight;
     final int tuningCycle;
     final int minMemorySize;
     final boolean enabled;
 
-    public TuningConfig(int writeMemSize, int cacheSize, int simulateSize, int pageSize, double writeWeight,
-            double readWeight, int tuningCycle, int minMemorySize, boolean enabled) {
+    public TuningConfig(int writeMemSize, int cacheSize, int simulateSize, int pageKB, int keysPerPage,
+            double writeWeight, double readWeight, int tuningCycle, int minMemorySize, boolean enabled) {
         this.initWriteMemSize = writeMemSize;
         this.initCacheSize = cacheSize;
         this.simulateSize = simulateSize;
-        this.pageSize = pageSize;
+        this.pageKB = pageKB;
+        this.keysPerPage = keysPerPage;
         this.writeWeight = writeWeight;
         this.readWeight = readWeight;
         this.tuningCycle = tuningCycle;
@@ -90,14 +91,16 @@ class Config {
     final int memSSTableSize;
     final int diskSSTableSize;
     final long maxLogLength;
+    final double fullFlushThreshold;
 
     public Config(LSMConfig[] lsmConfigs, TuningConfig tuningConfig, int memSSTableSize, int diskSSTableSize,
-            long maxLogLength) {
+            long maxLogLength, double fullFlushThreshold) {
         this.lsmConfigs = lsmConfigs;
         this.tuningConfig = tuningConfig;
         this.memSSTableSize = memSSTableSize;
         this.diskSSTableSize = diskSSTableSize;
         this.maxLogLength = maxLogLength;
+        this.fullFlushThreshold = fullFlushThreshold;
     }
 
 }
@@ -211,6 +214,7 @@ class SimulationStats {
     int totalUnpartitionedMerges = 0;
     int totalUnpartitionedMergeGroups = 0;
     int maxMemTableSize = 0;
+    int fullFlushes = 0;
 
     long totalFlushedSize;
 
@@ -238,11 +242,12 @@ public class Simulator {
     protected final ArrayDeque<MemorySSTable> memorySSTs = new ArrayDeque<>();
     protected final ArrayDeque<DiskSSTable> diskSSTs = new ArrayDeque<>();
 
-    public static int progress = Integer.MAX_VALUE; // 1 million
+    public static int progress = 10 * 1024 * 1024; // 1 million
     protected boolean loading = false;
 
     protected int usedWriteMem;
     // logging
+
     protected int minSeq = 0;
     protected int nextSeq = 0;
 
@@ -255,6 +260,8 @@ public class Simulator {
     protected final MemoryTuner tuner;
     protected final Config config;
     protected final SimulatedLSM[] lsmTrees;
+    protected final FlushLSNQueue flushQueue = new FlushLSNQueue();
+    protected final MaxMemoryQueue maxMemoryQueue = new MaxMemoryQueue();
 
     protected int writeMemSize;
     protected int cacheSize;
@@ -268,8 +275,8 @@ public class Simulator {
 
         this.writeMemSize = config.tuningConfig.initWriteMemSize;
         this.cacheSize = config.tuningConfig.initCacheSize;
-        ICache cache = new OptimizedClockCache(cacheSize / config.tuningConfig.pageSize, PageState.CACHED);
-        ICache simulateCache = new OptimizedClockCache(config.tuningConfig.simulateSize / config.tuningConfig.pageSize,
+        ICache cache = new OptimizedClockCache(cacheSize / config.tuningConfig.pageKB, PageState.CACHED);
+        ICache simulateCache = new OptimizedClockCache(config.tuningConfig.simulateSize / config.tuningConfig.pageKB,
                 PageState.CACHED_SIMULATE);
         this.cache = new Cache(cache, simulateCache);
 
@@ -306,7 +313,7 @@ public class Simulator {
         }
 
         while (usedWriteMem > 0) {
-            diskFlush(FlushReason.MEMORY);
+            diskFlush(FlushReason.MEMORY, false);
         }
 
         loading = false;
@@ -319,8 +326,8 @@ public class Simulator {
         simulateWorkload.initCardinality(config.lsmConfigs);
         reads = 0;
         writes = 0;
-        long lastWrites = 0;
-        long lastMinSeq = 0;
+
+        long lastTuneSeq = 0;
         long lastOps = 0;
         long lastMergeDiskReads = 0;
         long lastQueryDiskReads = 0;
@@ -329,19 +336,18 @@ public class Simulator {
         long totalOps = 0;
         for (Workload workload : simulateWorkload.workloads) {
             totalOps += workload.totalOps;
-            while (writes < totalOps) {
+            while (reads + writes < totalOps) {
                 for (int i = 0; i < workload.workloads.length; i++) {
                     LSMWorkload lsmWorkload = workload.workloads[i];
                     for (int w = 0; w < lsmWorkload.writes; w++, writes++) {
                         write(lsmTrees[i], lsmWorkload.writeGen.nextKey());
                     }
                     for (int r = 0; r < lsmWorkload.reads; r++, reads++) {
-                        read(lsmTrees[i], lsmWorkload.readGen.nextKey());
+                        read(lsmTrees[i], lsmWorkload.writeGen.nextKey());
                     }
                 }
                 // check tuning
-                if (minSeq > lastMinSeq + config.tuningConfig.tuningCycle
-                        && writes > lastWrites + config.tuningConfig.tuningCycle) {
+                if (nextSeq > lastTuneSeq + config.tuningConfig.tuningCycle) {
                     if (writes / config.tuningConfig.tuningCycle <= 1) {
                         String line = "writes\tmerge reads\tquery reads\twrites\ttotal\twrite\tcache";
                         System.out.println(line);
@@ -363,11 +369,8 @@ public class Simulator {
                     lastDiskWrites = cache.getDiskWrites();
                     lastOps = reads + writes;
 
-                    if (config.tuningConfig.enabled) {
-                        tuner.tune();
-                    }
-                    lastMinSeq = minSeq;
-                    lastWrites = writes;
+                    tuner.tune();
+                    lastTuneSeq = nextSeq;
                 }
             }
         }
@@ -406,12 +409,18 @@ public class Simulator {
     protected void write(SimulatedLSM lsm, int key) {
         checkCounter();
 
-        lsm.write(key, nextSeq++);
+        if (lsm.write(key, nextSeq++)) {
+            nextSeq++;
+        }
+        flushQueue.truncate(nextSeq - config.maxLogLength);
+        maxMemoryQueue.truncate(nextSeq - config.maxLogLength);
         int diskFlushed = 0;
         // do log flush
         if (config.maxLogLength > 0 && minSeq + config.maxLogLength < nextSeq) {
             while (nextSeq > minSeq + config.maxLogLength) {
-                diskFlush(FlushReason.LOG);
+                double ratio = flushQueue.getFlushedMemory() == 0 ? 0.0
+                        : (double) flushQueue.getFlushedMemory() / maxMemoryQueue.getMaxMemory();
+                diskFlush(FlushReason.LOG, ratio <= config.fullFlushThreshold);
                 diskFlushed++;
             }
             stats.totalLogTruncations++;
@@ -423,7 +432,7 @@ public class Simulator {
         }
         // do memory flush
         while (usedWriteMem >= writeMemSize) {
-            diskFlush(FlushReason.MEMORY);
+            diskFlush(FlushReason.MEMORY, false);
         }
     }
 
@@ -432,9 +441,17 @@ public class Simulator {
         lsm.read(key);
     }
 
-    protected void diskFlush(FlushReason reason) {
+    protected void diskFlush(FlushReason reason, boolean fullFlush) {
         SimulatedLSM lsm = getMinSeqLSM();
-        lsm.diskFlush(reason);
+        int usedWriteMem = this.usedWriteMem;
+        long memory = lsm.diskFlush(reason, fullFlush);
+        if (reason == FlushReason.MEMORY) {
+            flushQueue.flush(nextSeq, memory);
+            maxMemoryQueue.add(nextSeq, usedWriteMem);
+        }
+        if (fullFlush) {
+            stats.fullFlushes++;
+        }
     }
 
     protected void recomputeMinSeq() {
@@ -465,10 +482,13 @@ public class Simulator {
         SSTable sstable = ssts.peekFirst();
         if (sstable == null) {
             if (isMemory) {
-                sstable = new MemorySSTable(config.memSSTableSize);
+                sstable = new MemorySSTable(
+                        config.memSSTableSize * config.tuningConfig.keysPerPage / config.tuningConfig.pageKB);
                 stats.totalMemorySSTables++;
             } else {
-                sstable = new DiskSSTable(config.diskSSTableSize, this);
+                int numPages = config.diskSSTableSize / config.tuningConfig.pageKB;
+                int numKeys = numPages * config.tuningConfig.keysPerPage;
+                sstable = new DiskSSTable(numKeys, numPages, this);
                 stats.totalDiskSSTables++;
             }
         } else {
@@ -496,7 +516,7 @@ public class Simulator {
     }
 
     protected void checkCounter() {
-        if (writes + reads > 0 && (writes + reads) % progress == 0) {
+        if (false && writes + reads > 0 && (writes + reads) % progress == 0) {
             synchronized (Simulator.class) {
                 System.out.println("max memory table size " + stats.maxMemTableSize);
                 System.out.println("current memory table size " + usedWriteMem);
@@ -505,6 +525,12 @@ public class Simulator {
                 System.out.println(String.format("%s: completed %d keys. memory write amp %s, disk write amp %s",
                         loading ? "Load" : "Update", (writes + reads), printWriteAmplification(stats.memoryMergeKeys),
                         printWriteAmplification(stats.diskMergeKeys)));
+                double readCost = (cache.getDiskReads() - tuner.getLastDiskReads()) * (config.tuningConfig.pageKB)
+                        / (writes + reads - tuner.getLastOperations());
+                double writeCost = (cache.getDiskWrites() - tuner.getLastDiskWrites()) * (config.tuningConfig.pageKB)
+                        / (writes + reads - tuner.getLastOperations());
+                System.out.println(String.format("read cost: %.3f, write cost:%.3f, total cost:%.3f", readCost,
+                        writeCost, readCost + writeCost));
                 for (SimulatedLSM lsm : lsmTrees) {
                     System.out.println(lsm.printLevels());
                 }
@@ -515,13 +541,13 @@ public class Simulator {
     public void updateMemoryComponentSize(int newSize) {
         writeMemSize = newSize;
         while (usedWriteMem > writeMemSize) {
-            diskFlush(FlushReason.MEMORY);
+            diskFlush(FlushReason.MEMORY, false);
         }
     }
 
     public void updateBufferCacheSize(int newSize) {
         cacheSize = newSize;
-        cache.resize(newSize / config.tuningConfig.pageSize, p -> {
+        cache.resize(newSize / config.tuningConfig.keysPerPage, p -> {
         });
     }
 

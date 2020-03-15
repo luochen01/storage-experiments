@@ -38,6 +38,10 @@ abstract class SSTable implements Comparable<SSTable> {
         return keys[index];
     }
 
+    public int getMaxKey() {
+        return keys[numKeys - 1];
+    }
+
     public int getSeq(int index) {
         return 0;
     }
@@ -204,16 +208,16 @@ class DiskSSTable extends SSTable {
     final Simulator sim;
     final boolean[] cached;
 
-    public DiskSSTable(int capacity, Simulator sim) {
-        super(capacity);
-        pages = new Page[Utils.ceil(capacity, sim.config.tuningConfig.pageSize)];
+    public DiskSSTable(int numKeys, int numPages, Simulator sim) {
+        super(numKeys);
+        pages = new Page[numPages];
         for (int i = 0; i < pages.length; i++) {
             pages[i] = new Page();
         }
         cached = new boolean[pages.length];
         // suppose each key is 1KB. each page is 1KB * pageSize
         // each key has 10 bits (10/8 bytes).
-        this.bfPages = new Page[Utils.getBloomFilterPages(capacity, sim.config.tuningConfig.pageSize)];
+        this.bfPages = new Page[Utils.getBloomFilterPages(numKeys, sim.config.tuningConfig.pageKB)];
         for (int i = 0; i < bfPages.length; i++) {
             this.bfPages[i] = new Page();
         }
@@ -228,7 +232,7 @@ class DiskSSTable extends SSTable {
 
         int index = keyMap.get(key);
         if (index >= 0) {
-            sim.cache.access(pages[index / sim.config.tuningConfig.pageSize]);
+            sim.cache.access(pages[index / sim.config.tuningConfig.keysPerPage]);
             return true;
         } else {
             if (sim.rand.nextInt(100) == 0) {
@@ -245,9 +249,9 @@ class DiskSSTable extends SSTable {
         keys[index] = key;
         keyMap.put(key, index);
         numKeys++;
-        if (!load && pages[index / sim.config.tuningConfig.pageSize].state != PageState.CACHED) {
+        if (!load && pages[index / sim.config.tuningConfig.keysPerPage].state != PageState.CACHED) {
             if (cached || level < lsm.diskLevels.size() - 1) {
-                sim.cache.mergeReturnPage(pages[index / sim.config.tuningConfig.pageSize]);
+                sim.cache.mergeReturnPage(pages[index / sim.config.tuningConfig.keysPerPage]);
             }
         }
     }
@@ -278,16 +282,16 @@ class DiskSSTable extends SSTable {
     }
 
     public int getNumPages() {
-        return Utils.ceil(numKeys, sim.config.tuningConfig.pageSize);
+        return Utils.ceil(numKeys, sim.config.tuningConfig.keysPerPage);
     }
 
     public int getNumBFPages() {
-        return Utils.getBloomFilterPages(numKeys, sim.config.tuningConfig.pageSize);
+        return Utils.getBloomFilterPages(numKeys, sim.config.tuningConfig.pageKB);
     }
 
     @Override
     public boolean isCached(int keyIndex) {
-        return cached[keyIndex / sim.config.tuningConfig.pageSize];
+        return cached[keyIndex / sim.config.tuningConfig.keysPerPage];
     }
 
     @Override
@@ -302,7 +306,6 @@ class DiskSSTable extends SSTable {
             sim.cache.delete(bfPages[i]);
         }
     }
-
 }
 
 class KeySSTable extends SSTable {

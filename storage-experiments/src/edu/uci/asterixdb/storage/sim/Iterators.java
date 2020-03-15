@@ -122,7 +122,9 @@ class DiskFlushIterator extends AbstractIterator {
     public DiskFlushIterator(List<List<SSTable>> sstables) {
         int pos = 0;
         for (List<SSTable> list : sstables) {
-            queue.add(new PQEntry(list, pos++));
+            if (!list.isEmpty()) {
+                queue.add(new PQEntry(list, pos++));
+            }
         }
     }
 }

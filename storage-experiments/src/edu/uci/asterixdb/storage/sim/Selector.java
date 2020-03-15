@@ -29,7 +29,35 @@ class HybridSelector implements SSTableSelector {
             return GreedySelector.INSTANCE.selectMerge(lsm, currentLevel, nextLevel);
         }
     }
+}
 
+class RoundRobinSelector implements SSTableSelector {
+
+    public static final RoundRobinSelector INSTANCE = new RoundRobinSelector();
+
+    private final ThreadLocal<KeySSTable> localKey = new ThreadLocal<>();
+
+    @Override
+    public Pair<SSTable, Set<SSTable>> selectMerge(SimulatedLSM lsm, PartitionedLevel currentLevel,
+            TreeSet<SSTable> nextLevel) {
+        KeySSTable lastKey = setKey(currentLevel.lastKey);
+        SSTable sstable = currentLevel.sstables.higher(lastKey);
+        if (sstable == null) {
+            sstable = currentLevel.sstables.first();
+        }
+        Set<SSTable> overlappingSSTables = Utils.findOverlappingSSTables(sstable, nextLevel);
+        return Pair.of(sstable, overlappingSSTables);
+    }
+
+    private KeySSTable setKey(int lastKey) {
+        KeySSTable key = localKey.get();
+        if (key == null) {
+            key = new KeySSTable();
+            localKey.set(key);
+        }
+        key.resetKey(lastKey);
+        return key;
+    }
 }
 
 class OldestMinLSNSelector implements SSTableSelector {

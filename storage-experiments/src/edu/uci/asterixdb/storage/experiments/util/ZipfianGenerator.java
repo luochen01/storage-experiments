@@ -260,14 +260,19 @@ public class ZipfianGenerator {
     }
 
     public static void main(String[] args) {
-        int count = 3;
-        ZipfianGenerator gen = new ZipfianGenerator(count);
+        int count = 1000;
+        int total = count * 100;
+        int[] values = new int[count];
+        ZipfianGenerator gen = new ZipfianGenerator(count, 0.75);
 
-        for (int i = 0; i < 1000; i++) {
-            long value = gen.nextLong(count + i);
-            if (value > count + i) {
-                throw new IllegalStateException("Illegal value " + value);
-            }
+        for (int i = 0; i < total; i++) {
+            long value = gen.nextLong(count);
+            values[(int) value]++;
+        }
+        int sum = 0;
+        for (int i = 0; i < values.length; i++) {
+            sum += values[i];
+            System.out.println(i + "\t" + (double) sum / total);
         }
     }
 
