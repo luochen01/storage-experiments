@@ -106,5 +106,10 @@
       <artifactId>javafaker</artifactId>
       <version>0.15</version>
     </dependency>
+     <dependency>
+	    <groupId>net.smacke</groupId>
+	    <artifactId>jaydio</artifactId>
+        <version>0.2-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 </project>

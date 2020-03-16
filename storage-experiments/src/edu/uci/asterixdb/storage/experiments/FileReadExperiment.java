@@ -6,11 +6,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import net.smacke.jaydio.DirectRandomAccessFile;
 
 /**
  * Experiment performance with sequential and random I/Os
@@ -24,9 +25,10 @@ public class FileReadExperiment {
     private final List<File> files;
 
     private final int numPages;
+    private final boolean directIO;
 
-    public FileReadExperiment(String dir, int numFiles, int pageSizeKB, int fileSizeMB, boolean createFiles)
-            throws IOException {
+    public FileReadExperiment(String dir, int numFiles, int pageSizeKB, int fileSizeMB, boolean createFiles,
+            boolean directIO) throws IOException {
         this.bytes = new byte[pageSizeKB * 1024];
         this.numPages = fileSizeMB * 1024 / pageSizeKB;
         File dirFile = new File(dir);
@@ -34,6 +36,7 @@ public class FileReadExperiment {
             throw new IllegalArgumentException(dir + " is not directory");
         }
         files = generateFiles(numFiles, dirFile, createFiles);
+        this.directIO = directIO;
     }
 
     private List<File> generateFiles(int numFiles, File baseDir, boolean createFiles) throws IOException {
@@ -58,17 +61,14 @@ public class FileReadExperiment {
     }
 
     public void run() throws IOException {
-        sequentialRead();
+        //sequentialRead();
         randomRead();
     }
 
-    private List<FileChannel> readFiles() throws IOException {
-        List<FileChannel> ins = new ArrayList<>();
+    private List<Object> readFiles() throws IOException {
+        List<Object> ins = new ArrayList<>();
         for (File file : files) {
-            RandomAccessFile raf = new RandomAccessFile(file, "rw");
-            FileChannel channel = raf.getChannel();
-            channel.position(0);
-            ins.add(channel);
+            ins.add(directIO ? new DirectRandomAccessFile(file, "rw") : new RandomAccessFile(file, "rw"));
         }
         return ins;
     }
@@ -76,18 +76,18 @@ public class FileReadExperiment {
     private void sequentialRead() throws IOException {
         ByteBuffer dest = ByteBuffer.wrap(bytes);
         long begin = System.currentTimeMillis();
-        List<FileChannel> ins = readFiles();
+        List<Object> ins = readFiles();
         for (int i = 0; i < files.size(); i++) {
-            FileChannel channel = ins.get(i);
             for (int p = 0; p < numPages; p++) {
                 dest.rewind();
-                int bytesRead = channel.read(dest, (long) p * bytes.length);
+                int bytesRead =
+                        directIO ? ((DirectRandomAccessFile) ins.get(i)).read(dest.array(), 0, dest.array().length)
+                                : ((RandomAccessFile) ins.get(i)).read(dest.array(), 0, dest.array().length);
                 if (bytesRead != bytes.length) {
                     throw new IllegalStateException("Wrong bytes read " + bytesRead);
                 }
             }
             System.out.println("Finished sequential read file " + i);
-            channel.close();
         }
         long end = System.currentTimeMillis();
         long time = (end - begin);
@@ -106,18 +106,22 @@ public class FileReadExperiment {
         Random rand = new Random(System.currentTimeMillis());
         List<Integer> pages = new ArrayList<>(files.size());
         files.forEach(f -> pages.add(0));
-        List<FileChannel> ins = readFiles();
+        List<Object> ins = readFiles();
 
         while (ins.size() > 0) {
             int i = rand.nextInt(ins.size());
             dest.rewind();
-            int ret = ins.get(i).read(dest, (long) pages.get(i) * bytes.length);
-            if (ret != bytes.length) {
-                throw new IllegalStateException("Wrong bytes read " + ret);
+            if (directIO) {
+                DirectRandomAccessFile file = (DirectRandomAccessFile) ins.get(i);
+                file.seek((long) pages.get(i) * bytes.length);
+                file.read(bytes, 0, bytes.length);
+            } else {
+                RandomAccessFile file = (RandomAccessFile) ins.get(i);
+                file.seek((long) pages.get(i) * bytes.length);
+                file.read(bytes, 0, bytes.length);
             }
             pages.set(i, pages.get(i) + 1);
             if (pages.get(i) >= numPages) {
-                ins.get(i).close();
                 System.out.println("Finished " + files.get(i));
                 ins.remove(i);
                 pages.remove(i);
@@ -129,8 +133,8 @@ public class FileReadExperiment {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 5) {
-            System.err.println("args: dir numFiles pageSize(kb) fileSize(mb) createFiles(boolean)");
+        if (args.length != 6) {
+            System.err.println("args: dir numFiles pageSize(kb) fileSize(mb) createFiles(boolean) directIO(boolean)");
             return;
         }
 
@@ -139,12 +143,14 @@ public class FileReadExperiment {
         int pageSizeKB = Integer.valueOf(args[2]);
         int fileSizeMB = Integer.valueOf(args[3]);
         boolean createFiles = Boolean.valueOf(args[4]);
+        boolean directIO = Boolean.valueOf(args[5]);
         System.out.println("File Read Experiment ");
         System.out.println("Num Files " + numFiles);
         System.out.println("PageSize (KB) " + pageSizeKB);
         System.out.println("FileSize (MB) " + fileSizeMB);
+        System.out.println("Direct IO " + directIO);
 
-        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, pageSizeKB, fileSizeMB, createFiles);
+        FileReadExperiment expr = new FileReadExperiment(dir, numFiles, pageSizeKB, fileSizeMB, createFiles, directIO);
         expr.run();
     }
 }
