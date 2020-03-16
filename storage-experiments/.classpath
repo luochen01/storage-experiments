@@ -30,7 +30,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-client-helper"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-common"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-doc"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/asterix-evaluator-generator-maven-plugin"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-external-data"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-fuzzyjoin"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-grammar-extension-maven-plugin"/>
@@ -41,7 +40,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-license"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-metadata"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-om"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/asterix-replication"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-runtime"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-server"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-test-datagenerator-maven-plugin"/>

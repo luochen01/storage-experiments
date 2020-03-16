@@ -92,16 +92,12 @@ public class FileFeedDriver implements IFeedDriver {
 
         idGen = IdGenerator.create(distribution, theta, startRange, updateRatio, mode.equals(FeedMode.Random));
 
-        String[] urlArray = urls.split(",");
         String[] portArray = ports.split(",");
-        if (urlArray.length != portArray.length) {
-            throw new IllegalStateException("urls do not match ports");
-        }
-        clients = new FeedSocketAdapterClient[urlArray.length];
+        clients = new FeedSocketAdapterClient[portArray.length];
         for (int i = 0; i < clients.length; i++) {
             IRecordGenerator recordGen =
                     dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator(recordSize);
-            clients[i] = new FeedSocketAdapterClient(urlArray[i], Integer.valueOf(portArray[i]), recordGen);
+            clients[i] = new FeedSocketAdapterClient(urls, Integer.valueOf(portArray[i]), recordGen);
         }
         reporter = new FeedReporter(clients, period, logPath);
         printConf();
@@ -118,6 +114,7 @@ public class FileFeedDriver implements IFeedDriver {
         reporter.writeLine("Theta: " + theta);
     }
 
+    @Override
     public long getNextId(MutableBoolean isNewTweet) throws IOException {
         synchronized (idGen) {
             long id = idGen.next();
