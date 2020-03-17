@@ -2,7 +2,6 @@ package edu.uci.asterixdb.storage.experiments.feed;
 
 import java.io.IOException;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
@@ -117,31 +116,30 @@ public class FileFeedDriver implements IFeedDriver {
         reporter.writeLine("Theta: " + theta);
     }
 
-    @Override
-    public long getNextId(MutableBoolean isNewTweet) throws IOException {
-        synchronized (idGen) {
-            long id = idGen.next();
-            isNewTweet.setValue(idGen.isNewId());
-            return id;
-        }
-    }
-
     public void start() throws InterruptedException, IOException {
         try {
             for (FeedSocketAdapterClient client : clients) {
                 client.initialize();
             }
-            Thread[] threads = new Thread[clients.length];
-            for (int i = 0; i < threads.length; i++) {
-                threads[i] = new FileFeedRunner(clients[i], this);
+            FileFeedRunner[] runners = new FileFeedRunner[clients.length];
+
+            for (int i = 0; i < runners.length; i++) {
+                runners[i] = new FileFeedRunner(clients[i]);
             }
-            for (int i = 0; i < threads.length; i++) {
-                threads[i].start();
+            for (int i = 0; i < runners.length; i++) {
+                runners[i].start();
             }
             reporter.start();
             long startTime = System.currentTimeMillis();
+            int batchSize = 1000;
+
             while (!stop(startTime)) {
-                Thread.sleep(1000);
+                for (int i = 0; i < batchSize; i++) {
+                    long id = idGen.next();
+                    boolean isNewTweet = idGen.isNewId();
+                    int runnerId = (int) (Math.abs(id) % runners.length);
+                    runners[runnerId].put(id, isNewTweet);
+                }
             }
             reporter.close();
             Thread.sleep(wait * 1000);

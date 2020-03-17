@@ -1,26 +1,37 @@
 package edu.uci.asterixdb.storage.experiments.feed;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
+import java.util.concurrent.ArrayBlockingQueue;
+
+class Entry {
+    final long key;
+    final boolean newRecord;
+
+    public Entry(long key, boolean newRecord) {
+        this.key = key;
+        this.newRecord = newRecord;
+    }
+}
 
 public class FileFeedRunner extends Thread {
 
     private final FeedSocketAdapterClient client;
 
-    private final IFeedDriver driver;
+    private final ArrayBlockingQueue<Entry> queue = new ArrayBlockingQueue<>(1024);
 
-    public FileFeedRunner(FeedSocketAdapterClient client, IFeedDriver driver) {
+    public FileFeedRunner(FeedSocketAdapterClient client) {
         this.client = client;
-        this.driver = driver;
+    }
+
+    public void put(long key, boolean newRecord) {
+        queue.add(new Entry(key, newRecord));
     }
 
     @Override
     public void run() {
-        long id = 0;
         try {
-            MutableBoolean isNew = new MutableBoolean();
             while (true) {
-                id = driver.getNextId(isNew);
-                client.ingest(id, isNew.isTrue());
+                Entry e = queue.take();
+                client.ingest(e.key, e.newRecord);
             }
         } catch (Exception e) {
             e.printStackTrace();

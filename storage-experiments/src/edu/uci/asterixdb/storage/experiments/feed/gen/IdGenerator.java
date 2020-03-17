@@ -42,7 +42,7 @@ public abstract class IdGenerator {
             id = generateUpdate(counter);
             isNewTweet = false;
         } else {
-            id = (counter++);
+            id = ++counter;
             isNewTweet = true;
         }
         return randomize ? randomize(id) : id;

@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.kohsuke.args4j.CmdLineParser;
@@ -140,23 +139,16 @@ public class FeedRepairDriver implements IFeedDriver {
         return readAhead + parallel + query;
     }
 
-    @Override
-    public long getNextId(MutableBoolean isNew) throws IOException {
-        long id = idGen.next();
-        isNew.setValue(idGen.isNewId());
-        return id;
-    }
-
     public void start() throws InterruptedException, IOException {
         try {
             client.initialize();
             reporter.start();
             BufferedWriter repairLogWritter = new BufferedWriter(new FileWriter(repairLogPath));
             long ingestedRecords = 0;
-            MutableBoolean isNew = new MutableBoolean();
             while (ingestedRecords < totalRecords) {
-                long id = getNextId(isNew);
-                client.ingest(id, isNew.isTrue());
+                long id = idGen.next();
+                boolean isNew = idGen.isNewId();
+                client.ingest(id, isNew);
                 ingestedRecords++;
                 if (ingestedRecords % repairFrequency == 0) {
                     LOGGER.error("Prepare to start repair, sleep for {} ms...", repairWait);
