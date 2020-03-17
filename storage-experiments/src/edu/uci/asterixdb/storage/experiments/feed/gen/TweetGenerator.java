@@ -38,4 +38,9 @@ public class TweetGenerator implements IRecordGenerator {
         return msg.getAdmEquivalent(null) + "\n";
     }
 
+    public static void main(String[] args) {
+        TweetGenerator gen = new TweetGenerator(100, 500);
+        System.out.println(gen.getRecord(1));
+    }
+
 }
