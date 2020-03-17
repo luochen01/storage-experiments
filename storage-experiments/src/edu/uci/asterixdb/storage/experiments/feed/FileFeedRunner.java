@@ -22,7 +22,7 @@ public class FileFeedRunner extends Thread {
         this.client = client;
     }
 
-    public void put(long key, boolean newRecord) {
+    public void put(long key, boolean newRecord) throws InterruptedException {
         queue.put(new Entry(key, newRecord));
     }
 
