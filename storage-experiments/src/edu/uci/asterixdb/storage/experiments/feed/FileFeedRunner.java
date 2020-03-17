@@ -23,7 +23,7 @@ public class FileFeedRunner extends Thread {
     }
 
     public void put(long key, boolean newRecord) {
-        queue.add(new Entry(key, newRecord));
+        queue.put(new Entry(key, newRecord));
     }
 
     @Override
