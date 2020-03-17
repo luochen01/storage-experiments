@@ -75,6 +75,9 @@ public class FileFeedDriver implements IFeedDriver {
     @Option(name = "-size", aliases = "--size", usage = "record size (in bytes)")
     public int recordSize = 500;
 
+    @Option(name = "-wait")
+    public int wait = 600;
+
     private final FeedSocketAdapterClient[] clients;
 
     private final FeedReporter reporter;
@@ -141,6 +144,7 @@ public class FileFeedDriver implements IFeedDriver {
                 Thread.sleep(1000);
             }
             reporter.close();
+            Thread.sleep(wait * 1000);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
