@@ -6,7 +6,12 @@ import matplotlib.pyplot as plt
 from base import *
 from pathlib import PurePath
 
-upsert_base_path = base_path + 'upsert/'
+index = ssd_index
+
+ysteps = [100, 100]
+ylimits = [300, 400]
+
+upsert_base_path = base_path + devices[index] + '/upsert/'
 
 print(upsert_base_path)
 
@@ -96,5 +101,5 @@ plot_totals([PlotOption(upsert_antimatters_totals, 'eager', marker=markers[0], l
             PlotOption(upsert_validations_totals, 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_validation_norepairs_totals, 'validation (no repair)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
             PlotOption(upsert_delete_btrees_totals, 'deleted-key B+tree', marker=markers[4], linestyle=delete_btree_linestyle, color=delete_btree_color)]
-            , xvalues, result_base_path + 'upsert-secondary-index-total.pdf', 'Number of Secondary Indexes')
+            , xvalues, result_base_path + devices[index] + 'upsert-secondary-index-total.pdf', 'Number of Secondary Indexes', ylimit = ylimits[index])
 

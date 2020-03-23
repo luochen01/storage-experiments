@@ -6,7 +6,12 @@ import matplotlib.pyplot as plt
 from base import *
 from pathlib import PurePath
 
-upsert_base_path = base_path + 'upsert/'
+index = ssd_index
+
+ysteps = [100, 100]
+ylimits = [300, 350]
+
+upsert_base_path = base_path + devices[index] + '/upsert/'
 
 print(upsert_base_path)
 
@@ -76,11 +81,9 @@ for i in [0, 1, 2]:
             PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_inplaces[i], 'mutable-bitmap', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
 
-#plot_shared_ingestion(options[0], options[1], options[2], ['No Update', '50% Uniform Updates', '50% Zipf Updates'], result_base_path + 'upsert-secondary-update.pdf', ylimit=180)
+# plot_shared_ingestion(options[0], options[1], options[2], ['No Update', '50% Uniform Updates', '50% Zipf Updates'], result_base_path + 'upsert-secondary-update.pdf', ylimit=180)
 
-plot_basic(options[0], result_base_path+'upsert-secondary-update-0.pdf', '')
-plot_basic(options[1], result_base_path+'upsert-secondary-update-uniform-50.pdf', '')
-plot_basic(options[2], result_base_path+'upsert-secondary-update-zipf-50.pdf', '')
-
-
+plot_basic(options[0], result_base_path + devices[index] + '-upsert-secondary-update-0.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
+plot_basic(options[1], result_base_path + devices[index] + '-upsert-secondary-update-uniform-50.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
+plot_basic(options[2], result_base_path + devices[index] + '-upsert-secondary-update-zipf-50.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
 

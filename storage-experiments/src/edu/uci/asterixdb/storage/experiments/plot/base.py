@@ -7,9 +7,8 @@ import os
 
 time_index = 'counter'
 total_records_index = 'total_records'
-base_path = '/Users/luochen/Documents/Research/experiments/results/lsm/'
-result_base_path = '/Users/luochen/Documents/Research/papers/lsm-paper/expr/'
-# result_base_path = '/Users/luochen/Documents/Research/experiments/results/figure/'
+base_path = '/Users/luochen/Documents/Research/experiments/results/lsm-new/'
+result_base_path = '/Users/luochen/Documents/Research/experiments/results/lsm-new/'
 
 antimatter_color = 'red'
 antimatter_linestyle = 'solid'
@@ -25,6 +24,12 @@ delete_btree_linestyle = 'solid'
 
 inplace_color = 'orange'
 inplace_linestyle = 'solid'
+
+devices = ['hdd', 'ssd']
+xlimits = [250, 130]
+
+hdd_index = 0
+ssd_index = 1
 
 updates = [0, 0.05, 0.1, 0.25, 0.5]
 
@@ -98,7 +103,7 @@ class IngestionResult(object):
 
 class PlotOption(object):
 
-    def __init__(self, data, legend, color='red', linestyle='solid', marker=None, markevery=60, alpha=None, hatch=None):
+    def __init__(self, data, legend, color='red', linestyle='solid', marker=None, markevery=1800, alpha=None, hatch=None):
         self.data = data
         self.linestyle = linestyle
         self.marker = marker
@@ -118,7 +123,7 @@ def open_csv(path):
         return None
 
 
-def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=170, framealpha=0, ystep=50):
+def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, xlimit=365, ylimit=None, framealpha=0, ystep=50):
     # use as global
     plt.figure()
     for option in options:
@@ -128,22 +133,25 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     legend_col = 1
     if len(options) > 5:
         legend_col = 2
-    plt.legend(loc=2, ncol=legend_col, framealpha=framealpha, numpoints = 1)
+    plt.legend(loc=2, ncol=legend_col, framealpha=framealpha, numpoints=1)
 
     # plt.title(title)
 
     step = 0
     if xlimit / 6 <= 65:
-        step = 60
+        step = 30
     else:
-        step = 600
+        step = 300
 
     plt.xlabel(xlabel)
     plt.xticks(np.arange(0, xlimit, step=step))
     plt.xlim(0, xlimit)
-    plt.ylim(0, ylimit)
+    if ylimit != None:
+        plt.ylim(0, ylimit)
+        plt.yticks(np.arange(0, ylimit, step=ystep))
+    else:
+        plt.ylim(0)
     plt.ylabel(ylabel)
-    plt.yticks(np.arange(0, ylimit, step=ystep))
 
     plt.savefig(output)
     print('output figure to ' + output)
@@ -184,22 +192,21 @@ def get_totals(results):
     return totals
 
 
-def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, ylimit=240, ystep = 50):
+def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingestion_ylabel, ylimit=240, ystep=50):
     plt.figure()
     for option in options:
         plt.plot(np.arange(len(xvalues)), option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
                   markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=1)
-    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.04, 1), columnspacing=0.2, numpoints = 1, framealpha=0, handlelength=1.3)
+    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.04, 1), columnspacing=0.2, numpoints=1, framealpha=0, handlelength=1.3)
     plt.grid(False)
     # plt.title(title)
     plt.xlabel(xlabel)
-    plt.xlim([-0.1, len(xvalues)-0.9])
+    plt.xlim([-0.1, len(xvalues) - 0.9])
     plt.xticks(np.arange(len(xvalues)), xvalues)
     plt.ylim(0, ylimit)
     plt.ylabel(ylabel)
     
     plt.savefig(output)
-    
     
     print('output figure to ' + output)
 

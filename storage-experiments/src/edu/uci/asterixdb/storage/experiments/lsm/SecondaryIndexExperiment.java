@@ -150,7 +150,7 @@ public class SecondaryIndexExperiment {
     }
 
     public static void main(String[] args) throws Exception {
-        QueryUtil.init(new URI("http://sensorium-23.ics.uci.edu:19002/query/service"));
+        QueryUtil.init(new URI("http://localhost:19002/query/service"));
         SecondaryIndexExperiment expr = new SecondaryIndexExperiment(args);
         expr.run();
     }
