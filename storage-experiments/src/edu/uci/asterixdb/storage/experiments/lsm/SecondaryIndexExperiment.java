@@ -72,6 +72,9 @@ public class SecondaryIndexExperiment {
     @Option(name = "-sortrecord", aliases = "--sortrecord", usage = "sort record", required = false)
     public boolean sortRecord = false;
 
+    @Option(name = "-readahread", aliases = "--readahread", usage = "read ahead size (KB)", required = false)
+    public int readAhread = 4096;
+
     private final Random rand = new Random(System.currentTimeMillis());
 
     public SecondaryIndexExperiment(String[] args) throws Exception {
@@ -90,6 +93,7 @@ public class SecondaryIndexExperiment {
         System.out.println("No BTree: " + noBtree);
         System.out.println("Force Component Id: " + forceId);
         System.out.println("No Index: " + noindex);
+        System.out.println("Read ahead (KB): " + readAhread);
 
     }
 
@@ -117,7 +121,7 @@ public class SecondaryIndexExperiment {
     private String generateSecondaryIndexQuery(int beginRange, int endRange, boolean skipPkIndex) {
         String batch = batchSizeKB >= 0 ? String.format("set `compiler.batchmemory` '%dKB';", batchSizeKB) : "";
         if (noindex) {
-            String readahead = "set `compiler.readaheadmemory` '4MB';";
+            String readahead = String.format("set `compiler.readaheadmemory` '%dKB';", readAhread);
             String query = String.format(
                     "select count(*) from %s.%s where sid /*+ skip-index */ >=%d AND sid /*+ skip-index */ <=%d;",
                     dataverseName, dataset, beginRange, endRange);
