@@ -52,7 +52,7 @@ public class SecondaryIndexExperiment {
     public boolean indexOnly = false;
 
     @Option(name = "-b", aliases = "--batch", usage = "batch size (KB)", required = false)
-    public int batchSizeKB = -1;
+    public int batchSizeKB = 16384;
 
     @Option(name = "-nocid", aliases = "--nocid", usage = "no component id", required = false)
     public boolean noComponentId = false;
