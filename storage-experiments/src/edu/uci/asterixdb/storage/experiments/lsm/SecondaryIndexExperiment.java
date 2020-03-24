@@ -72,7 +72,7 @@ public class SecondaryIndexExperiment {
     @Option(name = "-sortrecord", aliases = "--sortrecord", usage = "sort record", required = false)
     public boolean sortRecord = false;
 
-    @Option(name = "-readahead", aliases = "--readahread", usage = "read ahead size (KB)", required = false)
+    @Option(name = "-ra", aliases = "-readahread", usage = "read ahead size (KB)", required = false)
     public int readAhread = 4096;
 
     private final Random rand = new Random(System.currentTimeMillis());
