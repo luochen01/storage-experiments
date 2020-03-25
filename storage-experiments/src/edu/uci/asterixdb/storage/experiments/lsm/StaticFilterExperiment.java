@@ -30,12 +30,12 @@ public class StaticFilterExperiment {
 
     public static final Map<String, DateTime> maxTimes = new HashMap<>();
     static {
-        maxTimes.put(dv_antimatter_1, new DateTime(2012, 7, 14, 7, 49, 11));
-        maxTimes.put(dv_antimatter_5, new DateTime(2012, 7, 14, 23, 0, 35));
-        maxTimes.put(dv_validation_1, new DateTime(2012, 7, 13, 17, 42, 2));
-        maxTimes.put(dv_validation_5, new DateTime(2012, 7, 14, 23, 40, 9));
-        maxTimes.put(dv_inplace_1, new DateTime(2012, 7, 15, 0, 7, 51));
-        maxTimes.put(dv_inplace_5, new DateTime(2012, 7, 15, 0, 3, 1));
+        maxTimes.put(dv_antimatter_1, new DateTime(2012, 7, 15, 0, 3, 20));
+        maxTimes.put(dv_antimatter_5, new DateTime(2012, 7, 14, 23, 40, 40));
+        maxTimes.put(dv_validation_1, new DateTime(2012, 7, 14, 23, 46, 40));
+        maxTimes.put(dv_validation_5, new DateTime(2012, 7, 15, 0, 3, 20));
+        maxTimes.put(dv_inplace_1, new DateTime(2012, 7, 15, 0, 3, 20));
+        maxTimes.put(dv_inplace_5, new DateTime(2012, 7, 15, 0, 20, 0));
     }
 
     @Option(name = "-dv", aliases = "--dataverse", usage = "the dataverse name", required = true)
