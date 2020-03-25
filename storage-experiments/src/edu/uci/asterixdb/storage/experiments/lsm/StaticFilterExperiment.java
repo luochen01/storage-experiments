@@ -36,7 +36,6 @@ public class StaticFilterExperiment {
         maxTimes.put(dv_validation_5, new DateTime(2012, 7, 14, 23, 40, 9));
         maxTimes.put(dv_inplace_1, new DateTime(2012, 7, 15, 0, 7, 51));
         maxTimes.put(dv_inplace_5, new DateTime(2012, 7, 15, 0, 3, 1));
-
     }
 
     @Option(name = "-dv", aliases = "--dataverse", usage = "the dataverse name", required = true)

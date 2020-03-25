@@ -86,6 +86,9 @@ public class FeedRepairDriver implements IFeedDriver {
     @Option(name = "-parallel", aliases = "--parallel", usage = "repair paralleism ")
     public int parallelism = 1;
 
+    @Option(name = "-ra", aliases = "--read-ahead", usage = "read ahead (KB) ")
+    public int readAhead = 4096;
+
     private final FeedSocketAdapterClient client;
 
     private final FeedReporter reporter;
@@ -127,8 +130,12 @@ public class FeedRepairDriver implements IFeedDriver {
         reporter.writeLine("RepairMethod: " + repairMethod);
     }
 
+    public String getWaitQuery() {
+        return String.format("wait dataset %s.ds_tweet;", dataverse);
+    }
+
     public String getRepairQuery() {
-        String readAhead = "set `compiler.readaheadmemory` '4MB';";
+        String readAhead = String.format("set `compiler.readaheadmemory` '%dKB';", this.readAhead);
         String parallel = "set `compiler.repair.parallelism` '" + parallelism + "';";
         String query = "";
         if (repairMethod == RepairMethod.Dataset) {
@@ -153,6 +160,7 @@ public class FeedRepairDriver implements IFeedDriver {
                 if (ingestedRecords % repairFrequency == 0) {
                     LOGGER.error("Prepare to start repair, sleep for {} ms...", repairWait);
                     Thread.sleep(repairWait);
+                    QueryUtil.executeQuery("wait", getWaitQuery());
                     String query = getRepairQuery();
                     QueryResult result = QueryUtil.executeQuery("repair", query);
                     repairLogWritter.write(ingestedRecords + "\t" + result.time + System.lineSeparator());

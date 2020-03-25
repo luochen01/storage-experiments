@@ -96,9 +96,9 @@ public class FileFeedDriver implements IFeedDriver {
 
         String[] portArray = ports.split(",");
         clients = new FeedSocketAdapterClient[portArray.length];
+        IRecordGenerator recordGen =
+                dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator(recordSize);
         for (int i = 0; i < clients.length; i++) {
-            IRecordGenerator recordGen =
-                    dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator(recordSize);
             clients[i] = new FeedSocketAdapterClient(urls, Integer.valueOf(portArray[i]), recordGen);
         }
         reporter = new FeedReporter(clients, period, logPath);

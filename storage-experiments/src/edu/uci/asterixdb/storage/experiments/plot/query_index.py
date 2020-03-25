@@ -5,20 +5,25 @@ import matplotlib as mt
 import matplotlib.pyplot as plt
 import os
 import base
+import sys
 from base import *
 from pathlib import PurePath
 
-query_base_path = base_path + 'query/'
+index = ssd_index
+query_base_path = base_path + devices[index] + '/query-index/'
+
+ylimits = [310, 45]
 
 time_index = 'time'
-#sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
-#sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
+# sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
+# sels = [0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
 
-sel_strs = ['0.00001', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
-sels = [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 1]
+sel_strs = ['0.00001', '0.00005', '0.0001', '0.0005', '0.001', '0.01']
+sels = [0.001, 0.005, 0.01, 0.05, 0.1, 1]
 
 indexonly_sel_strs = ['0.00001', '0.00005', '0.0001', '0.0005', '0.001', '0.01']
 indexonly_sels = [0.001, 0.005, 0.01, 0.05, 0.1, 1]
+
 
 class QueryResult(object):
 
@@ -55,7 +60,7 @@ def parse_query_experiment(prefix, pattern, skips, values=sel_strs):
     results = []
     i = 0
     for sel in values:
-        file = prefix + "_" + sel + "_" + pattern + ".csv"
+        file = prefix + "_" + sel + pattern + ".csv"
         print("processing file " + file)
         result = parse_csv(query_base_path + file, skips[i])
         results.append(result)
@@ -99,25 +104,17 @@ antimatter_indexonly_skips.append(2)
 antimatter_1_prefix = "twitter_antimatter_UNIFORM_1"
 antimatter_5_prefix = "twitter_antimatter_UNIFORM_5"
 antimatter_skip = 2
-antimatter_pattern = "false"
-antimatter_index_only_pattern = "indexonly"
-antimatter_index_only_sort_pattern = "indexonly_sort"
+antimatter_pattern = ""
 antimatter_1_results = parse_query_experiment(antimatter_1_prefix, antimatter_pattern, antimatter_skips)
 antimatter_5_results = parse_query_experiment(antimatter_5_prefix, antimatter_pattern, antimatter_skips)
-antimatter_1_indexonly_results = parse_query_experiment(antimatter_1_prefix, antimatter_index_only_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
-antimatter_5_indexonly_results = parse_query_experiment(antimatter_5_prefix, antimatter_index_only_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
-antimatter_1_indexonly_sort_results = parse_query_experiment(antimatter_1_prefix, antimatter_index_only_sort_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
-antimatter_5_indexonly_sort_results = parse_query_experiment(antimatter_5_prefix, antimatter_index_only_sort_pattern, antimatter_indexonly_skips , indexonly_sel_strs)
 
 validation_1_prefix = "twitter_validation_UNIFORM_1"
 validation_5_prefix = "twitter_validation_UNIFORM_5"
-validation_direct_pattern = "true"
-validation_pk_pattern = "false"
-validation_pk_512M_pattern = "false_512MB"
-validation_pk_indexonly_pattern = "indexonly"
+validation_direct_pattern = "_true"
+validation_pk_pattern = "_false"
 
 direct_validation_skips = [2, 2, 2, 2, 2, 2, 2, 2]
-pk_validation_skips = [100, 25, 10, 5, 5, 2, 2]
+pk_validation_skips = [100, 25, 10, 5, 2, 2, 2]
 pk_validation_indexonly_skips = pk_validation_skips[:]
 pk_validation_indexonly_skips.append(2)
 
@@ -125,32 +122,20 @@ validation_1_direct_results = parse_query_experiment(validation_1_prefix, valida
 validation_5_direct_results = parse_query_experiment(validation_5_prefix, validation_direct_pattern, direct_validation_skips)
 
 validation_1_pk_results = parse_query_experiment(validation_1_prefix, validation_pk_pattern, pk_validation_skips)
-validation_1_pk_512M_results = parse_query_experiment(validation_1_prefix, validation_pk_512M_pattern, pk_validation_skips)
 validation_5_pk_results = parse_query_experiment(validation_5_prefix, validation_pk_pattern, pk_validation_skips)
-validation_5_pk_512M_results = parse_query_experiment(validation_5_prefix, validation_pk_512M_pattern, pk_validation_skips)
-
-validation_1_pk_indexonly_results = parse_query_experiment(validation_1_prefix, validation_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
-validation_5_pk_indexonly_results = parse_query_experiment(validation_5_prefix, validation_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
 
 validation_norepair_1_prefix = "twitter_validation_norepair_UNIFORM_1"
 validation_norepair_5_prefix = "twitter_validation_norepair_UNIFORM_5"
-validation_norepair_direct_pattern = "true"
-validation_norepair_pk_pattern = "false"
-validation_norepair_pk_512M_pattern = "false_512MB"
-validation_norepair_pk_indexonly_pattern = "indexonly"
+validation_norepair_direct_pattern = "_true"
+validation_norepair_pk_pattern = "_false"
+validation_norepair_pk_512M_pattern = "_false_512MB"
 
 validation_norepair_1_direct_results = parse_query_experiment(validation_norepair_1_prefix, validation_norepair_direct_pattern, direct_validation_skips)
 validation_norepair_5_direct_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_direct_pattern, direct_validation_skips)
 
 validation_norepair_1_pk_results = parse_query_experiment(validation_norepair_1_prefix, validation_norepair_pk_pattern, pk_validation_skips)
-validation_norepair_1_pk_512M_results = parse_query_experiment(validation_norepair_1_prefix, validation_norepair_pk_512M_pattern, pk_validation_skips)
 validation_norepair_5_pk_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_pk_pattern, pk_validation_skips)
-validation_norepair_5_pk_512M_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_pk_512M_pattern, pk_validation_skips)
 
-validation_norepair_1_pk_indexonly_results = parse_query_experiment(validation_norepair_1_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
-validation_norepair_5_pk_indexonly_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
-
-print(matplotlib.font_manager.get_cachedir())
 
 def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0.16, xfontsize=None):
     x = np.arange(len(xvalues))
@@ -173,19 +158,20 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0
     return lines
 
 
-def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=310):
+def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=ylimits[index]):
     # use as global
     f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(11, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit)
-    #f.legend(handles=lines, loc='upper left', ncol=2, bbox_to_anchor=(0.065, 1.02), columnspacing=11.8)
+    # f.legend(handles=lines, loc='upper left', ncol=2, bbox_to_anchor=(0.065, 1.02), columnspacing=11.8)
     ax1.legend(framealpha=0.5, loc='upper left')
     ax1.set_ylabel(ylabel)
     ax2.legend(framealpha=0.5, loc='upper left')
 
     plt.savefig(output)
     print('output figure to ' + output)
+
 
 color = 'blue'
 alphas = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
@@ -203,9 +189,57 @@ query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=
                 PlotOption(toTime(validation_norepair_5_direct_results), 'direct validation (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
                 PlotOption(toTime(validation_norepair_5_pk_results), 'ts validation (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5)])
 
+plot_shared_query(sels, query_options[0], query_options[1], result_base_path + devices[index] + "-query-index.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
+
+validation_pk_512M_pattern = "_false_512MB"
+
+# validation_norepair_1_pk_512M_results = parse_query_experiment(validation_norepair_1_prefix, validation_norepair_pk_512M_pattern, pk_validation_skips)
+# validation_norepair_5_pk_512M_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_pk_512M_pattern, pk_validation_skips)
+
+validation_1_pk_512M_results = parse_query_experiment(validation_1_prefix, validation_pk_512M_pattern, pk_validation_skips)
+# validation_5_pk_512M_results = parse_query_experiment(validation_5_prefix, validation_pk_512M_pattern, pk_validation_skips)
 
 
-plot_shared_query(sels, query_options[0], query_options[1], result_base_path + "query-index.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
+def plot_query(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
+    # use as global
+    plt.figure()
+    x = np.arange(len(xvalues))
+    numbars = float(len(options))
+    i = 0
+    barwidth = 0.22
+    for option in options:
+        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
+        i += 1
+    # plt.set_title(title)
+    plt.xlabel(xlabel)
+    plt.xticks(x, xvalues)
+    plt.xlim([-0.5, len(x) - 0.5])
+    plt.legend(loc=2, ncol=1, framealpha=0.5)
+    plt.ylabel(ylabel)
+
+    # ax1.set_ylim(0, 1000)
+    # ax2.set_ylim(0, 1000)
+
+    plt.savefig(output)
+    print('output figure to ' + output)
+
+
+ts_cache_options = [PlotOption(toTime(validation_1_pk_results), 'ts validation', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
+                PlotOption(toTime(validation_1_pk_512M_results), 'ts validation (small cache)', marker=markers[2], linestyle=validation_linestyle, color=validation_norepair_color, alpha=0.5)]
+
+plot_query(sels, ts_cache_options, result_base_path + devices[index] + "-query-index-small-cache.pdf", "")
+
+antimatter_index_only_pattern = "_indexonly"
+validation_pk_indexonly_pattern = "_indexonly"
+validation_norepair_pk_indexonly_pattern = "_indexonly"
+
+antimatter_1_indexonly_results = parse_query_experiment(antimatter_1_prefix, antimatter_index_only_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
+antimatter_5_indexonly_results = parse_query_experiment(antimatter_5_prefix, antimatter_index_only_pattern, antimatter_indexonly_skips, indexonly_sel_strs)
+validation_1_pk_indexonly_results = parse_query_experiment(validation_1_prefix, validation_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
+validation_5_pk_indexonly_results = parse_query_experiment(validation_5_prefix, validation_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
+
+validation_norepair_1_pk_indexonly_results = parse_query_experiment(validation_norepair_1_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
+validation_norepair_5_pk_indexonly_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
 
 
 def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=50):
@@ -219,14 +253,13 @@ def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, 
     ax1.set_yscale('log', basey=10)
     ax2.set_yscale('log', basey=10)
 
-    ax1.set_ylim(0.05, ylimit)
-    ax2.set_ylim(0.05, ylimit)
+    ax1.set_ylim(0.005, ylimit)
+    ax2.set_ylim(0.005, ylimit)
 
     ax1.legend(loc=2, ncol=1)
     ax1.set_ylabel(ylabel)
 
     ax2.legend(loc=2, ncol=1)
-
 
     plt.savefig(output)
     print('output figure to ' + output)
@@ -242,38 +275,5 @@ index_only_options.append([ PlotOption(toTime(antimatter_5_indexonly_results), '
                 PlotOption(toTime(validation_5_pk_indexonly_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
                 PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts validation (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)])
 
-plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + "query-index-only.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
-
-
-def plot_query(xvalues, options, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
-    # use as global
-    plt.figure()
-    x = np.arange(len(xvalues))
-    numbars = float(len(options))
-    i = 0
-    barwidth=0.22
-    for option in options:
-        plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
-        i += 1
-    #plt.set_title(title)
-    plt.xlabel(xlabel)
-    plt.xticks(x, xvalues)
-    plt.xlim([-0.5, len(x) - 0.5])
-    plt.legend(loc=2, ncol=1, framealpha=0.5)
-    plt.ylabel(ylabel)
-
-    #ax1.set_ylim(0, 1000)
-    #ax2.set_ylim(0, 1000)
-
-
-    plt.savefig(output)
-    print('output figure to ' + output)
-
-
-
-ts_cache_options = [PlotOption(toTime(validation_1_pk_results), 'ts validation', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
-                PlotOption(toTime(validation_1_pk_512M_results), 'ts validation (small cache)', marker=markers[2], linestyle=validation_linestyle, color=validation_norepair_color, alpha=0.5)]
-
-
-plot_query(sels, ts_cache_options, result_base_path + "query-index-small-cache.pdf", "")
+plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + devices[index] + "-query-index-only.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
 

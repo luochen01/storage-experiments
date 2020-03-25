@@ -33,7 +33,7 @@ public class TweetGenerator implements IRecordGenerator {
     }
 
     @Override
-    public String getRecord(long nextId) {
+    public synchronized String getRecord(long nextId) {
         TweetMessage msg = dataGenerator.getNext(nextId, (nextSid++) % sidRange);
         return msg.getAdmEquivalent(null) + "\n";
     }

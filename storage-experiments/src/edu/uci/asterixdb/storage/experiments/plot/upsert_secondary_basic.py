@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 
 ysteps = [100, 100]
-ylimits = [300, 350]
+ylimits = [550, 350]
 
 upsert_base_path = base_path + devices[index] + '/upsert/'
 

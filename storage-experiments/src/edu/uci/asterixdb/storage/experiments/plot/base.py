@@ -114,9 +114,11 @@ class PlotOption(object):
         self.hatch = hatch
 
 
-def open_csv(path):
+def open_csv(path, length = 0):
     try:
         csv = pandas.read_csv(path, sep=',', header=8)
+        if length > 0:
+            csv = csv[0:length]
         return IngestionResult(csv)
     except:
         print('fail to parse ' + path)
