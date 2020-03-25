@@ -102,6 +102,7 @@ public class StaticFilterExperiment {
             String query = generateFilterQuery(minFilter, maxFilter);
             QueryResult result = QueryUtil.executeQuery("default", query);
             writer.println(i + "\t" + result.time + "\t" + result.result);
+            System.out.println(i + "\t" + result.time + "\t" + result.result);
         }
         writer.flush();
         writer.close();
