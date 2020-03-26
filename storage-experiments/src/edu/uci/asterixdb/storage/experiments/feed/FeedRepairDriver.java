@@ -159,11 +159,12 @@ public class FeedRepairDriver implements IFeedDriver {
                 ingestedRecords++;
                 if (ingestedRecords % repairFrequency == 0) {
                     LOGGER.error("Prepare to start repair, sleep for {} ms...", repairWait);
-                    Thread.sleep(repairWait);
+                    //Thread.sleep(repairWait);
                     QueryUtil.executeQuery("wait", getWaitQuery());
                     String query = getRepairQuery();
                     QueryResult result = QueryUtil.executeQuery("repair", query);
                     repairLogWritter.write(ingestedRecords + "\t" + result.time + System.lineSeparator());
+                    System.out.println(ingestedRecords + "\t" + result.time + System.lineSeparator());
                 }
             }
 
