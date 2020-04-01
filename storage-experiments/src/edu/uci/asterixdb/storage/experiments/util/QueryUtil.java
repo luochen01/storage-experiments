@@ -37,7 +37,7 @@ public class QueryUtil {
     }
 
     public static QueryResult executeQuery(String key, String query, URI endpoint) throws Exception {
-        LOGGER.warn(query);
+        LOGGER.error(query);
 
         RequestBuilder builder = RequestBuilder.post(endpoint);
         builder.addParameter("statement", query);
@@ -49,7 +49,7 @@ public class QueryUtil {
         HttpResponse response = client.execute(post);
         String queryResult = IOUtils.toString(response.getEntity().getContent(), Charset.defaultCharset());
 
-        LOGGER.warn(queryResult);
+        LOGGER.error(queryResult);
 
         JSONObject obj = new JSONObject(queryResult);
         Object count = null;

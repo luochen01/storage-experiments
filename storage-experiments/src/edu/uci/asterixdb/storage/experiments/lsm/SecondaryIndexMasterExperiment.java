@@ -34,8 +34,6 @@ public class SecondaryIndexMasterExperiment {
     @Option(name = "-nobatch")
     public boolean noBatch = false;
 
-    public int readAhread = 4096;
-
     private final Random rand = new Random(System.currentTimeMillis());
 
     public SecondaryIndexMasterExperiment(String[] args) throws Exception {
@@ -47,7 +45,6 @@ public class SecondaryIndexMasterExperiment {
         System.out.println("Num queries: " + numQueries);
         System.out.println("Output path: " + outputPath);
         System.out.println("No Batch: " + noBatch);
-        System.out.println("Read ahead (KB): " + readAhread);
 
     }
 
@@ -68,10 +65,11 @@ public class SecondaryIndexMasterExperiment {
     }
 
     private String generateSecondaryIndexQuery(int beginRange, int endRange) {
+        String noIndexOnly = "set `noindexonly` true';";
         String nobatch = noBatch ? "set `no.batch` 'true';" : "";
         String query = String.format("select count(*) from %s.%s where sid>=%d AND sid<=%d;", dataverseName, dataset,
                 beginRange, endRange);
-        return nobatch + query;
+        return noIndexOnly + nobatch + query;
     }
 
     public static void main(String[] args) throws Exception {
