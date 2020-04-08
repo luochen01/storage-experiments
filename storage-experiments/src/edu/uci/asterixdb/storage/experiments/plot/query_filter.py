@@ -7,8 +7,10 @@ import os
 from base import *
 from pathlib import PurePath
 
-query_base_path = base_path + 'query/'
-filter_base_path = base_path + 'query-filter/'
+index = hdd_index
+
+query_base_path = base_path + devices[index] + '/query/'
+filter_base_path = base_path + devices[index] + '/query-filter/'
 
 time_index = 'time'
 
@@ -28,6 +30,7 @@ def parse_csv(path, skip=0):
     except:
         print('fail to parse ' + path + sys.exc_info()[0])
         return None
+
 
 def toTime(results):
     times = []
@@ -50,7 +53,7 @@ non_skips = np.empty(len(filter_strs))
 non_skips = [0] * len(filter_strs)
 
 
-def parse_filter_experiments(prefix, pattern, skips, suffix=""):
+def parse_filter_experiments(prefix, pattern, skips, suffix="_4M"):
     results = []
     i = 0
     for filter in filter_ranges:
@@ -67,49 +70,32 @@ antimatter_5_prefix = "twitter_antimatter_UNIFORM_5"
 
 recent_pattern = "RECENT"
 history_pattern = "HISTORY"
-dynamic_pattern = "dynamic"
 
 antimatter_1_recent_results = parse_filter_experiments(antimatter_1_prefix, recent_pattern, filter_skips)
 antimatter_1_history_results = parse_filter_experiments(antimatter_1_prefix, history_pattern, filter_skips)
-antimatter_1_dynamic_results = parse_filter_experiments(antimatter_1_prefix, dynamic_pattern, non_skips)
 
 antimatter_5_recent_results = parse_filter_experiments(antimatter_5_prefix, recent_pattern, filter_skips)
 antimatter_5_history_results = parse_filter_experiments(antimatter_5_prefix, history_pattern, filter_skips)
-antimatter_5_dynamic_results = parse_filter_experiments(antimatter_5_prefix, dynamic_pattern, non_skips)
 
 validation_1_prefix = "twitter_validation_UNIFORM_1"
 validation_5_prefix = "twitter_validation_UNIFORM_5"
 validation_history_pattern = "HISTORY_PARTIAL"
 
 validation_1_recent_results = parse_filter_experiments(validation_1_prefix, recent_pattern, filter_skips)
-validation_1_history_results = parse_filter_experiments(validation_1_prefix, validation_history_pattern, filter_skips)
-validation_1_dynamic_results = parse_filter_experiments(validation_1_prefix, dynamic_pattern, non_skips)
+validation_1_history_results = parse_filter_experiments(validation_1_prefix, validation_history_pattern, filter_skips, '')
 
 validation_5_recent_results = parse_filter_experiments(validation_5_prefix, recent_pattern, filter_skips)
-validation_5_history_results = parse_filter_experiments(validation_5_prefix, validation_history_pattern, filter_skips)
-validation_5_dynamic_results = parse_filter_experiments(validation_5_prefix, dynamic_pattern, non_skips)
+validation_5_history_results = parse_filter_experiments(validation_5_prefix, validation_history_pattern, filter_skips, '')
 
 inplace_1_prefix = "twitter_inplace_UNIFORM_1"
 inplace_5_prefix = "twitter_inplace_UNIFORM_5"
-inplace_4M_suffix = "_4M"
-
-inplace_1_recent_4M_results = parse_filter_experiments(inplace_1_prefix, recent_pattern, filter_skips, inplace_4M_suffix)
-inplace_1_history_4M_results = parse_filter_experiments(inplace_1_prefix, history_pattern, filter_skips, inplace_4M_suffix)
-inplace_1_dynamic_4M_results = parse_filter_experiments(inplace_1_prefix, dynamic_pattern, non_skips)
-
-inplace_5_recent_4M_results = parse_filter_experiments(inplace_5_prefix, recent_pattern, filter_skips, inplace_4M_suffix)
-inplace_5_history_4M_results = parse_filter_experiments(inplace_5_prefix, history_pattern, filter_skips, inplace_4M_suffix)
-inplace_5_dynamic_4M_results = parse_filter_experiments(inplace_5_prefix, dynamic_pattern, non_skips)
-
-inplace_suffix = ""
+inplace_suffix = "_4M"
 
 inplace_1_recent_results = parse_filter_experiments(inplace_1_prefix, recent_pattern, filter_skips, inplace_suffix)
 inplace_1_history_results = parse_filter_experiments(inplace_1_prefix, history_pattern, filter_skips, inplace_suffix)
-inplace_1_dynamic_results = parse_filter_experiments(inplace_1_prefix, dynamic_pattern, non_skips)
 
 inplace_5_recent_results = parse_filter_experiments(inplace_5_prefix, recent_pattern, filter_skips, inplace_suffix)
 inplace_5_history_results = parse_filter_experiments(inplace_5_prefix, history_pattern, filter_skips, inplace_suffix)
-inplace_5_dynamic_results = parse_filter_experiments(inplace_5_prefix, dynamic_pattern, non_skips)
 
 
 def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth=0.22):
@@ -138,8 +124,8 @@ def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Tim
     ax1.legend(loc=2, ncol=1, framealpha=framealpha)
     ax1.set_ylabel(ylabel)
 
-    #ax1.set_ylim(0, 1000)
-    #ax2.set_ylim(0, 1000)
+    # ax1.set_ylim(0, 1000)
+    # ax2.set_ylim(0, 1000)
 
     ax1.set_yscale('log', basey=10)
     ax2.set_yscale('log', basey=10)
@@ -151,30 +137,29 @@ def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Tim
     print('output figure to ' + output)
 
 
-
 def plot_query(xvalues, options, output, title, xlabel='Time Range (Days)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
     # use as global
     plt.figure()
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
-    barwidth=0.22
+    barwidth = 0.22
     for option in options:
         plt.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
         i += 1
-    #plt.set_title(title)
+    # plt.set_title(title)
     plt.xlabel(xlabel)
     plt.xticks(x, xvalues)
     plt.xlim([-0.5, len(x) - 0.5])
     plt.legend(loc=2, ncol=1, framealpha=framealpha)
     plt.ylabel(ylabel)
 
-    #ax1.set_ylim(0, 1000)
-    #ax2.set_ylim(0, 1000)
+    # ax1.set_ylim(0, 1000)
+    # ax2.set_ylim(0, 1000)
 
     plt.yscale('log', basey=10)
 
-    plt.ylim(ymin=1, ymax=800)
+    plt.ylim(ymin=0.1, ymax=800)
 
     plt.savefig(output)
     print('output figure to ' + output)
@@ -183,25 +168,26 @@ def plot_query(xvalues, options, output, title, xlabel='Time Range (Days)', ylab
 recent_options = [
     [ PlotOption(toTime(antimatter_1_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_1_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+                PlotOption(toTime(inplace_1_recent_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
 
     [ PlotOption(toTime(antimatter_5_recent_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_5_recent_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_recent_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]
+                PlotOption(toTime(inplace_5_recent_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]
     ]
 
 history_options = [
    [ PlotOption(toTime(antimatter_1_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_1_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_1_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
+                PlotOption(toTime(inplace_1_history_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)],
 
    [ PlotOption(toTime(antimatter_5_history_results), 'eager', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                 PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(toTime(inplace_5_history_4M_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
+                PlotOption(toTime(inplace_5_history_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
 
-#plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
-#plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)
-plot_query(filter_strs, recent_options[1], result_base_path + "query-filter-recent-50.pdf", 'Update Ratio 50%')
-plot_query(filter_strs, history_options[0], result_base_path + "query-filter-history-0.pdf", 'Update Ratio 0%', framealpha = 0.8)
-plot_query(filter_strs, history_options[1], result_base_path + "query-filter-history-50.pdf", 'Update Ratio 50%', framealpha = 0.8)
+# plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
+# plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)
+plot_query(filter_strs, recent_options[0], result_base_path + devices[index] + "-query-filter-recent-0.pdf", 'Update Ratio 50%')
+plot_query(filter_strs, recent_options[1], result_base_path + devices[index] + "-query-filter-recent-50.pdf", 'Update Ratio 50%')
+plot_query(filter_strs, history_options[0], result_base_path + devices[index] + "-query-filter-history-0.pdf", 'Update Ratio 0%', framealpha=0.8)
+plot_query(filter_strs, history_options[1], result_base_path + devices[index] + "-query-filter-history-50.pdf", 'Update Ratio 50%', framealpha=0.8)
 

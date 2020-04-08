@@ -11,11 +11,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
-		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry combineaccessrules="false" kind="src" path="/asterix-app"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/algebricks-common"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/algebricks-compiler"/>
@@ -96,5 +91,10 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/textserver"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/tpchclient"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/tpchserver"/>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

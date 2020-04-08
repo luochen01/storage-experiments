@@ -9,10 +9,12 @@ import sys
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 query_base_path = base_path + devices[index] + '/query-index/'
 
-ylimits = [310, 45]
+ylimits = [250, 45]
+
+index_only_ylimits = [20, 15]
 
 time_index = 'time'
 # sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
@@ -21,8 +23,8 @@ time_index = 'time'
 sel_strs = ['0.00001', '0.00005', '0.0001', '0.0005', '0.001', '0.01']
 sels = [0.001, 0.005, 0.01, 0.05, 0.1, 1]
 
-indexonly_sel_strs = ['0.00001', '0.00005', '0.0001', '0.0005', '0.001', '0.01']
-indexonly_sels = [0.001, 0.005, 0.01, 0.05, 0.1, 1]
+indexonly_sel_strs = ['0.00001', '0.00005', '0.0001', '0.0005', '0.001', '0.01', '0.1']
+indexonly_sels = [0.001, 0.005, 0.01, 0.05, 0.1, 1, 10]
 
 
 class QueryResult(object):
@@ -115,7 +117,7 @@ validation_pk_pattern = "_false"
 
 direct_validation_skips = [2, 2, 2, 2, 2, 2, 2, 2]
 pk_validation_skips = [100, 25, 10, 5, 2, 2, 2]
-pk_validation_indexonly_skips = pk_validation_skips[:]
+pk_validation_indexonly_skips = [100, 25, 10, 5, 5, 5, 2]
 pk_validation_indexonly_skips.append(2)
 
 validation_1_direct_results = parse_query_experiment(validation_1_prefix, validation_direct_pattern, direct_validation_skips)
@@ -242,7 +244,9 @@ validation_norepair_1_pk_indexonly_results = parse_query_experiment(validation_n
 validation_norepair_5_pk_indexonly_results = parse_query_experiment(validation_norepair_5_prefix, validation_norepair_pk_indexonly_pattern, pk_validation_indexonly_skips, indexonly_sel_strs)
 
 
-def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=50):
+
+
+def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=index_only_ylimits[index]):
     # use as global
     f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(6, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
@@ -250,11 +254,11 @@ def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, 
 
     plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit, barwidth)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit, barwidth)
-    ax1.set_yscale('log', basey=10)
-    ax2.set_yscale('log', basey=10)
+    #ax1.set_yscale('log', basey=10)
+    #ax2.set_yscale('log', basey=10)
 
-    ax1.set_ylim(0.005, ylimit)
-    ax2.set_ylim(0.005, ylimit)
+    #ax1.set_ylim(0.005, ylimit)
+    #ax2.set_ylim(0.005, ylimit)
 
     ax1.legend(loc=2, ncol=1)
     ax1.set_ylabel(ylabel)

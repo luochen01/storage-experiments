@@ -7,9 +7,9 @@ import os
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 ysteps = [100, 100]
-ylimits = [300, 110]
+ylimits = [420, 110]
 
 query_base_path = base_path + devices[index] + '/query-breakdown/'
 misc_base_path = base_path + devices[index] + '/query-breakdown/'

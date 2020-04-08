@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from base import *
 from pathlib import PurePath
 
-repair_base_path = base_path + 'repair/'
+index = hdd_index
+
+repair_base_path = base_path + devices[index] + '/repair/'
 
 print(repair_base_path)
 
@@ -35,46 +37,46 @@ repair_dataset_compact_0 = open_csv(repair_base_path + 'repair-dataset-compact-U
 repair_dataset_compact_5 = open_csv(repair_base_path + 'repair-dataset-compact-UNIFORM-0.5.csv')
 repair_dataset_compacts = [repair_dataset_compact_0, repair_dataset_compact_5]
 
-repair_index_0 = open_csv(repair_base_path + 'repair-index-UNIFORM-0-prefix.csv')
-repair_index_5 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.5-prefix.csv')
+repair_index_0 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.csv')
+repair_index_5 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.5.csv')
 repair_indexes = [repair_index_0, repair_index_5]
 
-repair_index_bf_0 = open_csv(repair_base_path + 'repair-index-UNIFORM-0-bf.csv')
-repair_index_bf_5 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.5-bf.csv')
-repair_index_bfs = [repair_index_bf_0, repair_index_bf_5]
+repair_index_nobf_0 = open_csv(repair_base_path + 'repair-index-UNIFORM-0-nobf.csv')
+repair_index_nobf_5 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.5-nobf.csv')
+repair_index_nobfs = [repair_index_nobf_0, repair_index_nobf_5]
 
-repair_dataset_record_500 = open_csv(repair_base_path + 'repair-dataset-UNIFORM-0.1-500.csv')
+# repair_dataset_record_500 = open_csv(repair_base_path + 'repair-dataset-UNIFORM-0.1-500.csv')
 repair_dataset_record_1000 = open_csv(repair_base_path + 'repair-dataset-UNIFORM-0.1-1000.csv')
-repair_dataset_record_2000 = open_csv(repair_base_path + 'repair-dataset-UNIFORM-0.1-2000.csv')
-repair_dataset_records = [repair_dataset_record_500, repair_dataset_record_1000, repair_dataset_record_2000]
+# repair_dataset_record_2000 = open_csv(repair_base_path + 'repair-dataset-UNIFORM-0.1-2000.csv')
+repair_dataset_records = [ repair_dataset_record_1000]
 
-repair_index_record_500 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.1-500.csv')
+# repair_index_record_500 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.1-500.csv')
 repair_index_record_1000 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.1-1000.csv')
-repair_index_record_2000 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.1-2000.csv')
-repair_index_records = [repair_index_record_500, repair_index_record_1000, repair_index_record_2000]
+# repair_index_record_2000 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.1-2000.csv')
+repair_index_records = [repair_index_record_1000]
 
-repair_index_bf_record_500 = open_csv(repair_base_path + 'repair-index-bf-UNIFORM-0.1-500.csv')
-repair_index_bf_record_1000 = open_csv(repair_base_path + 'repair-index-bf-UNIFORM-0.1-1000.csv')
-repair_index_bf_record_2000 = open_csv(repair_base_path + 'repair-index-bf-UNIFORM-0.1-2000.csv')
-repair_index_bf_records = [repair_index_bf_record_500, repair_index_bf_record_1000, repair_index_bf_record_2000]
+# repair_index_bf_record_500 = open_csv(repair_base_path + 'repair-index-bf-UNIFORM-0.1-500.csv')
+repair_index_nobf_record_1000 = open_csv(repair_base_path + 'repair-index-nobf-UNIFORM-0.1-1000.csv')
+# repair_index_bf_record_2000 = open_csv(repair_base_path + 'repair-index-bf-UNIFORM-0.1-2000.csv')
+repair_index_nobf_records = [repair_index_nobf_record_1000]
 
-repair_dataset_index_1 = open_csv(repair_base_path + 'repair-dataset-UNIFORM-0.1-500.csv')
-repair_dataset_index_3 = open_csv(repair_base_path + 'repair-dataset-index-3.csv')
+# repair_dataset_index_1 = open_csv(repair_base_path + 'repair-dataset-UNIFORM-0.1-500.csv')
+# repair_dataset_index_3 = open_csv(repair_base_path + 'repair-dataset-index-3.csv')
 repair_dataset_index_5 = open_csv(repair_base_path + 'repair-dataset-index-5.csv')
-repair_dataset_indexes = [repair_dataset_index_1, repair_dataset_index_3, repair_dataset_index_5]
+repair_dataset_indexes = [repair_dataset_index_5]
 
-repair_index_index_1 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.1-500.csv')
-repair_index_index_3 = open_csv(repair_base_path + 'repair-index-index-3.csv')
+# repair_index_index_1 = open_csv(repair_base_path + 'repair-index-UNIFORM-0.1-500.csv')
+# repair_index_index_3 = open_csv(repair_base_path + 'repair-index-index-3.csv')
 repair_index_index_5 = open_csv(repair_base_path + 'repair-index-index-5.csv')
-repair_index_indexes = [repair_index_index_1, repair_index_index_3, repair_index_index_5]
+repair_index_indexes = [repair_index_index_5]
 
-repair_index_bf_index_1 = open_csv(repair_base_path + 'repair-index-bf-UNIFORM-0.1-500.csv')
-repair_index_bf_index_3 = open_csv(repair_base_path + 'repair-index-index-bf-3.csv')
-repair_index_bf_index_5 = open_csv(repair_base_path + 'repair-index-index-bf-5.csv')
-repair_index_bf_indexes = [repair_index_bf_index_1, repair_index_bf_index_3, repair_index_bf_index_5]
+# repair_index_bf_index_1 = open_csv(repair_base_path + 'repair-index-bf-UNIFORM-0.1-500.csv')
+# repair_index_bf_index_3 = open_csv(repair_base_path + 'repair-index-index-bf-3.csv')
+repair_index_nobf_index_5 = open_csv(repair_base_path + 'repair-index-index-nobf-5.csv')
+repair_index_nobf_indexes = [ repair_index_nobf_index_5]
 
 
-def plot_repair(options, output, xlabel='Total Ingested Records (millions)', ylabel='Repair Time (s)', xlimit=105, ylimit=1100):
+def plot_repair(options, output, xlabel='Total Ingested Records (millions)', ylabel='Repair Time (s)', xlimit=105, ylimit=0):
     # use as global
 
     plt.figure()
@@ -88,7 +90,8 @@ def plot_repair(options, output, xlabel='Total Ingested Records (millions)', yla
     plt.xlabel(xlabel)
     plt.xticks(np.arange(0, xlimit, step=20))
     plt.xlim(5, xlimit)
-    plt.ylim(0, ylimit)
+    if ylimit > 0:
+        plt.ylim(0, ylimit)
     plt.ylabel(ylabel)
     plt.savefig(output)
     print('output figure to ' + output)
@@ -137,36 +140,36 @@ update_options = [
     [PlotOption(repair_datasets[0], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                  PlotOption(repair_dataset_compacts[0], 'primary repair (merge)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
                  PlotOption(repair_indexes[0], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                 PlotOption(repair_index_bfs[0], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
+                 PlotOption(repair_index_nobfs[0], 'secondary repair (nobf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
     [PlotOption(repair_datasets[1], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                  PlotOption(repair_dataset_compacts[1], 'primary repair (merge)', marker=markers[1], linestyle=validation_norepair_linestyle, color=validation_norepair_color),
                  PlotOption(repair_indexes[1], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                 PlotOption(repair_index_bfs[1], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)]
+                 PlotOption(repair_index_nobfs[1], 'secondary repair (nobf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)]
     ]
 
 record_sizes = [500, 1000, 2000]
 indexes = [1, 3, 5]
 index_options = []
 record_options = []
-for i in range (0, 3):
+for i in range (0, 1):
     record_options.append([PlotOption(repair_dataset_records[i], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                  PlotOption(repair_index_records[i], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                 PlotOption(repair_index_bf_records[i], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
+                 PlotOption(repair_index_nobf_records[i], 'secondary repair (nobf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
     index_options.append([PlotOption(repair_dataset_indexes[i], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
                     PlotOption(repair_index_indexes[i], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                    PlotOption(repair_index_bf_indexes[i], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
+                    PlotOption(repair_index_nobf_indexes[i], 'secondary repair (nobf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
 
-plot_shared_repair(update_options, ['Update Ratio 0%', 'Update Ratio 50%'], result_base_path + 'repair-update.pdf', figsize=(6, 2.2), ylimit=1200)
+plot_shared_repair(update_options, ['Update Ratio 0%', 'Update Ratio 50%'], result_base_path + devices[index] + '-repair-update.pdf', figsize=(6, 2.2))
 # plot_shared_repair(record_options, ['500 Bytes', '1KB', '2KB'], result_base_path + 'repair-record-size.pdf', ncols=1)
 # plot_shared_repair(index_options, ['1 Index', '3 Indexes', '5 Indexes'], result_base_path + 'repair-index.pdf', bbox_to_anchor=(0.075, 1), colspace=0.75)
 
-plot_repair([PlotOption(repair_dataset_records[1], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                 PlotOption(repair_index_records[1], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                 PlotOption(repair_index_bf_records[1], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
-                 result_base_path + 'repair-record-size.pdf', ylimit=1600)
+plot_repair([PlotOption(repair_dataset_records[0], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                 PlotOption(repair_index_records[0], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+                 PlotOption(repair_index_nobf_records[0], 'secondary repair (nobf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
+                 result_base_path + devices[index] + '-repair-record-size.pdf')
 
-plot_repair([PlotOption(repair_dataset_indexes[2], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                    PlotOption(repair_index_indexes[2], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
-                    PlotOption(repair_index_bf_indexes[2], 'secondary repair (bf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
-                 result_base_path + 'repair-index.pdf', ylimit = 1200)
+plot_repair([PlotOption(repair_dataset_indexes[0], 'primary repair', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+                    PlotOption(repair_index_indexes[0], 'secondary repair', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
+                    PlotOption(repair_index_nobf_indexes[0], 'secondary repair (nobf)', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)],
+                 result_base_path + devices[index] + '-repair-index.pdf')
 
