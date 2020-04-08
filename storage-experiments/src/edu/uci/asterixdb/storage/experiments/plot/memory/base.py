@@ -51,10 +51,10 @@ xlabel_skewness = "Skewness"
 
 ylabel_throughput = "Throughput (kops/s)"
 ylabel_transaction = "Throughput (ktxn/s)"
-ylabel_transaction_write = "Disk Write (KB/txn)"
-ylabel_transaction_cost = "I/O Cost (KB/txn)"
+ylabel_transaction_write = "Disk Writes (KB/txn)"
+ylabel_transaction_cost = "Disk I/O (KB/txn)"
 ylabel_write_memory = "Write Memory (GB)"
-ylabel_op_write = "write cost (KB/op)"
+ylabel_op_io = "Disk I/O (KB/op)"
 
 btree_static = r"B$^+$-tree-static"
 btree_static_default = r"B$^+$-tree-static-default"

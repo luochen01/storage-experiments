@@ -47,14 +47,14 @@ def plot_tune_ycsb():
         xvalues = sheet.col_values(i * 3, start_index, start_index + lens[i])
         yvalues = np.array(sheet.col_values(i * 3 + 1, start_index, start_index + lens[i])) / 1024
         options.append(get_option(xvalues, yvalues, names[i]))
-    lines = plot_axis(axs[0], '(a) Tuned Write Memory-4G', time_values, limit_4G, options, xlabel=xlabel_time, ylabel=ylabel_write_memory, use_raw_value=True)  
+    lines = plot_axis(axs[0], '(a) Tuned Write Memory/4GB', time_values, limit_4G, options, xlabel=xlabel_time, ylabel=ylabel_write_memory, use_raw_value=True)  
     
     options = []
     for i in range(0, len(names)):
         xvalues = sheet.col_values(i * 3, start_index + 1, start_index + lens[i])
         yvalues = np.array(sheet.col_values(i * 3 + 2, start_index + 1, start_index + lens[i]))
         options.append(get_option(xvalues, yvalues, names[i]))
-    lines = plot_axis(axs[1], '(b) Tuned I/O Cost-4G', time_values, limit_cost, options, xlabel=xlabel_time, ylabel=ylabel_op_write, use_raw_value=True)  
+    lines = plot_axis(axs[1], '(b) Tuned I/O Cost/4GB', time_values, limit_cost, options, xlabel=xlabel_time, ylabel=ylabel_op_io, use_raw_value=True)  
     
     start_index = 21
     options = []
@@ -62,14 +62,14 @@ def plot_tune_ycsb():
         xvalues = sheet.col_values(i * 3, start_index, start_index + lens[i])
         yvalues = np.array(sheet.col_values(i * 3 + 1, start_index, start_index + lens[i])) / 1024
         options.append(get_option(xvalues, yvalues, names[i]))
-    lines = plot_axis(axs[2], '(c) Tuned Write Memory-20G', time_values, limit_20G, options, xlabel=xlabel_time, ylabel=ylabel_write_memory, use_raw_value=True) 
+    lines = plot_axis(axs[2], '(c) Tuned Write Memory/20GB', time_values, limit_20G, options, xlabel=xlabel_time, ylabel=ylabel_write_memory, use_raw_value=True) 
     
     options = []
     for i in range(0, len(names)):
         xvalues = sheet.col_values(i * 3, start_index + 1, start_index + lens[i])
         yvalues = np.array(sheet.col_values(i * 3 + 2, start_index + 1, start_index + lens[i]))
         options.append(get_option(xvalues, yvalues, names[i]))
-    lines = plot_axis(axs[3], '(d) Tuned I/O Cost-20G', time_values, limit_cost, options, xlabel=xlabel_time, ylabel=ylabel_op_write, use_raw_value=True)  
+    lines = plot_axis(axs[3], '(d) Tuned I/O Cost/20GB', time_values, limit_cost, options, xlabel=xlabel_time, ylabel=ylabel_op_io, use_raw_value=True)  
     
     plt.tight_layout(pad=0, w_pad=0.1)
     fig.legend(lines, labels=names, ncol=5, loc='upper center', borderpad=0)
