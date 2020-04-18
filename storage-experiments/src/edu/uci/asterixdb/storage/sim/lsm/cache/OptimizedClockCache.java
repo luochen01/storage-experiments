@@ -1,6 +1,6 @@
-package edu.uci.asterixdb.storage.sim.cache;
+package edu.uci.asterixdb.storage.sim.lsm.cache;
 
-import edu.uci.asterixdb.storage.sim.cache.Page.PageState;
+import edu.uci.asterixdb.storage.sim.lsm.cache.Page.PageState;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 
 public class OptimizedClockCache extends ClockCache {

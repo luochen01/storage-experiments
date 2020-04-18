@@ -1,8 +1,8 @@
-package edu.uci.asterixdb.storage.sim.cache;
+package edu.uci.asterixdb.storage.sim.lsm.cache;
 
 import java.util.function.Consumer;
 
-import edu.uci.asterixdb.storage.sim.cache.Page.PageState;
+import edu.uci.asterixdb.storage.sim.lsm.cache.Page.PageState;
 
 public class LRUCache implements ICache {
     private Page head = new Page();

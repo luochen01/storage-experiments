@@ -11,7 +11,7 @@ write_limit = 70
 
 
 def plot_tpcc():
-    fig, axs = plt.subplots(1, 4, figsize=(9.5, 2.5))
+    fig, axs = plt.subplots(1, 4, figsize=(10, 2.5))
 
     sheet = workbook.sheet_by_name("tpcc-500")
     

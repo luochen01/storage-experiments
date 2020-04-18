@@ -52,9 +52,9 @@ xlabel_skewness = "Skewness"
 ylabel_throughput = "Throughput (kops/s)"
 ylabel_transaction = "Throughput (ktxn/s)"
 ylabel_transaction_write = "Disk Writes (KB/txn)"
-ylabel_transaction_cost = "Disk I/O (KB/txn)"
+ylabel_transaction_cost = "I/O Cost (KB/txn)"
 ylabel_write_memory = "Write Memory (GB)"
-ylabel_op_io = "Disk I/O (KB/op)"
+ylabel_op_io = "I/O Cost (KB/op)"
 
 btree_static = r"B$^+$-tree-static"
 btree_static_default = r"B$^+$-tree-static-default"
@@ -122,7 +122,7 @@ def get_option(x, y, name):
         return PlotOption(x, y, name, linestyle='solid', marker='s', markevery=1, color='dimgray')
 
 
-def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=ylabel_throughput, use_raw_value=False):
+def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=ylabel_throughput, use_raw_value=False, ystep=None):
     x = np.arange(len(xvalues))
     i = 0
     lines = []
@@ -141,6 +141,9 @@ def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=y
         ax.set_xticks(x)
         ax.set_xticklabels(xvalues)
     ax.set_ylim(0, ylimit)
-        
+    if ystep != None:
+        ax.set_yticks(np.arange(0, ylimit + 0.1, ystep))
+    
+    # ax.set_yscale("log")
     return lines
 

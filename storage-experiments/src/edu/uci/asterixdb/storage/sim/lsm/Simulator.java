@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.sim;
+package edu.uci.asterixdb.storage.sim.lsm;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -14,10 +14,10 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.TreeSet;
 
-import edu.uci.asterixdb.storage.sim.cache.Cache;
-import edu.uci.asterixdb.storage.sim.cache.ICache;
-import edu.uci.asterixdb.storage.sim.cache.OptimizedClockCache;
-import edu.uci.asterixdb.storage.sim.cache.Page.PageState;
+import edu.uci.asterixdb.storage.sim.lsm.cache.Cache;
+import edu.uci.asterixdb.storage.sim.lsm.cache.ICache;
+import edu.uci.asterixdb.storage.sim.lsm.cache.OptimizedClockCache;
+import edu.uci.asterixdb.storage.sim.lsm.cache.Page.PageState;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntLists;

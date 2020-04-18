@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.sim;
+package edu.uci.asterixdb.storage.sim.lsm;
 
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 

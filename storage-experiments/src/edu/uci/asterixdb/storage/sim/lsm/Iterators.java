@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.sim;
+package edu.uci.asterixdb.storage.sim.lsm;
 
 import java.util.Collection;
 import java.util.Iterator;

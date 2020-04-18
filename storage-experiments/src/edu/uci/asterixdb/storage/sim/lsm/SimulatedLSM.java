@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.sim;
+package edu.uci.asterixdb.storage.sim.lsm;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -12,7 +12,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import edu.uci.asterixdb.storage.sim.Simulator.FlushReason;
+import edu.uci.asterixdb.storage.sim.lsm.Simulator.FlushReason;
 import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;

@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.sim.cache;
+package edu.uci.asterixdb.storage.sim.lsm.cache;
 
 public class Page {
     public enum PageState {

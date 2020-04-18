@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.sim;
+package edu.uci.asterixdb.storage.sim.lsm;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import edu.uci.asterixdb.storage.sim.cache.Page;
-import edu.uci.asterixdb.storage.sim.cache.Page.PageState;
+import edu.uci.asterixdb.storage.sim.lsm.cache.Page;
+import edu.uci.asterixdb.storage.sim.lsm.cache.Page.PageState;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 
