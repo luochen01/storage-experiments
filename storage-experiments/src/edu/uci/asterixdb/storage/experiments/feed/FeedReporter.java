@@ -69,6 +69,7 @@ public class FeedReporter extends TimerTask {
         System.out.println(line);
         logWriter.write(line);
         logWriter.write('\n');
+        logWriter.flush();
     }
 
     public void flush() throws IOException {
