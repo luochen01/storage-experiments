@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntConsumer;
 
 import com.google.common.base.Preconditions;
 
@@ -12,19 +13,45 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 class Partition implements Comparable<Partition> {
-    int lowerBound;
-    int upperBound;
-    final IntSet keys = new IntOpenHashSet();
-    Node node;
+    private int lowerBound;
+    private int upperBound;
+    private final IntSet keys = new IntOpenHashSet();
+    private Node node;
 
     public Partition(int lowerBound, int upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }
 
-    public void reset(int lowerBound, int upperBound) {
+    public Node getNode() {
+        return node;
+    }
+
+    public void setNode(Node node) {
+        this.node = node;
+    }
+
+    public void forEach(IntConsumer action) {
+        keys.forEach(action);
+    }
+
+    public void reset(int lower, int upper) {
+        this.lowerBound = lower;
+        this.upperBound = upper;
+    }
+
+    public void resetLower(int lowerBound) {
         this.lowerBound = lowerBound;
+    }
+
+    public void resetUpper(int upperBound) {
         this.upperBound = upperBound;
+    }
+
+    public void addKey(int key) {
+        Preconditions.checkState(inRange(key));
+        keys.add(key);
+        node.assignment.invalidateKeys();
     }
 
     @Override
@@ -38,21 +65,28 @@ class Partition implements Comparable<Partition> {
         }
     }
 
+    public boolean inRange(int key) {
+        if (lowerBound < upperBound) {
+            return lowerBound <= key && key <= upperBound;
+        } else {
+            return lowerBound <= key || key <= upperBound;
+        }
+    }
+
+    public int getLowerBound() {
+        return lowerBound;
+    }
+
+    public int getUpperBound() {
+        return upperBound;
+    }
+
     public int middleBound() {
         if (lowerBound < upperBound) {
             return (upperBound + lowerBound) / 2;
         } else {
             return (upperBound + lowerBound + DistributionSimulator.MAX_KEY) / 2;
         }
-    }
-
-    public int range() {
-        if (lowerBound < upperBound) {
-            return upperBound - lowerBound + 1;
-        } else {
-            return upperBound - lowerBound + 1 + DistributionSimulator.MAX_KEY;
-        }
-
     }
 
     @Override
@@ -66,57 +100,81 @@ class Partition implements Comparable<Partition> {
 }
 
 class Assignment {
-    public static final Comparator<Partition> SIZE_SORTER =
-            (p1, p2) -> -Integer.compare(p1.keys.size(), p2.keys.size());
-
-    public static final Comparator<Partition> RANGE_SORTER = (p1, p2) -> -Integer.compare(p1.range(), p2.range());
+    public static final Comparator<Partition> SIZE_SORTER = (p1, p2) -> Integer.compare(p1.numKeys(), p2.numKeys());
 
     final Set<Partition> partitions = new HashSet<>();
     // must be computed before each rebalance
 
-    boolean computed = false;
-    int totalKeys;
-    int totalRanges;
-    final List<Partition> partitionList = new ArrayList<>();
+    private final Node node;
+    private boolean keyComputed = false;
+    private int totalKeys;
+    private boolean listComputed = false;
+    private final List<Partition> partitionList = new ArrayList<>();
+
+    public Assignment(Node node) {
+        this.node = node;
+    }
 
     public void add(Partition p) {
+        Preconditions.checkState(p.getNode() == null);
         partitions.add(p);
-        computed = false;
+        p.setNode(node);
+        invalidateAll();
+    }
+
+    public void invalidateAll() {
+        keyComputed = false;
+        listComputed = false;
     }
 
     public void remove(Partition p) {
+        Preconditions.checkState(p.getNode() == node);
         partitions.remove(p);
-        computed = false;
+        p.setNode(null);
+        invalidateAll();
     }
 
-    public Partition getSmallestPartition() {
-        Preconditions.checkState(computed);
+    public void invalidateKeys() {
+        keyComputed = false;
+    }
+
+    public List<Partition> getPartitionList(Comparator<Partition> sorter) {
+        computePartitionList(sorter);
+        return partitionList;
+    }
+
+    public Partition getLastPartition(Comparator<Partition> sorter) {
+        computePartitionList(sorter);
         return partitionList.get(partitionList.size() - 1);
     }
 
-    public void compute(Comparator<Partition> sorter) {
-        if (computed) {
-            return;
+    private void computePartitionList(Comparator<Partition> sorter) {
+        if (!listComputed) {
+            partitionList.clear();
+            partitionList.addAll(partitions);
+            if (sorter != null) {
+                partitionList.sort(sorter);
+            }
+            listComputed = true;
         }
-        totalRanges = 0;
-        totalKeys = 0;
-        partitionList.clear();
-        for (Partition partition : partitions) {
-            totalKeys += partition.keys.size();
-            totalRanges += partition.range();
-            partitionList.add(partition);
-        }
+    }
 
-        // order from largest to smallest
-        partitionList.sort(sorter);
-        computed = true;
+    public int getTotalKeys() {
+        if (!keyComputed) {
+            totalKeys = 0;
+            for (Partition partition : partitions) {
+                totalKeys += partition.numKeys();
+            }
+            keyComputed = true;
+        }
+        return totalKeys;
     }
 }
 
 class Node {
     public final int id;
     public final IntSet keys = new IntOpenHashSet();
-    public final Assignment assignment = new Assignment();
+    public final Assignment assignment = new Assignment(this);
 
     public Node(int id) {
         this.id = id;
@@ -143,4 +201,13 @@ class Node {
             return false;
         return true;
     }
+
+    public int numPartitions() {
+        return assignment.partitions.size();
+    }
+
+    public int numKeys() {
+        return assignment.getTotalKeys();
+    }
+
 }
