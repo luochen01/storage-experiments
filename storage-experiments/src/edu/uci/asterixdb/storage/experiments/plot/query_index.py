@@ -9,7 +9,7 @@ import sys
 from base import *
 from pathlib import PurePath
 
-index = hdd_index
+index = ssd_index
 query_base_path = base_path + devices[index] + '/query-index/'
 
 ylimits = [250, 45]
@@ -191,7 +191,9 @@ query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=
                 PlotOption(toTime(validation_norepair_5_direct_results), 'direct validation (no repair)', marker=markers[1], linestyle=validation_linestyle, color=validation_norepair_color, alpha=1),
                 PlotOption(toTime(validation_norepair_5_pk_results), 'ts validation (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5)])
 
-plot_shared_query(sels, query_options[0], query_options[1], result_base_path + devices[index] + "-query-index.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
+titles = ['Update Ratio 0%', 'Update Ratio 50%']
+titles = [None, None]
+plot_shared_query(sels, query_options[0], query_options[1], result_base_path + devices[index] + "-query-index.pdf", [None, None])
 
 validation_pk_512M_pattern = "_false_512MB"
 
@@ -248,7 +250,7 @@ validation_norepair_5_pk_indexonly_results = parse_query_experiment(validation_n
 
 def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=index_only_ylimits[index]):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(6, 2.2))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     barwidth = 0.2
 
@@ -279,5 +281,5 @@ index_only_options.append([ PlotOption(toTime(antimatter_5_indexonly_results), '
                 PlotOption(toTime(validation_5_pk_indexonly_results), 'ts validation', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_color),
                 PlotOption(toTime(validation_norepair_5_pk_indexonly_results), 'ts validation (no repair)', marker=markers[3], linestyle=inplace_linestyle, color=validation_norepair_color)])
 
-plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + devices[index] + "-query-index-only.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
+plot_shared_index_only_query(indexonly_sels, index_only_options[0], index_only_options[1], result_base_path + devices[index] + "-query-index-only.pdf", titles)
 
