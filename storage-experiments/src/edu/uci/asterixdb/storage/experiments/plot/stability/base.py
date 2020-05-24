@@ -105,7 +105,6 @@ def get_queries(df, window=query_window):
     data = df.iloc[:, 3]
     return data.groupby(np.arange(len(data)) // window).mean()
 
-
 def get_write_rates(df, window=write_window):
     data = df.iloc[:, 1] / 1000
     data = data.loc[0:write_xlimit - 1]
@@ -190,15 +189,15 @@ def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, ymin=0, x
         if settings.plot_mode == 'plot':
             if option.dashes != None:
                 plt.plot(option.x, option.y,
-                     data=xtick_labels,
-                      label=option.legend, color=option.color, linestyle=option.linestyle,
+                      label=option.legend, color=option.color,
+                      linestyle=option.linestyle,
                       markerfacecolor=option.color, markeredgecolor=option.color, marker=option.marker, markevery=option.markevery,
-                      dashes=option.dashes, alpha = option.alpha)
+                      dashes=option.dashes, alpha=option.alpha
+                      )
             else:
                 plt.plot(option.x, option.y,
-                     data=xtick_labels,
                       label=option.legend, color=option.color, linestyle=option.linestyle,
-                      markerfacecolor=option.color, markeredgecolor=option.color, marker=option.marker, markevery=option.markevery, alpha = option.alpha)
+                      markerfacecolor=option.color, markeredgecolor=option.color, marker=option.marker, markevery=option.markevery, alpha=option.alpha)
         else:
             plt.scatter(option.x, option.y, 1,
                   label=option.legend, color=option.color, linestyle=option.linestyle)

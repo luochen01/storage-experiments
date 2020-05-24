@@ -7,6 +7,8 @@ from pathlib import PurePath
 from itertools import count
 from numpy.core.defchararray import partition
 
+result_base_path = '/Users/luochen/Desktop/tmp/'
+
 ylimit = 15
 
 settings.init()
@@ -15,14 +17,37 @@ component_str = "Component state: "
 
 dashes = (3, 1)
 
+result_base_path = '/Users/luochen/Desktop/tmp/'
+
+settings.init()
+
+settings.fig_size = [3.5, 2.5]
+
+params = {
+   'lines.linewidth':1.0,
+}
+
+plt.rcParams.update(params)
+
+font_size = 10
+
+params = {
+    'font.family': 'Calibri',
+    'axes.titlesize': title_size,
+   'axes.labelsize': font_size,
+   'legend.fontsize': font_size,
+   'xtick.labelsize': font_size,
+   'ytick.labelsize': font_size,
+   'font.size': font_size
+}
+plt.rcParams.update(params)
 
 
-def get_round_scheduler(x, y):
-    return PlotOption(x, y, legend='round-robin', color=green)
-
-
-def get_choose_scheduler(x, y):
-    return PlotOption(x, y, legend='choose-best', color='grey', linestyle='--', dashes = dashes)
+def get_round_scheduler(x, y, marker=False):
+    if marker == True:
+        return PlotOption(x, y, legend='round-robin', color='green', marker='s', markevery=1)
+    else:
+        return PlotOption(x, y, legend='round-robin', color='green')
 
 
 def parse_components(line):
@@ -61,7 +86,7 @@ def parse_partitioned_components(path):
             component = parse_components(line)
             
             if time >= start_time + component_window:
-                if max_component>0:
+                if max_component > 0:
                     times.append(start_time)
                     components.append(max_component)    
                 while time >= start_time + component_window:
@@ -106,7 +131,6 @@ def parse_partitioned_component_points(path):
     fp.close()
     return (times, components)
 
-settings.fig_size = fig_size_small
 
 def process(dist):
     partition_base_path = base_path + dist + "/partition/"
@@ -116,49 +140,28 @@ def process(dist):
     round_time = get_write_times(df, load_window)
     round_data = get_write_rates(df, load_window)
     
-    df = open_csv(get_latest_file(partition_base_path, 'write-partition-choosebest.csv'), header=1)
-    choose_time = get_write_times(df, load_window)
-    choose_data = get_write_rates(df, load_window)
-    
     write_window = 10
     
     plot_writes([
-        get_round_scheduler(round_time, round_data),
-        get_choose_scheduler(choose_time, choose_data)],
-        result_base_path + 'write-partition-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep = 3,
-        title = '(a) Testing Phase')
+        get_round_scheduler(round_time, round_data)],
+        result_base_path + 'write-partition-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep=3,
+        title=None)
     
     df = open_csv(get_latest_file(partition_base_path, 'write-partition-open-95-fast.csv'), header=1)
     round_time = get_write_times(df, write_window)
     round_data = get_write_rates(df, write_window)
     
-    df = open_csv(get_latest_file(partition_base_path, 'write-partition-open-95-fast-choosebest.csv'), header=1)
-    choose_time = get_write_times(df, write_window)
-    choose_data = get_write_rates(df, write_window)
- 
-    def post_write():
-        plt.legend(loc=2, ncol=1, bbox_to_anchor=None, framealpha=0)
-    
- 
     plot_writes([
-        get_round_scheduler(round_time, round_data),
-        get_choose_scheduler(choose_time, choose_data)],
-        result_base_path + 'write-partition-open-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep = 3, post=post_write,
-        title = '(b) Running Phase')
+        get_round_scheduler(round_time, round_data)],
+        result_base_path + 'write-partition-open-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep=3,
+        title=None)
     
     (round_latencies, write_count) = parse_latencies(partition_base_path + "write-partition-open-95-fast.log", "[Intended-UPDATE]")
     round_latencies = parse_latency_dists(round_latencies, write_count)
     
-    (choose_latencies, write_count) = parse_latencies(partition_base_path + "write-partition-open-95-fast-choosebest.log", "[Intended-UPDATE]")
-    choose_latencies = parse_latency_dists(choose_latencies, write_count)
-    
-    
     plot_latencies([
-                    get_round_scheduler(np.arange(len(round_latencies)), round_latencies),
-                    get_round_scheduler(np.arange(len(choose_latencies)), choose_latencies)],
+                    get_round_scheduler(np.arange(len(round_latencies)), round_latencies, True)],
                     result_base_path + 'write-partition-write-latency-' + dist + '.pdf', ylimit=20, logy=False)
-    
-
     
     df = open_csv(get_latest_file(partition_base_path, 'write-partition-fixed.csv'), header=1)
     round_time = get_write_times(df, load_window)
@@ -169,10 +172,9 @@ def process(dist):
     choose_data = get_write_rates(df, load_window)
     
     plot_writes([
-        get_round_scheduler(round_time, round_data),
-        get_choose_scheduler(choose_time, choose_data)],
-        result_base_path + 'write-partition-fixed-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep = 3,
-        title = '(a) Testing Phase')
+        get_round_scheduler(round_time, round_data)],
+        result_base_path + 'write-partition-fixed-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep=3,
+        title=None)
     
     df = open_csv(get_latest_file(partition_base_path, 'write-partition-open-95-slow.csv'), header=1)
     round_time = get_write_times(df, write_window)
@@ -183,22 +185,16 @@ def process(dist):
     choose_data = get_write_rates(df, write_window)
  
     plot_writes([
-        get_round_scheduler(round_time, round_data),
-        get_choose_scheduler(choose_time, choose_data)],
-        result_base_path + 'write-partition-open-fixed-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep = 3,
-        title = '(b) Running Phase')
+        get_round_scheduler(round_time, round_data)],
+        result_base_path + 'write-partition-open-fixed-' + dist + '.pdf', ylimit=ylimit, xstep=1800, ystep=3,
+        title=None)
     
     (round_latencies, write_count) = parse_latencies(partition_base_path + "write-partition-open-95-slow.log", "[Intended-UPDATE]")
     round_latencies = parse_latency_dists(round_latencies, write_count)
     
-    (choose_latencies, write_count) = parse_latencies(partition_base_path + "write-partition-open-95-slow-choosebest.log", "[Intended-UPDATE]")
-    choose_latencies = parse_latency_dists(choose_latencies, write_count)
-    
-    
     plot_latencies([
-                    get_round_scheduler(np.arange(len(round_latencies)), round_latencies),
-                    get_round_scheduler(np.arange(len(choose_latencies)), choose_latencies)],
-                    result_base_path + 'write-partition-write-latency-fixed-' + dist + '.pdf', ylimit=ylimit, logy=False)
+                    get_round_scheduler(np.arange(len(round_latencies)), round_latencies, True)],
+                    result_base_path + 'write-partition-write-latency-fixed-' + dist + '.pdf', ylimit=1, logy=False)
 
     params = {
        'lines.linewidth':0.75,
@@ -206,14 +202,10 @@ def process(dist):
     
     plt.rcParams.update(params)
     
-    #settings.fig_size = (3.75, 2.5)
-    
     (round_times, round_components) = parse_partitioned_components(partition_base_path + "write-partition-open-95-slow.log")
-    (choose_times, choose_components) = parse_partitioned_components(partition_base_path + "write-partition-open-95-slow-choosebest.log")
     # settings.plot_mode='scatter'
     plot_components([
-                    get_round_scheduler(round_times, round_components),
-                    get_choose_scheduler(choose_times, choose_components)],
+                    get_round_scheduler(round_times, round_components)],
                     result_base_path + 'write-partition-fixed-component-' + dist + '.pdf', xstep=1800, ylimit=8)
 
 
