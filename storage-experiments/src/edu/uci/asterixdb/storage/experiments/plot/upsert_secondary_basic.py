@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from base import *
 from pathlib import PurePath
 
-index = hdd_index
+index = ssd_index
 
 ysteps = [100, 100]
 ylimits = [550, 350]

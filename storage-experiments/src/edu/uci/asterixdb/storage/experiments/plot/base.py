@@ -9,6 +9,8 @@ time_index = 'counter'
 total_records_index = 'total_records'
 base_path = '/Users/luochen/Documents/Research/experiments/results/lsm-new/'
 result_base_path = '/Users/luochen/Documents/Research/experiments/results/lsm-new/'
+result_base_path = "/Users/luochen/Desktop/tmp/"
+
 
 antimatter_color = 'red'
 antimatter_linestyle = 'solid'
@@ -39,10 +41,11 @@ if not os.path.exists(result_base_path):
 # del matplotlib.font_manager.weight_dict['roman']
 # matplotlib.font_manager._rebuild()
 
-font_size = 13
+font_size = 11
 font_weight = 100
 params = {
-    'font.family': 'Times New Roman',
+    #'font.family': 'Times New Roman',
+    'font.family': 'Calibri',
     'font.weight': font_weight,
     'axes.labelweight': font_weight,
     'figure.titleweight': font_weight,

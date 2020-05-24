@@ -9,7 +9,7 @@ import sys
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 query_base_path = base_path + devices[index] + '/query-index/'
 
 ylimits = [250, 45]
