@@ -99,12 +99,12 @@ public class FileFeedDriver implements IFeedDriver {
 
         idGen = IdGenerator.create(distribution, theta, startRange, updateRatio, mode.equals(FeedMode.Random));
 
-        String[] portArray = ports.split(",");
-        clients = new FeedSocketAdapterClient[portArray.length];
+        String[] urls = url.split(",");
+        clients = new FeedSocketAdapterClient[urls.length];
         for (int i = 0; i < clients.length; i++) {
             IRecordGenerator recordGen =
                     dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator(recordSize);
-            clients[i] = new FeedSocketAdapterClient(url, Integer.valueOf(portArray[i]), recordGen);
+            clients[i] = new FeedSocketAdapterClient(urls[i], Integer.valueOf(ports), recordGen);
         }
         reporter = new FeedReporter(clients, period, logPath);
         limiter = limit > 0 ? RateLimiter.create(limit) : null;
