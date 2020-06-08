@@ -1,27 +1,52 @@
 class Solution {
-    public int maxDotProduct(int[] nums1, int[] nums2) {
-        int m = nums1.length;
-        int n = nums2.length;
+    private final int MAX = 100000000;
 
-        int[][] dp = new int[m+1][n+1];
-        for(int i=0;i<=m;i++){
-            for(int j =0;j<=n;j++){
-                dp[i][j] = -10000000;
+    public int minCost(int[] houses, int[][] cost, int m, int n, int target) {
+        int[][][] dp = new int[m + 1][n + 1][target + 1];
+        for (int i = 0; i <= m; i++) {
+            for (int j = 0; j <= n; j++) {
+                for (int k = 0; k <= target; k++) {
+                    dp[i][j][k] = MAX;
+                }
             }
         }
-        dp[0][0] = 0;
-        dp[1][1] = nums1[0] * nums2[0];
-        for(int i =1;i<=m;i++){
-            for(int j = 1;j<=n;j++){
-                dp[i][j] = Math.max(dp[i][j], dp[i-1][j-1] + nums1[i-1]*nums2[j-1]);
-                dp[i][j] = Math.max(dp[i][j], dp[i][j-1]);
-                dp[i][j] = Math.max(dp[i][j], dp[i-1][j]);
+        for (int j = 1; j <= n; j++) {
+            dp[0][j][0] = 0;
+            dp[0][j][1] = 0;
+        }
+        for (int k = 1; k <= target; k++) {
+            for (int i = 1; i <= m; i++) {
+                for (int j = 1; j <= n; j++) {
+                    if (houses[i - 1] == 0) {
+                        for (int j2 = 1; j2 <= n; j2++) {
+                            if (j != j2) {
+                                dp[i][j][k] = Math.min(dp[i][j][k], dp[i - 1][j2][k - 1] + cost[i - 1][j - 1]);
+                            } else {
+                                dp[i][j][k] = Math.min(dp[i][j][k], dp[i - 1][j2][k] + cost[i - 1][j - 1]);
+                            }
+                        }
+                    } else if (houses[i - 1] == j) {
+                        for (int j2 = 1; j2 <= n; j2++) {
+                            if (j != j2) {
+                                dp[i][j][k] = Math.min(dp[i][j][k], dp[i - 1][j2][k - 1]);
+                            } else {
+                                dp[i][j][k] = Math.min(dp[i][j][k], dp[i - 1][j][k]);
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        return dp[m][n];
+        int min = MAX;
+        for (int j = 1; j <= n; j++) {
+            min = Math.min(min, dp[m][j][target]);
+        }
+        return min < MAX ? min : -1;
     }
 
     public static void main(String[] args) {
+        new Solution().minCost(new int[] { 0, 2, 1, 2, 0 },
+                new int[][] { { 1, 10 }, { 10, 1 }, { 10, 1 }, { 1, 10 }, { 5, 1 } }, 5, 2, 3);
     }
 }

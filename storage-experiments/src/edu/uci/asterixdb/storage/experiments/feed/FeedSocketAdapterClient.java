@@ -32,14 +32,22 @@ public class FeedSocketAdapterClient {
         out = socket.getOutputStream();
     }
 
-    @Override
-    public void finalize() {
-        try {
-            out.close();
-            socket.close();
-        } catch (IOException e) {
-            System.err.println("Problem in closing socket against host " + adapterUrl + " on the port " + port);
-            e.printStackTrace();
+    public void reconnect() throws IOException {
+        close();
+        initialize();
+    }
+
+    public void close() {
+        if (socket != null) {
+            try {
+                out.close();
+                socket.close();
+                out = null;
+                socket = null;
+            } catch (IOException e) {
+                System.err.println("Problem in closing socket against host " + adapterUrl + " on the port " + port);
+                e.printStackTrace();
+            }
         }
     }
 

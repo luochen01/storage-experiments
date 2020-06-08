@@ -102,7 +102,7 @@ def process(dist):
     local_greedy_latencies = parse_latency_dists(local_greedy_latencies, write_count)
     
     def post():
-        plt.legend(loc=4, ncol=1, bbox_to_anchor=(1.03, 0.3))
+        plt.legend(loc=4, ncol=1, bbox_to_anchor=(1.03, 0.4))
         # plt.legend(loc=4, ncol=1, bbox_to_anchor=None)
     
     plot_latencies([

@@ -4,6 +4,8 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class FileFeedRunner extends Thread {
 
+    private static final int reconnectInterval = 1000;
+
     private final FeedSocketAdapterClient client;
 
     private final IFeedDriver driver;
@@ -15,15 +17,22 @@ public class FileFeedRunner extends Thread {
 
     @Override
     public void run() {
-        long id = 0;
-        try {
-            MutableBoolean isNew = new MutableBoolean();
-            while (true) {
+        while (true) {
+            long id = 0;
+            try {
+                MutableBoolean isNew = new MutableBoolean();
                 id = driver.getNextId(isNew);
                 client.ingest(id, isNew.isTrue());
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Try to reconnect...");
+                try {
+                    Thread.sleep(reconnectInterval);
+                    client.reconnect();
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
     }

@@ -1,1 +1,5 @@
+edu/uci/asterixdb/storage/sim/lsm/SimulatedLSM$1.class
 edu/uci/asterixdb/storage/experiments/feed/gen/DataGenerator$1.class
+edu/uci/asterixdb/storage/experiments/feed/gen/IdGenerator$1.class
+edu/uci/asterixdb/storage/experiments/LSMNoPhaseOperationProcessor$1.class
+edu/uci/asterixdb/storage/sim/lsm/cache/Cache$1.class

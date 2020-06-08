@@ -6,6 +6,8 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import com.google.common.util.concurrent.RateLimiter;
+
 import edu.uci.asterixdb.storage.experiments.feed.gen.IRecordGenerator;
 import edu.uci.asterixdb.storage.experiments.feed.gen.IdGenerator;
 import edu.uci.asterixdb.storage.experiments.feed.gen.KVGenerator;
@@ -16,7 +18,7 @@ public class FileFeedDriver implements IFeedDriver {
 
     public enum FeedMode {
         Sequential,
-        Random
+        Random,
     }
 
     public enum UpdateDistribution {
@@ -30,7 +32,7 @@ public class FileFeedDriver implements IFeedDriver {
     }
 
     @Option(required = true, name = "-u", aliases = "--urls", usage = "urls of the feed adapter")
-    public String urls;
+    public String url;
 
     @Option(required = true, name = "-p", aliases = "--ports", usage = "ports of the feed socket")
     public String ports;
@@ -55,7 +57,7 @@ public class FileFeedDriver implements IFeedDriver {
 
     @Option(name = "-r", aliases = "--sidrange", usage = "the sid total range")
     // 100K
-    public int sidRange = 100000;
+    public int sidRange = 1000;
 
     @Option(name = "-m", aliases = "--mode", usage = "the feed mode. validation options: sequential, random")
     public FeedMode mode = FeedMode.Random;
@@ -75,11 +77,16 @@ public class FileFeedDriver implements IFeedDriver {
     @Option(name = "-size", aliases = "--size", usage = "record size (in bytes)")
     public int recordSize = 500;
 
+    @Option(name = "-limit", aliases = "--limit", usage = "the ingestion speed limit")
+    public int limit = 0;
+
     private final FeedSocketAdapterClient[] clients;
 
     private final FeedReporter reporter;
 
     private final IdGenerator idGen;
+
+    private final RateLimiter limiter;
 
     public static void main(String[] args) throws Exception {
         FileFeedDriver driver = new FileFeedDriver(args);
@@ -92,18 +99,15 @@ public class FileFeedDriver implements IFeedDriver {
 
         idGen = IdGenerator.create(distribution, theta, startRange, updateRatio, mode.equals(FeedMode.Random));
 
-        String[] urlArray = urls.split(",");
         String[] portArray = ports.split(",");
-        if (urlArray.length != portArray.length) {
-            throw new IllegalStateException("urls do not match ports");
-        }
-        clients = new FeedSocketAdapterClient[urlArray.length];
+        clients = new FeedSocketAdapterClient[portArray.length];
         for (int i = 0; i < clients.length; i++) {
             IRecordGenerator recordGen =
                     dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator(recordSize);
-            clients[i] = new FeedSocketAdapterClient(urlArray[i], Integer.valueOf(portArray[i]), recordGen);
+            clients[i] = new FeedSocketAdapterClient(url, Integer.valueOf(portArray[i]), recordGen);
         }
         reporter = new FeedReporter(clients, period, logPath);
+        limiter = limit > 0 ? RateLimiter.create(limit) : null;
         printConf();
     }
 
@@ -118,7 +122,11 @@ public class FileFeedDriver implements IFeedDriver {
         reporter.writeLine("Theta: " + theta);
     }
 
+    @Override
     public long getNextId(MutableBoolean isNewTweet) throws IOException {
+        if (limiter != null) {
+            limiter.acquire();
+        }
         synchronized (idGen) {
             long id = idGen.next();
             isNewTweet.setValue(idGen.isNewId());
