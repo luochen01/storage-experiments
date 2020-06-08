@@ -1,4 +1,4 @@
-package edu.uci.asterixdb.storage.experiments.validation.query;
+package edu.uci.asterixdb.storage.experiments.lsm;
 
 import java.util.Random;
 
