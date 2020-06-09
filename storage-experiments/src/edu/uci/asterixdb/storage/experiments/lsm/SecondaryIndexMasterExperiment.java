@@ -65,7 +65,7 @@ public class SecondaryIndexMasterExperiment {
     }
 
     private String generateSecondaryIndexQuery(int beginRange, int endRange) {
-        String noIndexOnly = "set `noindexonly` 'true';";
+        String noIndexOnly = "set `compiler.indexonly` 'false';";
         String nobatch = noBatch ? "set `no.batch` 'true';" : "";
         String query = String.format("select count(*) from %s.%s where sid>=%d AND sid<=%d;", dataverseName, dataset,
                 beginRange, endRange);
