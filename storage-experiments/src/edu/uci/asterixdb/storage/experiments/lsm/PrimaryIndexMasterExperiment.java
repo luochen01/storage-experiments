@@ -17,7 +17,8 @@ public class PrimaryIndexMasterExperiment {
     public static final String dataset = "ds_tweet";
 
     // 2billon
-    public static final long pkRange = 2_000_000_000;
+    public static final long pkMin = -9223372036854750786l;
+    public static final long pkMax = 9223090563878087754l;
 
     @Option(name = "-dv", aliases = "--dataverse", usage = "the dataverse name", required = true)
     public String dataverseName;
@@ -46,9 +47,13 @@ public class PrimaryIndexMasterExperiment {
     public void run() throws Exception {
         PrintWriter writer = new PrintWriter(new File(outputPath));
         writer.println("seq\ttime\tresult");
-        long queryRange = (long) (pkRange * selectivity);
+        double range = (double) pkMax - pkMin;
+        long queryRange = (long) (range * selectivity);
         for (int i = 1; i <= numQueries; i++) {
-            long beginRange = Math.abs(rand.nextLong()) % (pkRange - queryRange);
+            long beginRange = Math.abs(rand.nextLong());
+            if (beginRange > 0) {
+                beginRange -= queryRange;
+            }
             long endRange = beginRange + queryRange - 1;
             String query = generatePrimaryIndexQuery(beginRange, endRange);
             QueryResult result = QueryUtil.executeQuery("default", query);
