@@ -17,7 +17,7 @@ public class SecondaryIndexMasterExperiment {
     public static final String dataset = "ds_tweet";
 
     // 100k
-    public static final int sidRange = 100000;
+    public static final int sidRange = 1000;
 
     @Option(name = "-dv", aliases = "--dataverse", usage = "the dataverse name", required = true)
     public String dataverseName;

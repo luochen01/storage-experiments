@@ -57,7 +57,7 @@ public class FileFeedDriver implements IFeedDriver {
 
     @Option(name = "-r", aliases = "--sidrange", usage = "the sid total range")
     // 100K
-    public int sidRange = 1000;
+    public int sidRange = 100 * 1000;
 
     @Option(name = "-m", aliases = "--mode", usage = "the feed mode. validation options: sequential, random")
     public FeedMode mode = FeedMode.Random;
