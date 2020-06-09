@@ -65,7 +65,7 @@ public class PrimaryIndexMasterExperiment {
     }
 
     private String generatePrimaryIndexQuery(long beginRange, long endRange) {
-        String query = String.format("select count(*) from %s.%s where id>=%d AND id<=%d;", dataverseName, dataset,
+        String query = String.format("select count(*) from %s.%s where id>=%d AND id<=%d AND user.status_count>=-10000;", dataverseName, dataset,
                 beginRange, endRange);
         return query;
     }
