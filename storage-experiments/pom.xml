@@ -56,6 +56,9 @@
 		<resources>
 			<resource>
 				<directory>resource</directory>
+				<includes>
+					<include>**/*.dss</include>
+				</includes>
 			</resource>
 		</resources>
 	</build>
