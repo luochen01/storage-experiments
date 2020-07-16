@@ -22,8 +22,6 @@ import static java.util.Objects.*;
 
 import java.util.Iterator;
 
-import com.google.common.collect.AbstractIterator;
-
 public class OrderGenerator implements TpchGenerator<Order> {
     public static final int SCALE_BASE = 1_500_000;
 
@@ -78,7 +76,7 @@ public class OrderGenerator implements TpchGenerator<Order> {
         return (long) (SCALE_BASE * scaleFactor);
     }
 
-    private static class OrderGeneratorIterator extends AbstractIterator<Order> {
+    private static class OrderGeneratorIterator extends com.google.common.collect.AbstractIterator<Order> {
         private final RandomBoundedInt orderDateRandom = createOrderDateRandom();
         private final RandomBoundedInt lineCountRandom = createLineCountRandom();
         private final RandomBoundedLong customerKeyRandom;
