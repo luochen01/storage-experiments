@@ -16,28 +16,32 @@ package edu.uci.asterixdb.tpch.gen;
 import static com.google.common.base.CharMatcher.*;
 import static com.google.common.base.Preconditions.*;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.CharSource;
 
 public final class DistributionLoader {
     private DistributionLoader() {
     }
 
-    public static <R extends Readable & Closeable> Map<String, Distribution> loadDistribution(CharSource input)
+    public static <R extends Readable & Closeable> Map<String, Distribution> loadDistribution(BufferedReader input)
             throws IOException {
-        try (Stream<String> lines = input.lines()) {
-            return loadDistributions(
-                    lines.map(String::trim).filter(line -> !line.isEmpty() && !line.startsWith("#")).iterator());
+        List<String> lines = new ArrayList<>();
+        String line = null;
+        while ((line = input.readLine()) != null) {
+            lines.add(line);
         }
+        input.close();
+        return loadDistributions(
+                lines.stream().map(String::trim).filter(tmp -> !tmp.isEmpty() && !tmp.startsWith("#")).iterator());
     }
 
     private static Distribution loadDistribution(Iterator<String> lines, String name) {

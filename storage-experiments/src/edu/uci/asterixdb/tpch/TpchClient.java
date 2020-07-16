@@ -18,6 +18,7 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import edu.uci.asterixdb.tpch.gen.CustomerGenerator;
+import edu.uci.asterixdb.tpch.gen.Distributions;
 import edu.uci.asterixdb.tpch.gen.LineItemGenerator;
 import edu.uci.asterixdb.tpch.gen.NationGenerator;
 import edu.uci.asterixdb.tpch.gen.OrderGenerator;
@@ -43,6 +44,9 @@ public class TpchClient {
     @Option(name = "-workers")
     public int numWorkers = 1;
 
+    @Option(name = "-dss")
+    public String dssPath = "";
+
     public ThreadPoolExecutor executor;
 
     public Properties properties = new Properties();
@@ -58,6 +62,10 @@ public class TpchClient {
     }
 
     public void start() throws Exception {
+        if (!dssPath.isEmpty()) {
+            Distributions.loadDefaults(dssPath);
+        }
+
         executor = new ThreadPoolExecutor(numWorkers, numWorkers, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
         properties.load(new FileReader(conf));
 

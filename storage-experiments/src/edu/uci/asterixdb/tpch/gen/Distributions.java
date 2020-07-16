@@ -14,33 +14,34 @@
 package edu.uci.asterixdb.tpch.gen;
 
 import static com.google.common.base.Preconditions.*;
-import static com.google.common.base.Suppliers.*;
-import static edu.uci.asterixdb.tpch.gen.DistributionLoader.*;
-import static java.nio.charset.StandardCharsets.*;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URL;
 import java.util.Map;
 
-import com.google.common.base.Supplier;
-import com.google.common.io.Resources;
-
 public class Distributions {
-    private static final Supplier<Distributions> DEFAULT_DISTRIBUTIONS = memoize(Distributions::loadDefaults);
+    private final static String dssPath = "resource/dists.dss";
+    private static Distributions DEFAULT_DISTRIBUTIONS;
 
-    private static Distributions loadDefaults() {
-        try {
-            URL resource = Resources.getResource(Distribution.class, "dists.dss");
-            checkState(resource != null, "Distribution file 'dists.dss' not found");
-            return new Distributions(loadDistribution(Resources.asCharSource(resource, UTF_8)));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+    public static void loadDefaults(String path) {
+        synchronized (Distributions.class) {
+            if (DEFAULT_DISTRIBUTIONS == null) {
+                try {
+                    BufferedReader reader = new BufferedReader(new FileReader(path));
+                    DEFAULT_DISTRIBUTIONS = new Distributions(DistributionLoader.loadDistribution(reader));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 
     public static Distributions getDefaultDistributions() {
-        return DEFAULT_DISTRIBUTIONS.get();
+        if (DEFAULT_DISTRIBUTIONS == null) {
+            loadDefaults(dssPath);
+        }
+        return DEFAULT_DISTRIBUTIONS;
     }
 
     private final Distribution grammars;
