@@ -47,19 +47,19 @@ def plot_tune_tpcc_change_step():
     lines = plot_axis(ax[0], "(a) Tuned Write Memory", time_values, ylimit, options, xlabel=xlabel_time, ylabel=ylabel_write_memory, use_raw_value=True)  
     
     ax[0].vlines(3600, 0, ylimit, linestyle='dashed')
-    ax[0].text(3800, 1.25, 'workload\nchanged')
+    ax[0].text(3800, 1, 'workload\nchanged')
     
     start_index = 2
     options = []
     for i in range(0, len(names)):
         xvalues = sheet.col_values(i * 3, start_index, start_index + length)
         yvalues = sheet.col_values(i * 3 + 2, start_index, start_index + length)
-        yvalues = np.array(yvalues)
+        yvalues = np.array(yvalues)/100
         options.append(get_option(xvalues, yvalues, names[i]))
-    lines = plot_axis(ax[1], "(b) Tuned I/O Cost", time_values, 160, options, xlabel=xlabel_time, ylabel=ylabel_transaction_cost, use_raw_value=True)  
+    lines = plot_axis(ax[1], "(b) Tuned I/O Cost", time_values, 3, options, xlabel=xlabel_time, ylabel=ylabel_transaction_weighted_cost, use_raw_value=True)  
        
-    ax[1].vlines(3600, 0, 160, linestyle='dashed')
-    ax[1].text(3800, 130, 'workload\nchanged')
+    ax[1].vlines(3600, 0, 3, linestyle='dashed')
+    ax[1].text(3800, 1.5, 'workload\nchanged')
    
     fig.tight_layout(pad=0.0)
 

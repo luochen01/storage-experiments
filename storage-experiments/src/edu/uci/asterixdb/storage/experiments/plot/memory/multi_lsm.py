@@ -4,9 +4,23 @@ import numpy as np
 from matplotlib import gridspec
 from base import *
 
-names = [btree_static_default, btree_static_tuned, btree_dynamic, partitioned_max_memory, partitioned_min_lsn, partitioned_opt]
+names = [btree_static_default, btree_static_tuned, btree_dynamic_max_memory,
+         btree_dynamic_min_lsn, btree_dynamic_opt, 
+         partitioned_max_memory, partitioned_min_lsn, partitioned_opt]
 
 ylimit = 55
+params = {
+    'legend.fontsize': 9,
+    #"legend.labelspacing":0,
+    #"legend.columnspacing":0,
+    #"legend.handletextpad":0,
+    "legend.handlelength":1.5,
+    "legend.columnspacing":0.1,
+
+}
+plt.rcParams.update(params)
+plt.tight_layout()
+
 
 
 def plot_multi_lsm():
@@ -31,12 +45,11 @@ def plot_multi_lsm():
     lines = plot_axis(ax1, '(b) Vary Skewness', skew_values, ylimit, options, xlabel=xlabel_skewness)  
 
     fig.tight_layout(pad=0.0, w_pad=0.1)
-    fig.legend(lines, labels=names, ncol=3, loc='upper center', borderpad=0)
-    plt.subplots_adjust(top=0.75)
+    fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0)
+    plt.subplots_adjust(top=0.78)
 
     path = output_path + "expr-multi-lsm.pdf"
     plt.savefig(path)
     print('plotted ' + path)
-
 
 plot_multi_lsm()

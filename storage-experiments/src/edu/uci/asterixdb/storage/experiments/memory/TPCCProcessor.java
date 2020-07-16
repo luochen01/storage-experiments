@@ -147,16 +147,16 @@ public class TPCCProcessor {
     public static void main(String[] args) throws IOException {
         new TPCCProcessor(basePath500, "static", Btree_policies).runMaxThroughput();
         new TPCCProcessor(basePath500, "static", Btree_policies).runTransactionWrite();
-        new TPCCProcessor(basePath500, "btree", Btree_policies).runMaxThroughput();
-        new TPCCProcessor(basePath500, "btree", Btree_policies).runTransactionWrite();
+        new TPCCProcessor(basePath500, "btree", Partition_Policies).runMaxThroughput();
+        new TPCCProcessor(basePath500, "btree", Partition_Policies).runTransactionWrite();
         new TPCCProcessor(basePath500, "partition", Partition_Policies).runMaxThroughput();
         new TPCCProcessor(basePath500, "partition", Partition_Policies).runTransactionWrite();
 
         new TPCCProcessor(basePath2000, "static", Btree_policies).runMaxThroughput();
         new TPCCProcessor(basePath2000, "static", Btree_policies).runTransactionWrite();
 
-        new TPCCProcessor(basePath2000, "btree", Btree_policies).runMaxThroughput();
-        new TPCCProcessor(basePath2000, "btree", Btree_policies).runTransactionWrite();
+        new TPCCProcessor(basePath2000, "btree", Partition_Policies).runMaxThroughput();
+        new TPCCProcessor(basePath2000, "btree", Partition_Policies).runTransactionWrite();
 
         new TPCCProcessor(basePath2000, "partition", Partition_Policies).runMaxThroughput();
         new TPCCProcessor(basePath2000, "partition", Partition_Policies).runTransactionWrite();

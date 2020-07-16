@@ -4,7 +4,6 @@ import static edu.uci.asterixdb.storage.experiments.memory.LSMMemoryUtils.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 public class MultiLSMThroughputProcessor {
 
@@ -36,7 +35,6 @@ public class MultiLSMThroughputProcessor {
     private static final String[] fieldNames = new String[] { "1", "2", "3", "4", "5" };
 
     private static final String[] POLICIES = { "maxmemory", "minlsn", "adaptive" };
-    private static final String[] BTREE_POLICIES = { "maxmemory" };
 
     private final String basePath;
     private final String pattern;
@@ -135,17 +133,17 @@ public class MultiLSMThroughputProcessor {
                 portions10, portionNames, new String[] { "" }).runVarMemory();
         new MultiLSMThroughputProcessor(basePathSecondary, "btree-static-tuned", "write-static-1-write-sk", portions10,
                 portionNames, new String[] { "" }).runVarMemory();
+        new MultiLSMThroughputProcessor(basePathSecondary, "btree-dynamic", "write-btree-write-sk", portions10,
+                portionNames, POLICIES).runVarMemory();
         new MultiLSMThroughputProcessor(basePathSecondary, "partition", "write-partition-write-sk", portions10,
                 portionNames, POLICIES).runVarMemory();
-        new MultiLSMThroughputProcessor(basePathSecondary, "btree-dynamic", "write-btree-write-sk", portions10,
-                portionNames, BTREE_POLICIES).runVarMemory();
 
         new MultiLSMThroughputProcessor(basePathSecondary, "btree-static-default", "write-static-8-write-sk",
                 portions10, portionNames, new String[] { "" }).runVarSkew();
         new MultiLSMThroughputProcessor(basePathSecondary, "btree-static-tuned", "write-static-1-write-sk", portions10,
                 portionNames, new String[] { "" }).runVarSkew();
         new MultiLSMThroughputProcessor(basePathSecondary, "btree-dynamic", "write-btree-write-sk", portions10,
-                portionNames, BTREE_POLICIES).runVarSkew();
+                portionNames, POLICIES).runVarSkew();
         new MultiLSMThroughputProcessor(basePathSecondary, "partition", "write-partition-write-sk", portions10,
                 portionNames, POLICIES).runVarSkew();
 
@@ -154,7 +152,7 @@ public class MultiLSMThroughputProcessor {
         new MultiLSMThroughputProcessor(basePathSecondary, "btree-static-tuned", "write-static-1-write-sk", fields,
                 fieldNames, new String[] { "" }).runVarSkew();
         new MultiLSMThroughputProcessor(basePathSecondary, "btree-dynamic", "write-btree-write-sk", fields, fieldNames,
-                BTREE_POLICIES).runVarSkew();
+                POLICIES).runVarSkew();
         new MultiLSMThroughputProcessor(basePathSecondary, "partition", "write-partition-write-sk", fields, fieldNames,
                 POLICIES).runVarSkew();
     }
@@ -165,7 +163,7 @@ public class MultiLSMThroughputProcessor {
         new MultiLSMThroughputProcessor(basePathMultiLSM, "btree-static-tuned", "write-static-10-write-10", portions10,
                 portionNames, new String[] { "" }).runVarMemory();
         new MultiLSMThroughputProcessor(basePathMultiLSM, "btree-dynamic", "write-btree-write-10", portions10,
-                portionNames, Arrays.copyOf(POLICIES, 1)).runVarMemory();
+                portionNames, POLICIES).runVarMemory();
         new MultiLSMThroughputProcessor(basePathMultiLSM, "partition", "write-partition-write-10", portions10,
                 portionNames, POLICIES).runVarMemory();
 
@@ -174,7 +172,7 @@ public class MultiLSMThroughputProcessor {
         new MultiLSMThroughputProcessor(basePathMultiLSM, "btree-static-tuned", "write-static-10-write-10", portions10,
                 portionNames, new String[] { "" }).runVarSkew();
         new MultiLSMThroughputProcessor(basePathMultiLSM, "btree-dynamic", "write-btree-write-10", portions10,
-                portionNames, Arrays.copyOf(POLICIES, 1)).runVarSkew();
+                portionNames, POLICIES).runVarSkew();
         new MultiLSMThroughputProcessor(basePathMultiLSM, "partition", "write-partition-write-10", portions10,
                 portionNames, POLICIES).runVarSkew();
     }

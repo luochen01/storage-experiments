@@ -71,7 +71,7 @@ public class TPCCTuneProcessor {
     };
 
     private static final int interval = 600;
-    private static final int totalTime = 3600 * 4;
+    private static final int totalTime = 3600 * 2;
 
     private final String path;
     private final String pattern;
@@ -167,14 +167,14 @@ public class TPCCTuneProcessor {
 
     public static void main(String[] args) throws IOException {
         //mainYCSB();
-        //mainTPCCChange();
-        mainTPCCChangeRatio("12288");
+        mainTPCCChange();
+        //mainTPCCChangeRatio("8192");
     }
 
     private static void mainYCSB() throws IOException {
-        String[] memories = { "4096", "20480" };
-        String[] memoryNames = { "4G", "20G" };
-        String[] workloads = { "write-10-read", "write-20-read", "write-30-read", "write-40-read", "write-50-read" };
+        String[] memories = { "4096" };
+        String[] memoryNames = { "4G" };
+        String[] workloads = { "write-read-10", "write-read-20", "write-read-30", "write-read-40", "write-read-50" };
         String[] workloadNames = { "10% writes", "20% writes", "30% writes", "40% writes", "50% writes" };
 
         for (int i = 0; i < memories.length; i++) {

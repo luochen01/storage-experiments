@@ -23,6 +23,7 @@ public class LSMMemoryUtils {
 
     public static final int skip = 600;
     public static final int tpccSkip = 1800;
+    public static final int tpccTotal = 3600;
 
     public static File getFile(String basePath, Object... patterns) {
         File dir = new File(basePath);
@@ -103,7 +104,7 @@ public class LSMMemoryUtils {
                 }
 
             }
-            if (count >= 3600) {
+            if (count >= tpccTotal) {
                 break;
             }
         }

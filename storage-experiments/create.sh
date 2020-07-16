@@ -16,6 +16,11 @@ with {
 };
 create primary index ds_tweet_primary_idx on ds_tweet;
 create index sid_idx if not exists on ds_tweet(sid) type btree;
+create index latitute_idx if not exists on ds_tweet(latitude) type btree;
+create index created_at_idx if not exists on ds_tweet(created_at) type btree;
+create index friends_idx if not exists on ds_tweet(user.friends_count) type btree;
+create index follow_idx if not exists on ds_tweet(user.followers_count) type btree;
+
 EOF
 
 ./create_upsert_feed.sh $dv

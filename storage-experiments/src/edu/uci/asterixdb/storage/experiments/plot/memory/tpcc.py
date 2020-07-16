@@ -4,7 +4,8 @@ import numpy as np
 from matplotlib import gridspec
 from base import *
 
-names = [btree_static, btree_dynamic, partitioned_max_memory, partitioned_min_lsn, partitioned_opt]
+names = [btree_static, btree_dynamic_max_memory, btree_dynamic_min_lsn,btree_dynamic_opt,
+          partitioned_max_memory, partitioned_min_lsn, partitioned_opt]
 
 txn_limit = 5
 write_limit = 70
@@ -43,7 +44,7 @@ def plot_tpcc():
     lines = plot_axis(axs[3], '(d) Write Cost (SF=2000)', write_memory_values, write_limit, options, ylabel=ylabel_transaction_write)  
 
     fig.tight_layout(pad=0.0, w_pad=0.1)
-    fig.legend(lines, labels=names, ncol=5, loc='upper center', borderpad=0)
+    fig.legend(lines, labels=names, ncol=7, loc='upper center', borderpad=0)
     plt.subplots_adjust(top=0.84)
     
     path = output_path + "expr-tpcc.pdf"

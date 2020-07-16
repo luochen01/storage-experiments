@@ -11,11 +11,11 @@ public class TPCCSearchProcessor {
             "/Users/luochen/Documents/Research/experiments/results/memory/tune/tpcc-2000-search/";
     private static final int[] totalMemories = { 4096, 8192, 12288, 16384, 20480 };
 
-    private static final int[] memories4G = { 1152, 64, 2048 };
-    private static final int[] memories8G = { 1152, 64, 4096 };
-    private static final int[] memories12G = { 1152, 64, 6144 };
-    private static final int[] memories16G = { 1152, 64, 8192 };
-    private static final int[] memories20G = { 1152, 64, 10240 };
+    private static final int[] memories4G = { 64, 2048, 256, 512, 768, 1024, 1280, 1536 };
+    private static final int[] memories8G = { 64, 4096, 512, 768, 1024, 1280, 1536, 2048 };
+    private static final int[] memories12G = { 64, 6144, 768, 1024, 1280, 1536, 2048, 2560 };
+    private static final int[] memories16G = { 64, 8192, 768, 1024, 1280, 1536, 2048, 2560 };
+    private static final int[] memories20G = { 64, 10240, 768, 1024, 1280, 1536, 2048, 2560 };
 
     private final String path;
     private final String pattern;
@@ -34,7 +34,7 @@ public class TPCCSearchProcessor {
         for (int memory : memories) {
             File file = LSMMemoryUtils.getFile(path, pattern, "-" + memory + "-");
             int diskRead = LSMMemoryUtils.computeTPCCDiskRead(file);
-            int diskWrite = LSMMemoryUtils.computeTPCCDiskWrite(file);
+            int diskWrite = LSMMemoryUtils.computeTPCCDiskWrite(file) * 2;
             int throughput = LSMMemoryUtils.computeTPCCThroughput(file);
             System.out.println(String.format("%d\t%d\t%.2f\t%.2f\t%.2f", memory, throughput,
                     (double) diskWrite * 1024 / throughput, (double) diskRead * 1024 / throughput,

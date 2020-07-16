@@ -53,15 +53,23 @@ ylabel_throughput = "Throughput (kops/s)"
 ylabel_transaction = "Throughput (ktxn/s)"
 ylabel_transaction_write = "Disk Writes (KB/txn)"
 ylabel_transaction_cost = "I/O Cost (KB/txn)"
+ylabel_transaction_cost_100 = "I/O Cost (100KB/txn)"
+ylabel_transaction_weighted_cost = "Weighted I/O Cost (100KB/txn)"
 ylabel_write_memory = "Write Memory (GB)"
 ylabel_op_io = "I/O Cost (KB/op)"
 
-btree_static = r"B$^+$-tree-static"
-btree_static_default = r"B$^+$-tree-static-default"
-btree_static_tuned = r"B$^+$-tree-static-tuned"
-btree_dynamic = "B$^+$-tree-dynamic"
+btree_static = r"B$^+$-static"
+btree_static_default = r"B$^+$-static"
+btree_static_tuned = r"B$^+$-static-tuned"
+#btree_dynamic = "B$^+$-tree-dynamic"
 accordian_data = "Accordion-data"
 accordion_index = "Accordion-index"
+
+btree_dynamic = "B$^+$-dynamic"
+btree_dynamic_max_memory = "B$^+$-dynamic-MEM"
+btree_dynamic_min_lsn = "B$^+$-dynamic-LSN"
+btree_dynamic_opt = "B$^+$-dynamic-OPT"
+
 partitioned = "Partitioned"
 partitioned_max_memory = "Partitioned-MEM"
 partitioned_min_lsn = "Partitioned-LSN"
@@ -107,11 +115,20 @@ def get_option(x, y, name):
     elif name == btree_static_tuned:
         return PlotOption(x, y, name, linestyle='dashed', marker='o', markevery=1, color='green')
     elif name == btree_dynamic:
-        return PlotOption(x, y, name, linestyle='dashdot', marker='^', markevery=1, color='red')
+        return PlotOption(x, y, name, linestyle='dashdot', marker='s', markevery=1, color='red')
+    elif name == btree_dynamic_max_memory:
+        return PlotOption(x, y, name, linestyle='dashdot', marker='P', markevery=1, color='red')
+    elif name == btree_dynamic_min_lsn:
+        return PlotOption(x, y, name, linestyle='dashdot', marker='X', markevery=1, color='red')
+    elif name == btree_dynamic_opt:
+        return PlotOption(x, y, name, linestyle='dashdot', marker='s', markevery=1, color='red')
+    
     elif name == accordian_data:
         return PlotOption(x, y, name, linestyle='dotted', marker='P', markevery=1, color='blue')
     elif name == accordion_index:
         return PlotOption(x, y, name, linestyle='dotted', marker='X', markevery=1, color='blue')
+    
+    
     elif name == partitioned:
         return PlotOption(x, y, name, linestyle='solid', marker='s', markevery=1, color='dimgray')
     elif name == partitioned_max_memory:
@@ -119,7 +136,7 @@ def get_option(x, y, name):
     elif name == partitioned_min_lsn:
         return PlotOption(x, y, name, linestyle='solid', marker='X', markevery=1, color='dimgray')
     elif name == partitioned_opt:
-        return PlotOption(x, y, name, linestyle='solid', marker='s', markevery=1, color='dimgray')
+        return PlotOption(x, y, name, linestyle='solid', marker='^', markevery=1, color='dimgray')
 
 
 def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=ylabel_throughput, use_raw_value=False, ystep=None):

@@ -13,7 +13,9 @@ names = [tuned, optimal, static_128MB, static_half]
 
 
 def get_option(x, y, name, suffix, hatch):
-    fullname = name + "-" + suffix
+    fullname = name
+    if suffix != None:
+        fullname = name + "-" + suffix
     if name == tuned:
         return PlotOption(x, y, fullname, linestyle='solid', marker='D', markevery=1, color='green', hatch=hatch)
     elif name == optimal:
@@ -24,11 +26,13 @@ def get_option(x, y, name, suffix, hatch):
         return PlotOption(x, y, fullname, linestyle='solid', marker='P', markevery=1, color='orange', hatch=hatch)
 
 
-def plot_axis(ax, options):
+width = 0.2
+
+
+def plot_io_axis(ax, options):
     x = np.arange(len(total_memory_values))
     i = 0
 
-    width = 0.2
     start = -width * 2 + width / 2
     for array in options:
         ax.bar(x + start, array[0].y, width, label=array[0].legend, color=array[0].color, alpha=1)
@@ -40,27 +44,54 @@ def plot_axis(ax, options):
         start += width
         
     ax.set_xlabel(xlabel_total_memory)
-    ax.set_ylabel(ylabel_transaction_cost)
+    ax.set_ylabel(ylabel_transaction_weighted_cost)
     ax.set_xticks(x)
     ax.set_xticklabels(total_memory_values)
-    ax.set_ylim(0, 260)
-        
+    ax.set_ylim(0, 4.5)
+    ax.set_xlim(-width * 2 - width/2, len(total_memory_values) -width * 2 -  width +width/2)
+    ax.legend(ncol=2, loc='upper right', columnspacing=0.15, labelspacing=0.05, handlelength=1.15)
+    ax.set_title('(a) Weighted I/O Cost')
+
+    
+def plot_txn_axis(ax, options):
+    x = np.arange(len(total_memory_values))
+    i = 0
+
+    start = -width * 2 + width / 2
+    for array in options:
+        ax.bar(x + start, array[0].y, width, label=array[0].legend, color=array[0].color, alpha=0.8)
+        start += width
+    
+    ax.set_xlabel(xlabel_total_memory)
+    ax.set_ylabel(ylabel_transaction)
+    ax.set_xticks(x)
+    ax.set_xticklabels(total_memory_values)
+    ax.set_ylim(0, 4.5)
+    ax.legend(ncol=4, loc='upper right', columnspacing=0.15, labelspacing=0.05, handlelength=1.15)
+    ax.set_title('(b) Transaction Throughput')
+
 
 def plot_tpcc():
-    fig, axs = plt.subplots(1, 1, figsize=(3.5, 2.3))
+    fig, axs = plt.subplots(1, 2, figsize=(5, 2.3))
 
     sheet = tune_workbook.sheet_by_name("tpcc-tune-io")
     
     options = []
     for i in range(0, len(names)):
-        writes = np.array(sheet.col_values(i * 4 + 2, 2, 7))
-        reads = np.array(sheet.col_values(i * 4 + 3, 2, 7))
+        writes = np.array(sheet.col_values(i * 4 + 2, 2, 7)) / 100
+        reads = np.array(sheet.col_values(i * 4 + 3, 2, 7)) / 100
         array = [get_option(params, writes, names[i], "write", "/"), get_option(params, reads, names[i], "read", "+")]
         options.append(array)
-    lines = plot_axis(axs, options)
+    lines = plot_io_axis(axs[0], options)
+    
+    options = []
+    for i in range(0, len(names)):
+        txns = np.array(sheet.col_values(i * 4 + 1, 2, 7)) / 1000
+        array = [get_option(params, txns, names[i], None, "/")]
+        options.append(array)
+    lines = plot_txn_axis(axs[1], options)
    
     fig.tight_layout(pad=0.0)
-    fig.legend(ncol=2, loc='upper right', columnspacing=0.2, labelspacing=0.05)
     plt.subplots_adjust()
     
     path = output_path + "expr-tune-tpcc.pdf"

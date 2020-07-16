@@ -32,5 +32,4 @@ def plot_single():
     plt.savefig(path)
     print('plotted ' + path)
 
-
 plot_single()

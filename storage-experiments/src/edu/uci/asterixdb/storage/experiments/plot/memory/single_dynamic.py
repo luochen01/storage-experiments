@@ -10,7 +10,7 @@ static_1GB = 'static-1GB'
 names = [adaptive, static_32MB, static_1GB]
 
 xvalues = range(300, 7500, 300)
-xticks = range(0, 7500, 1200)
+xticks = range(0, 7500, 1800)
 
 ylimit = 60
 
@@ -35,7 +35,7 @@ def plot_single_dynamic():
         col += 2
     
     # x = np.arange(len(xvalues))
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(2.75, 2.25))
     fig.tight_layout(pad=0.0)
 
     for i in range(0, len(names)):
