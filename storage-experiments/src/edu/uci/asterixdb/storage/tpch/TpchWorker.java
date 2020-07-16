@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import edu.uci.asterixdb.storage.tpch.gen.TpchEntity;
+import edu.uci.asterixdb.storage.tpch.pojo.TpchEntity;
 
 public class TpchWorker implements Runnable {
 

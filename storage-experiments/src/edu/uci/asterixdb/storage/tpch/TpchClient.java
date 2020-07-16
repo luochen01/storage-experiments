@@ -17,15 +17,15 @@ import org.apache.logging.log4j.Logger;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
-import edu.uci.asterixdb.storage.tpch.gen.CustomerGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.LineItemGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.NationGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.OrderGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.PartGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.PartsuppGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.RegionGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.SupplierGenerator;
-import edu.uci.asterixdb.storage.tpch.gen.TpchGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.CustomerGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.LineItemGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.NationGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.OrderGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.PartGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.PartsuppGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.RegionGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.SupplierGenerator;
+import edu.uci.asterixdb.storage.tpch.pojo.TpchGenerator;
 
 public class TpchClient {
 
