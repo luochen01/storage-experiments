@@ -21,8 +21,6 @@ import static java.util.Objects.*;
 
 import java.util.Iterator;
 
-import com.google.common.collect.AbstractIterator;
-
 public class LineItemGenerator implements TpchGenerator<LineItem> {
     private static final int QUANTITY_MIN = 1;
     private static final int QUANTITY_MAX = 50;
@@ -85,7 +83,7 @@ public class LineItemGenerator implements TpchGenerator<LineItem> {
         return (long) (SCALE_BASE * scaleFactor);
     }
 
-    private static class LineItemGeneratorIterator extends AbstractIterator<LineItem> {
+    private static class LineItemGeneratorIterator extends com.google.common.collect.AbstractIterator<LineItem> {
         private final RandomBoundedInt orderDateRandom = createOrderDateRandom();
         private final RandomBoundedInt lineCountRandom = createLineCountRandom();
 
