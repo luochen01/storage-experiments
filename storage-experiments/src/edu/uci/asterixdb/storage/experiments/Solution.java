@@ -1,66 +1,87 @@
 package edu.uci.asterixdb.storage.experiments;
 
-import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Stack;
+
+class TreeNode {
+    final int val;
+
+    TreeNode left;
+    TreeNode right;
+
+    public TreeNode(int val) {
+        this.val = val;
+    }
+}
+
+class TreeIterator {
+    private final Stack<TreeNode> stack = new Stack<>();
+    private final Stack<Integer> visitedCount = new Stack<>();
+
+    private Integer next;
+
+    public TreeIterator(TreeNode root) {
+        if (root != null) {
+            stack.add(root);
+            visitedCount.add(0);
+        }
+    }
+
+    public Integer getNext() {
+        if (next == null) {
+            doGetNext();
+        }
+        Integer value = next;
+        next = null;
+        return value;
+    }
+
+    public boolean hasNext() {
+        if (next == null) {
+            doGetNext();
+        }
+        return next != null;
+    }
+
+    private void doGetNext() {
+        while (!stack.isEmpty()) {
+            TreeNode node = stack.pop();
+            int count = visitedCount.pop();
+            if (node == null) {
+                continue;
+            }
+            if (count == 2) {
+                next = node.val;
+                break;
+            } else if (count == 0) {
+                stack.push(node);
+                visitedCount.push(1);
+                stack.push(node.left);
+                visitedCount.push(0);
+            } else if (count == 1) {
+                stack.push(node);
+                visitedCount.push(2);
+                stack.push(node.right);
+                visitedCount.push(0);
+            }
+        }
+    }
+
+}
 
 class Solution {
-    public int[][] kClosest(int[][] points, int K) {
-        if (points.length <= K) {
-            return points;
-        }
-
-        sort(points, 0, points.length - 1, K);
-        return Arrays.copyOfRange(points, 0, K);
-    }
-
-    private void sort(int[][] points, int from, int to, int K) {
-        if (from >= to || K == 0) {
-            return;
-        }
-
-        int mid = partition(points, from, to);
-        int len = mid - from + 1;
-        if (len < K) {
-            sort(points, mid + 1, to, K - len);
-        } else if (len > K) {
-            sort(points, from, mid - 1, K);
-        }
-    }
-
-    private int partition(int[][] points, int from, int to) {
-        int p = ThreadLocalRandom.current().nextInt(from, to);
-        swap(points, from, p);
-        int left = from + 1;
-        int right = to;
-        int pivot = dist(points[from]);
-        while (true) {
-            while (left < right && dist(points[left]) < pivot) {
-                left++;
-            }
-            while (left <= right && dist(points[right]) > pivot) {
-                right--;
-            }
-            if (left >= right) {
-                break;
-            }
-            swap(points, left, right);
-        }
-        swap(points, from, right);
-        return right;
-    }
-
-    private void swap(int[][] points, int i, int j) {
-        int[] tmp = points[i];
-        points[i] = points[j];
-        points[j] = tmp;
-    }
-
-    private int dist(int[] p) {
-        return p[0] * p[0] + p[1] * p[1];
-    }
 
     public static void main(String[] args) {
-        new Solution().kClosest(new int[][] { { 2, 2 }, { 2, 2 }, { 2, 2 }, { 2, 2 }, { 1, 1 } }, 1);
+        TreeNode root = new TreeNode(0);
+        root.left = new TreeNode(1);
+        root.left.left = new TreeNode(2);
+        root.left.right = new TreeNode(3);
+
+        root.right = new TreeNode(4);
+
+        TreeIterator it = new TreeIterator(root);
+        while (it.hasNext()) {
+            System.out.println(it.getNext());
+        }
     }
 
 }

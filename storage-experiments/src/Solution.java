@@ -1,66 +1,67 @@
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-class UnionFind {
-    final Map<String, String> parents = new HashMap<>();
-    final Map<String, Double> factors = new HashMap<>();
+class Pair {
+    final int num;
+    final int index;
 
-    public String find(String node) {
-        String parent = parents.get(node);
-        if (parent == null) {
-            return node;
-        } else {
-            String root = find(parent);
-            parents.put(node, root);
-            factors.put(node, factors.getOrDefault(parent, 1.0) * factors.getOrDefault(node, 1.0));
-            return root;
-        }
+    public Pair(int num, int index) {
+        this.num = num;
+        this.index = index;
     }
 
-    public void union(String node1, String node2, double factor) {
-        String root1 = find(node1);
-        String root2 = find(node2);
-
-        parents.put(root2, root1);
-        factors.put(root2, factor * factors.getOrDefault(node1, 1.0) / factors.getOrDefault(node2, 1.0));
+    @Override
+    public String toString() {
+        return num + "@" + index;
     }
 }
 
 class Solution {
-    public double[] calcEquation(List<List<String>> equations, double[] values, List<List<String>> queries) {
-        UnionFind uf = new UnionFind();
-        Set<String> keys = new HashSet<>();
-        for (int i = 0; i < values.length; i++) {
-            List<String> list = equations.get(i);
-            uf.union(list.get(0), list.get(1), values[i]);
-            keys.addAll(list);
-        }
-        double[] result = new double[queries.size()];
-        for (int i = 0; i < result.length; i++) {
-            List<String> list = queries.get(i);
-            if (!keys.contains(list.get(0)) && !keys.contains(list.get(1))) {
-                result[i] = -1.0;
-            } else {
-                String root1 = uf.find(list.get(0));
-                String root2 = uf.find(list.get(1));
-                if (root1.equals(root2)) {
-                    result[i] = uf.factors.getOrDefault(list.get(1), 1.0) / uf.factors.getOrDefault(list.get(0), 1.0);
-                } else {
-                    result[i] = -1.0;
-                }
+
+    public int longestSubarray(int[] nums, int k) {
+        //        TreeSet<Pair> set = new TreeSet<>((p1, p2) -> {
+        //            int cmp = Integer.compare(p1.num, p2.num);
+        //            if (cmp != 0) {
+        //                return cmp;
+        //            } else {
+        //                return Integer.compare(p1.index, p2.index);
+        //            }
+        //        });
+        List<Pair> list = new ArrayList<>();
+        int max = 1;
+        int sum = 0;
+        for (int i = 0; i < nums.length; i++) {
+            sum += nums[i];
+            if (sum <= k) {
+                max = Math.max(max, i + 1);
             }
         }
-        return result;
+        int min = Integer.MAX_VALUE;
+        for (int i = nums.length - 1; i >= 0; i--) {
+            if (sum < min) {
+                list.add(new Pair(sum, i));
+                min = sum;
+            }
+            sum -= nums[i];
+        }
+        Collections.reverse(list);
+        int right = 0;
+        int maxIndex = 0;
+        for (int i = 0; i < nums.length; i++) {
+            sum += nums[i];
+            while (right < list.size() && list.get(right).num - sum <= k) {
+                maxIndex = list.get(right).index;
+                right++;
+            }
+            max = Math.max(max, maxIndex - i);
+        }
+
+        return max;
     }
 
     public static void main(String[] args) {
-        new Solution().calcEquation(
-                Arrays.asList(Arrays.asList("a", "b"), Arrays.asList("b", "c"), Arrays.asList("d", "c")),
-                new double[] { 2.0, 3.0, 5.0 }, Arrays.asList(Arrays.asList("a", "d")));
+        int[] array = new int[] { 2000, 10, 2000, 10, -100, 200, -1000 };
+        System.out.println(new Solution().longestSubarray(array, 20));
     }
-
 }
