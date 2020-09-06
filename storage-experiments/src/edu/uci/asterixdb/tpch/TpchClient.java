@@ -51,6 +51,8 @@ public class TpchClient {
 
     public Properties properties = new Properties();
 
+    private String[] urls;
+
     public static void main(String[] args) throws Exception {
         TpchClient client = new TpchClient(args);
         client.start();
@@ -68,6 +70,8 @@ public class TpchClient {
 
         executor = new ThreadPoolExecutor(numWorkers, numWorkers, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
         properties.load(new FileReader(conf));
+
+        urls = url.split(",");
 
         NationGenerator nationGen = new NationGenerator();
         process(nationGen.getName(), nationGen);
@@ -119,8 +123,8 @@ public class TpchClient {
         LOGGER.error("Start loading {}", table);
         int port = Integer.valueOf(properties.getProperty(table));
         List<Future<?>> result = new ArrayList<>();
-        for (TpchGenerator gen : gens) {
-            Future<?> future = executor.submit(new TpchWorker(gen.iterator(), url, port, loaded));
+        for (int i = 0; i < gens.length; i++) {
+            Future<?> future = executor.submit(new TpchWorker(gens[i].iterator(), urls[i % urls.length], port, loaded));
             result.add(future);
         }
         Timer timer = new Timer();
