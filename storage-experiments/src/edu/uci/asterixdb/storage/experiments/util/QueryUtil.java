@@ -52,21 +52,13 @@ public class QueryUtil {
         LOGGER.warn(queryResult);
 
         JSONObject obj = new JSONObject(queryResult);
-        Object count = null;
 
         JSONArray resultArray = obj.optJSONArray("results");
-
-        if (resultArray != null) {
-            JSONObject resultObj = resultArray.optJSONObject(0);
-            if (resultObj != null) {
-                count = resultObj.opt("$1");
-            }
-        }
 
         String time = obj.getJSONObject("metrics").getString("executionTime");
         String formattedTime = QueryUtil.formatTime(time);
 
-        return new QueryResult(key, count, formattedTime);
+        return new QueryResult(key, resultArray, formattedTime);
     }
 
     public static String formatTime(String time) {

@@ -1,0 +1,18 @@
+use tpch;
+WITH tmp AS
+(
+    SELECT l.l_orderkey AS o_orderkey
+    FROM  LineItem AS l
+    WHERE l.l_commitdate < l.l_receiptdate
+)
+
+SELECT o_orderpriority AS order_priority,
+       count(o) AS count
+FROM Orders AS o
+JOIN tmp AS t
+ON o.o_orderkey = t.o_orderkey
+WHERE o.o_orderdate >= '1993-07-01' AND o.o_orderdate < '1993-10-01'
+/* +hash */
+GROUP BY o.o_orderpriority AS o_orderpriority
+ORDER BY o_orderpriority
+;
