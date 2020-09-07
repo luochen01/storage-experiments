@@ -1,0 +1,73 @@
+use tpch;
+
+declare function tmp1() {
+(
+    select element {'l_orderkey':l_orderkey,'count_suppkey': coll_count((
+            select element i.l_suppkey
+            from  l2 as i
+        )),'max_suppkey': coll_max((
+            select element i.l_suppkey
+            from  l2 as i
+        ))}
+    from  (
+        select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1}
+        from  LineItem as l
+        group by l.l_orderkey as l_orderkey1,l.l_suppkey as l_suppkey1
+    ) as l2
+    group by l2.l_orderkey as l_orderkey
+)
+};
+declare function tmp2() {
+(
+    select element {'l_orderkey':l_orderkey,'count_suppkey': coll_count((
+            select element i.l_suppkey
+            from  l2 as i
+        )),'max_suppkey': coll_max((
+            select element i.l_suppkey
+            from  l2 as i
+        ))}
+    from  (
+        select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1,'count': coll_count((
+                select element i.l_suppkey
+                from  l as i
+            ))}
+        from  LineItem as l
+        group by l.l_orderkey as l_orderkey1,l.l_suppkey as l_suppkey1
+    ) as l2,
+          (
+        select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1,'count': coll_count((
+                select element i.l_suppkey
+                from  l as i
+            ))}
+        from  LineItem as l
+        where (l.l_receiptdate <= l.l_commitdate)
+        group by l.l_orderkey as l_orderkey1,l.l_suppkey as l_suppkey1
+    ) as l3
+    where ((l2.l_orderkey = l3.l_orderkey) and (l2.l_suppkey = l3.l_suppkey) and (l2.count = l3.count))
+    group by l2.l_orderkey as l_orderkey
+)
+};
+select element {'s_name':s_name,'numwait':numwait}
+from  (
+    select element {'s_name':t3.s_name,'l_suppkey':t3.l_suppkey,'l_orderkey':t2.l_orderkey,'count_suppkey':t2.count_suppkey,'max_suppkey':t2.max_suppkey}
+    from  (
+        select element {'s_name':ns.s_name,'l_orderkey':t1.l_orderkey,'l_suppkey':l.l_suppkey,'t1_count_suppkey':t1.count_suppkey}
+        from  LineItem as l,
+              (
+            select element {'s_name':s.s_name,'s_suppkey':s.s_suppkey}
+            from  Nation as n,
+                  Supplier as s
+            where ((s.s_nationkey = n.n_nationkey) and (n.n_name = 'SAUDI ARABIA'))
+        ) as ns,
+              Orders as o,
+               tmp1() as t1
+        where (((ns.s_suppkey = l.l_suppkey) and (l.l_receiptdate > l.l_commitdate)) and ((o.o_orderkey = l.l_orderkey) and (o.o_orderstatus = 'F')) and ((l.l_orderkey = t1.l_orderkey) and (t1.count_suppkey > 1)))
+    ) as t3,
+           tmp2() as t2
+    where ((t3.l_orderkey = t2.l_orderkey) and (t2.count_suppkey = (t3.t1_count_suppkey - 1)))
+) as t4
+group by t4.s_name as s_name
+with  numwait as  count(t4)
+order by numwait desc,s_name
+limit 100
+;

@@ -1,0 +1,17 @@
+USE tpch;
+
+
+WITH tmp AS
+(
+    SELECT l_partkey t_partkey, 0.2 * avg(l_quantity) t_avg_quantity
+    FROM LineItem
+    GROUP BY l_partkey
+)
+
+SELECT ELEMENT SUM(l.l_extendedprice) / 7.0
+FROM  tmp t,
+      LineItem l,
+      Part p
+WHERE p.p_partkey = l.l_partkey AND p.p_container = 'MED BOX' AND p.p_brand = 'Brand#23'
+            AND l.l_partkey = t.t_partkey AND l.l_quantity < t.t_avg_quantity
+;

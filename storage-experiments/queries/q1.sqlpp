@@ -1,0 +1,18 @@
+USE tpch;
+
+SELECT  l.l_returnflag,
+        l.l_linestatus,
+        sum(l.l_quantity) AS sum_qty,
+        sum(l.l_extendedprice) AS sum_base_price,
+        sum(l.l_extendedprice * (1 - l.l_discount)) AS sum_disc_price,
+        sum(l.l_extendedprice * (1 - l.l_discount) * (1 + l.l_tax)) AS sum_charge,
+        avg(l.l_quantity) AS ave_qty,
+        avg(l.l_extendedprice) AS ave_price,
+        avg(l.l_discount) AS ave_disc,
+        count(l) AS count_order
+FROM  LineItem AS l
+WHERE l.l_shipdate /*+ skip-index */ <= '1998-09-02'
+/* +hash */
+GROUP BY l.l_returnflag, l.l_linestatus
+ORDER BY l.l_returnflag, l.l_linestatus
+;
