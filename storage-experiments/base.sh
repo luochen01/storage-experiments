@@ -1,7 +1,7 @@
 #/bin/bash!
 BASE=/home/luochen/experiment
 PORT=10001
-
+DIR=$BASE
 DURATION=7200
 PERIOD=1
 
@@ -12,14 +12,14 @@ FREQ=10000000
 WAIT=600
 
 
-SORT="64MB"
 
-NC="localhost"
 CC="localhost"
 
 
-REPAIR_PORT=10001
+export MAVEN_OPTS="-Xmx8g -server -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=500"
 
-MAIN="java -Xmx1024m -jar target/storage-experiments-0.0.1-SNAPSHOT-jar-with-dependencies.jar -u $NC -p $PORT -period $PERIOD -m RANDOM"
-REPAIR="mvn exec:java -Dexec.mainClass=edu.uci.asterixdb.storage.experiments.feed.FeedRepairDriver"
+
+MAIN="mvn exec:java -Dexec.mainClass=edu.uci.asterixdb.tpch.TpchClient"
+
+GLOBAL="-dss resource/dists.dss -conf tpch.conf -workers 2"
 
