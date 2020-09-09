@@ -21,5 +21,7 @@ export MAVEN_OPTS="-Xmx8g -server -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -X
 
 MAIN="mvn exec:java -Dexec.mainClass=edu.uci.asterixdb.tpch.TpchClient"
 
-GLOBAL="-dss resource/dists.dss -conf tpch.conf -workers 2"
+GLOBAL="-dss resource/dists.dss -conf tpch.conf"
 
+QUERYMAIN="mvn exec:java -Dexec.mainClass=edu.uci.asterixdb.tpch.TpchQueryClient"
+QUERYGLOBAL="-u localhost -path queries "
