@@ -79,6 +79,12 @@ public class TpchClient {
         RegionGenerator regionGen = new RegionGenerator();
         process(regionGen.getName(), regionGen);
 
+        LineItemGenerator[] lineItemGens = new LineItemGenerator[numWorkers];
+        for (int i = 1; i <= numWorkers; i++) {
+            lineItemGens[i - 1] = new LineItemGenerator(scaleFactor, i, numWorkers);
+        }
+        process(lineItemGens[0].getName(), lineItemGens);
+
         SupplierGenerator[] supplierGen = new SupplierGenerator[numWorkers];
         for (int i = 1; i <= numWorkers; i++) {
             supplierGen[i - 1] = new SupplierGenerator(scaleFactor, i, numWorkers);
@@ -108,12 +114,6 @@ public class TpchClient {
             orderGens[i - 1] = new OrderGenerator(scaleFactor, i, numWorkers);
         }
         process(orderGens[0].getName(), orderGens);
-
-        LineItemGenerator[] lineItemGens = new LineItemGenerator[numWorkers];
-        for (int i = 1; i <= numWorkers; i++) {
-            lineItemGens[i - 1] = new LineItemGenerator(scaleFactor, i, numWorkers);
-        }
-        process(lineItemGens[0].getName(), lineItemGens);
 
         executor.shutdown();
     }
