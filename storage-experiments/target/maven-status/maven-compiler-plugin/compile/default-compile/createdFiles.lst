@@ -321,6 +321,7 @@ edu/uci/asterixdb/storage/sim/dist/HashPolicy.class
 edu/uci/asterixdb/tpch/gen/LineItemColumn.class
 edu/uci/asterixdb/storage/sim/lsm/KeyGenerator.class
 edu/uci/asterixdb/tpch/gen/TpchTable$1.class
+edu/uci/asterixdb/tpch/TpchQueryClient.class
 SingleThreadTaskScheduler$2.class
 edu/uci/asterixdb/storage/experiments/memory/MemoryProcessor$1.class
 edu/uci/asterixdb/storage/experiments/util/TraceReader.class
