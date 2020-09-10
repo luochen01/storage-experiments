@@ -2,13 +2,7 @@ use tpch;
 
 declare function tmp1() {
 (
-    select element {'l_orderkey':l_orderkey,'count_suppkey': coll_count((
-            select element i.l_suppkey
-            from  l2 as i
-        )),'max_suppkey': coll_max((
-            select element i.l_suppkey
-            from  l2 as i
-        ))}
+    select element {'l_orderkey':l_orderkey,'count_suppkey': count(l2.l_suppkey),'max_suppkey': max(l2.l_suppkey)}
     from  (
         select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1}
         from  LineItem as l
@@ -19,26 +13,14 @@ declare function tmp1() {
 };
 declare function tmp2() {
 (
-    select element {'l_orderkey':l_orderkey,'count_suppkey': coll_count((
-            select element i.l_suppkey
-            from  l2 as i
-        )),'max_suppkey': coll_max((
-            select element i.l_suppkey
-            from  l2 as i
-        ))}
+    select element {'l_orderkey':l_orderkey,'count_suppkey': count(l2.l_suppkey),'max_suppkey': max(l2.l_suppkey)}
     from  (
-        select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1,'count': coll_count((
-                select element i.l_suppkey
-                from  l as i
-            ))}
+        select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1,'count': count(l.l_suppkey)}
         from  LineItem as l
         group by l.l_orderkey as l_orderkey1,l.l_suppkey as l_suppkey1
     ) as l2,
           (
-        select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1,'count': coll_count((
-                select element i.l_suppkey
-                from  l as i
-            ))}
+        select element {'l_orderkey':l_orderkey1,'l_suppkey':l_suppkey1,'count': count(l.l_suppkey)}
         from  LineItem as l
         where (l.l_receiptdate <= l.l_commitdate)
         group by l.l_orderkey as l_orderkey1,l.l_suppkey as l_suppkey1
@@ -71,3 +53,4 @@ with  numwait as  count(t4)
 order by numwait desc,s_name
 limit 100
 ;
+
