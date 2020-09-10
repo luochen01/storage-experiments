@@ -57,7 +57,7 @@ public class TpchQueryClient {
     }
 
     public void run() throws Exception {
-        if (query.isEmpty()) {
+        if (!query.isEmpty()) {
             String[] queries = query.split(",");
             for (String q : queries) {
                 run(Integer.valueOf(q));
