@@ -33,7 +33,7 @@ public class TpchQueryClient {
     public String result;
 
     @Option(name = "-query")
-    public int query = 0;
+    public String query = "";
 
     private BufferedWriter outputWriter;
     private BufferedWriter resultWriter;
@@ -57,8 +57,11 @@ public class TpchQueryClient {
     }
 
     public void run() throws Exception {
-        if (query > 0) {
-            run(query);
+        if (query.isEmpty()) {
+            String[] queries = query.split(",");
+            for (String q : queries) {
+                run(Integer.valueOf(q));
+            }
         } else {
             for (int i = 1; i <= 22; i++) {
                 run(i);
@@ -73,24 +76,28 @@ public class TpchQueryClient {
         }
     }
 
-    private void run(int queryId) throws Exception {
-        String queryPath = path + "/q" + queryId + ".sqlpp";
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new FileReader(new File(queryPath)));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            sb.append(line);
-            sb.append("\n");
-        }
-        reader.close();
+    private void run(int queryId) {
+        try {
+            String queryPath = path + "/q" + queryId + ".sqlpp";
+            StringBuilder sb = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new FileReader(new File(queryPath)));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+                sb.append("\n");
+            }
+            reader.close();
 
-        QueryResult result = QueryUtil.executeQuery("q" + queryId, sb.toString());
-        append(outputWriter, "query\t" + result.parameter + "\t" + result.time);
-        append(resultWriter, result.result);
+            QueryResult result = QueryUtil.executeQuery("q" + queryId, sb.toString());
+            append(outputWriter, "query\t" + result.parameter + "\t" + result.time);
+            append(resultWriter, result.result);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void append(BufferedWriter writer, Object content) throws IOException {
-        if (writer != null) {
+        if (writer != null && content != null) {
             writer.append(content.toString());
             writer.append("\n");
             writer.flush();
