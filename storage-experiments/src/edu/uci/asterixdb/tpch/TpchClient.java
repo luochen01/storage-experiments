@@ -73,17 +73,17 @@ public class TpchClient {
 
         urls = url.split(",");
 
-        NationGenerator nationGen = new NationGenerator();
-        process(nationGen.getName(), nationGen);
-
-        RegionGenerator regionGen = new RegionGenerator();
-        process(regionGen.getName(), regionGen);
-
         LineItemGenerator[] lineItemGens = new LineItemGenerator[numWorkers];
         for (int i = 1; i <= numWorkers; i++) {
             lineItemGens[i - 1] = new LineItemGenerator(scaleFactor, i, numWorkers);
         }
         process(lineItemGens[0].getName(), lineItemGens);
+
+        NationGenerator nationGen = new NationGenerator();
+        process(nationGen.getName(), nationGen);
+
+        RegionGenerator regionGen = new RegionGenerator();
+        process(regionGen.getName(), regionGen);
 
         SupplierGenerator[] supplierGen = new SupplierGenerator[numWorkers];
         for (int i = 1; i <= numWorkers; i++) {

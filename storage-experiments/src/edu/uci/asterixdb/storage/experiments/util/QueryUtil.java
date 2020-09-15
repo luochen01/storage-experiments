@@ -33,15 +33,18 @@ public class QueryUtil {
         if (DEFAULT_ENDPOINT == null) {
             throw new IllegalStateException("Default endpoint has not been initialized");
         }
-        return executeQuery(key, query, DEFAULT_ENDPOINT);
+        return executeQuery(key, query, DEFAULT_ENDPOINT, false);
     }
 
-    public static QueryResult executeQuery(String key, String query, URI endpoint) throws Exception {
+    public static QueryResult executeQuery(String key, String query, URI endpoint, boolean profile) throws Exception {
         LOGGER.warn(query);
 
         RequestBuilder builder = RequestBuilder.post(endpoint);
         builder.addParameter("statement", query);
         builder.setCharset(StandardCharsets.UTF_8);
+        if (profile) {
+            builder.addParameter("profile", "timings");
+        }
         HttpUriRequest post = builder.build();
 
         HttpClient client = HttpClients.custom().setRetryHandler(StandardHttpRequestRetryHandler.INSTANCE).build();

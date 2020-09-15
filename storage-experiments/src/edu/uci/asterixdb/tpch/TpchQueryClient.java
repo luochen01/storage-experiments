@@ -35,6 +35,9 @@ public class TpchQueryClient {
     @Option(name = "-query")
     public String query = "";
 
+    @Option(name = "-profile")
+    public boolean profile;
+
     private BufferedWriter outputWriter;
     private BufferedWriter resultWriter;
 
@@ -88,7 +91,8 @@ public class TpchQueryClient {
             }
             reader.close();
 
-            QueryResult result = QueryUtil.executeQuery("q" + queryId, sb.toString());
+            QueryResult result =
+                    QueryUtil.executeQuery("q" + queryId, sb.toString(), QueryUtil.DEFAULT_ENDPOINT, profile);
             append(outputWriter, "query\t" + result.parameter + "\t" + result.time);
             append(resultWriter, result.result);
         } catch (Exception e) {
