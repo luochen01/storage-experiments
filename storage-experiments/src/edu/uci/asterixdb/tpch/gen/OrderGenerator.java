@@ -207,7 +207,7 @@ public class OrderGenerator implements TpchGenerator<Order> {
 
     @Override
     public String getName() {
-        return "Order";
+        return "Orders";
     }
 
     static RandomBoundedInt createLineCountRandom() {

@@ -108,5 +108,4 @@ create index orderDateIdx on Orders(o_orderdate, o_custkey, o_shippriority, o_or
 
 EOF
 
-./create_feed.sh $1
 
