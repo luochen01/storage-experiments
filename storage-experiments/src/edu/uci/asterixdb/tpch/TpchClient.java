@@ -3,8 +3,11 @@ package edu.uci.asterixdb.tpch;
 import java.io.FileReader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Future;
@@ -49,11 +52,16 @@ public class TpchClient {
     @Option(name = "-dss")
     public String dssPath = "";
 
+    @Option(name = "-table")
+    public String table;
+
     public ThreadPoolExecutor executor;
 
     public Properties properties = new Properties();
 
     private String[] urls;
+
+    private Set<String> tables = new HashSet<>();
 
     public static void main(String[] args) throws Exception {
         TpchClient client = new TpchClient(args);
@@ -72,11 +80,10 @@ public class TpchClient {
         QueryUtil.init(new URI(String.format("http://localhost:19002/query/service")));
         executor = new ThreadPoolExecutor(numWorkers, numWorkers, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
         properties.load(new FileReader(conf));
-
+        tables.addAll(Arrays.asList(table.split(",")));
         urls = url.split(",");
 
         LineItemGenerator[] lineItemGens = new LineItemGenerator[numWorkers];
-
         for (int i = 1; i <= numWorkers; i++) {
             lineItemGens[i - 1] = new LineItemGenerator(scaleFactor, i, numWorkers);
         }
@@ -122,7 +129,10 @@ public class TpchClient {
     }
 
     private void process(String table, TpchGenerator... gens) throws Exception {
-
+        if (!tables.isEmpty() && !tables.contains(table)) {
+            LOGGER.error("Skipped {}", table);
+            return;
+        }
         AtomicLong loaded = new AtomicLong();
         LOGGER.error("Start loading {}", table);
         int port = Integer.valueOf(properties.getProperty(table));
