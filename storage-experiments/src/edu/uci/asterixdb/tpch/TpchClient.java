@@ -83,12 +83,6 @@ public class TpchClient {
         tables.addAll(Arrays.asList(table.split(",")));
         urls = url.split(",");
 
-        LineItemGenerator[] lineItemGens = new LineItemGenerator[numWorkers];
-        for (int i = 1; i <= numWorkers; i++) {
-            lineItemGens[i - 1] = new LineItemGenerator(scaleFactor, i, numWorkers);
-        }
-        process(lineItemGens[0].getName(), lineItemGens);
-
         NationGenerator nationGen = new NationGenerator();
         process(nationGen.getName(), nationGen);
 
@@ -124,6 +118,12 @@ public class TpchClient {
             orderGens[i - 1] = new OrderGenerator(scaleFactor, i, numWorkers);
         }
         process(orderGens[0].getName(), orderGens);
+
+        LineItemGenerator[] lineItemGens = new LineItemGenerator[numWorkers];
+        for (int i = 1; i <= numWorkers; i++) {
+            lineItemGens[i - 1] = new LineItemGenerator(scaleFactor, i, numWorkers);
+        }
+        process(lineItemGens[0].getName(), lineItemGens);
 
         executor.shutdown();
     }
