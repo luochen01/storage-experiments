@@ -149,6 +149,9 @@ public class TpchClient {
         for (Future<?> future : result) {
             future.get();
         }
+
+        Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+
         finalizeFeed(table);
 
         LOGGER.error("Completed loading {} records of {}", loaded.get(), table);

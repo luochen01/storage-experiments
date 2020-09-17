@@ -44,6 +44,7 @@ public class TpchWorker implements Runnable {
             LOGGER.error("Fail to write line " + line, e);
         } finally {
             try {
+                out.flush();
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
