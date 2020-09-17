@@ -53,7 +53,7 @@ public class TpchClient {
     public String dssPath = "";
 
     @Option(name = "-table")
-    public String table;
+    public String table = "";
 
     public ThreadPoolExecutor executor;
 
@@ -61,7 +61,7 @@ public class TpchClient {
 
     private String[] urls;
 
-    private Set<String> tables = new HashSet<>();
+    private final Set<String> tables = new HashSet<>();
 
     public static void main(String[] args) throws Exception {
         TpchClient client = new TpchClient(args);
@@ -80,7 +80,9 @@ public class TpchClient {
         QueryUtil.init(new URI(String.format("http://localhost:19002/query/service")));
         executor = new ThreadPoolExecutor(numWorkers, numWorkers, 60, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
         properties.load(new FileReader(conf));
-        tables.addAll(Arrays.asList(table.split(",")));
+        if (table != null && !table.isEmpty()) {
+            tables.addAll(Arrays.asList(table.split(",")));
+        }
         urls = url.split(",");
 
         NationGenerator nationGen = new NationGenerator();
