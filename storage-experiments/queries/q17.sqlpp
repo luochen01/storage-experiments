@@ -9,9 +9,9 @@ WITH tmp AS
 )
 
 SELECT ELEMENT SUM(l.l_extendedprice) / 7.0
-FROM  tmp t,
-      LineItem l,
-      Part p
-WHERE p.p_partkey = l.l_partkey AND p.p_container = 'MED BOX' AND p.p_brand = 'Brand#23'
-            AND l.l_partkey = t.t_partkey AND l.l_quantity < t.t_avg_quantity
+FROM  
+      Part p, tmp t,
+      LineItem l
+WHERE p.p_partkey = t.t_partkey AND p.p_container = 'MED BOX' AND p.p_brand = 'Brand#23'
+            AND t.t_partkey = l.l_partkey AND l.l_quantity < t.t_avg_quantity
 ;

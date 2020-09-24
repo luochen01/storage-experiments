@@ -10,9 +10,10 @@ WITH tmp AS
 SELECT c_name, c_custkey, o_orderkey,
        o_orderdate, o_totalprice,
        sum(l.l_quantity) sum_quantity
-FROM  Customer c JOIN Orders o ON  c.c_custkey = o.o_custkey
-    JOIN tmp t ON o.o_orderkey = t.l_orderkey
-   JOIN LineItem l ON  t.l_orderkey =  l.l_orderkey
+FROM  
+     tmp t JOIN Orders o ON o.o_orderkey = t.l_orderkey
+     JOIN Customer c ON  c.c_custkey = o.o_custkey
+     JOIN LineItem l ON  t.l_orderkey =  l.l_orderkey
 GROUP BY c.c_name AS c_name,c.c_custkey AS c_custkey,
          o.o_orderkey AS o_orderkey,o.o_orderdate AS o_orderdate,
          o.o_totalprice AS o_totalprice
