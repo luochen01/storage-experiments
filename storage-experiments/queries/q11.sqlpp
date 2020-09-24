@@ -2,25 +2,21 @@ USE tpch;
 
 WITH sum AS (
       SELECT VALUE SUM(ps.ps_supplycost * ps.ps_availqty)
-      FROM  Partsupp AS ps,
-            (
+      FROM (
                 SELECT s.s_suppkey
-                FROM  Supplier as s,
-                      Nation as n
+                FROM  Nation as n, Supplier as s
                 WHERE s.s_nationkey = n.n_nationkey AND n.n_name = 'GERMANY'
-            ) AS sn
+            ) AS sn, Partsupp AS ps
       WHERE ps.ps_suppkey = sn.s_suppkey
 )[0]
 
 
 SELECT ps_partkey, SUM(ps.ps_supplycost * ps.ps_availqty)
-FROM Partsupp ps,
-     (
+FROM (
         SELECT s.s_suppkey
-        FROM  Supplier AS s,
-              Nation as n
+        FROM  Nation as n, Supplier AS s
         WHERE s.s_nationkey = n.n_nationkey and n.n_name = 'GERMANY'
-    ) sn
+    ) sn, Partsupp ps
 WHERE ps.ps_suppkey = sn.s_suppkey
 GROUP BY ps.ps_partkey
 HAVING SUM(ps.ps_supplycost * ps.ps_availqty) > sum * 0.0001000
