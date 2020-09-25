@@ -1,0 +1,5 @@
+USE tpch;
+
+select count(*)
+from  Supplier s, LineItem l
+where l.l_suppkey = s.s_suppkey;
