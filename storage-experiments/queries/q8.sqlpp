@@ -6,33 +6,40 @@ FROM  (
         SELECT o_year AS year,
                slnrcop.l_extendedprice * (1 - slnrcop.l_discount) AS revenue,
                n2.n_name AS s_name
-        FROM  Nation n2, (
+        FROM  (
                 SELECT lnrcop.o_orderdate, lnrcop.l_discount, lnrcop.l_extendedprice, lnrcop.l_suppkey, s.s_nationkey
-                FROM  (
+                FROM  Supplier s,
+                (
                   SELECT lnrco.o_orderdate, lnrco.l_discount, lnrco.l_extendedprice, lnrco.l_suppkey
-                  FROM Part p JOIN (
+                  FROM  (
                          SELECT nrco.o_orderdate, l.l_partkey, l.l_discount, l.l_extendedprice, l.l_suppkey
-                         FROM  (
+                         FROM  LineItem l,
+                               (
                                 SELECT o.o_orderdate, o.o_orderkey
-                                FROM  (
+                                FROM  Orders o,
+                                      (
                                         SELECT c.c_custkey
-                                        FROM  (
+                                        FROM  Customer c,
+                                              (
                                                 SELECT n.n_nationkey
                                                 FROM  Nation n,
                                                       Region r
                                                 WHERE n.n_regionkey = r.r_regionkey AND r.r_name = 'AMERICA'
-                                         ) AS nr, Customer c
+                                                ) AS nr
                                          WHERE c.c_nationkey = nr.n_nationkey
-                                       ) AS nrc, Orders o
+                                       ) AS nrc
                                 WHERE nrc.c_custkey = o.o_custkey
-                                ) AS nrco JOIN LineItem l ON l.l_orderkey = nrco.o_orderkey  
-                        WHERE nrco.o_orderdate >= '1995-01-01' and nrco.o_orderdate < '1996-12-31'
-                        ) AS lnrco ON p.p_partkey = lnrco.l_partkey 
-                    WHERE p.p_type = 'ECONOMY ANODIZED STEEL'
-                    ) AS lnrcop JOIN Supplier s ON s.s_suppkey = lnrcop.l_suppkey
-                ) AS slnrcop
+                                ) AS nrco
+                        WHERE l.l_orderkey = nrco.o_orderkey and nrco.o_orderdate >= '1995-01-01' and nrco.o_orderdate < '1996-12-31'
+                        ) AS lnrco,
+                        Part p
+                        WHERE p.p_partkey = lnrco.l_partkey and p.p_type = 'ECONOMY ANODIZED STEEL'
+                    ) AS lnrcop
+                WHERE s.s_suppkey = lnrcop.l_suppkey
+                ) AS slnrcop,
+                Nation n2
                 LET o_year = `get-year`(slnrcop.o_orderdate)
-                WHERE n2.n_nationkey = slnrcop.s_nationkey 
+                WHERE slnrcop.s_nationkey = n2.n_nationkey
              ) as t
 GROUP BY year
 ORDER BY year
