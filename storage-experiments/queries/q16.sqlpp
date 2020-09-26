@@ -3,13 +3,14 @@ USE tpch;
 WITH tmp AS
 (
     SELECT psp.p_brand, psp.p_type, psp.p_size, psp.ps_suppkey
-    FROM  Supplier s, (
+    FROM  (
             SELECT p.p_brand, p.p_type, p.p_size, ps.ps_suppkey
             FROM  Partsupp ps,
                   Part p
             WHERE p.p_partkey = ps.ps_partkey AND p.p_brand != 'Brand#45' AND
                   p.p_type NOT LIKE 'MEDIUM POLISHED%'
-           ) AS psp
+           ) AS psp,
+           Supplier s
     WHERE psp.ps_suppkey = s.s_suppkey AND s.s_comment NOT LIKE '%Customer%Complaints%'
 )
 
