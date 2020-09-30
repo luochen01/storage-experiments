@@ -47,13 +47,14 @@ public class LineItemGenerator implements TpchGenerator<LineItem> {
 
     private final Distributions distributions;
     private final TextPool textPool;
+    private final boolean negate;
 
-    public LineItemGenerator(double scaleFactor, int part, int partCount) {
-        this(scaleFactor, part, partCount, Distributions.getDefaultDistributions(), TextPool.getDefaultTestPool());
+    public LineItemGenerator(double scaleFactor, int part, int partCount, boolean negate) {
+        this(scaleFactor, part, partCount, Distributions.getDefaultDistributions(), TextPool.getDefaultTestPool(), negate);
     }
 
     public LineItemGenerator(double scaleFactor, int part, int partCount, Distributions distributions,
-            TextPool textPool) {
+            TextPool textPool, boolean negate) {
         checkArgument(scaleFactor > 0, "scaleFactor must be greater than 0");
         checkArgument(part >= 1, "part must be at least 1");
         checkArgument(part <= partCount, "part must be less than or equal to part count");
@@ -61,7 +62,7 @@ public class LineItemGenerator implements TpchGenerator<LineItem> {
         this.scaleFactor = scaleFactor;
         this.part = part;
         this.partCount = partCount;
-
+        this.negate = negate;
         this.distributions = requireNonNull(distributions, "distributions is null");
         this.textPool = requireNonNull(textPool, "textPool is null");
     }
@@ -75,7 +76,7 @@ public class LineItemGenerator implements TpchGenerator<LineItem> {
     public Iterator<LineItem> iterator() {
         return new LineItemGeneratorIterator(distributions, textPool, scaleFactor,
                 calculateStartIndex(OrderGenerator.SCALE_BASE, scaleFactor, part, partCount),
-                calculateRowCount(OrderGenerator.SCALE_BASE, scaleFactor, part, partCount));
+                calculateRowCount(OrderGenerator.SCALE_BASE, scaleFactor, part, partCount), negate);
     }
 
     @Override
@@ -116,9 +117,10 @@ public class LineItemGenerator implements TpchGenerator<LineItem> {
         private int orderDate;
         private int lineCount;
         private int lineNumber;
+        private boolean negate;
 
         private LineItemGeneratorIterator(Distributions distributions, TextPool textPool, double scaleFactor,
-                long startIndex, long rowCount) {
+                long startIndex, long rowCount, boolean negate) {
             this.scaleFactor = scaleFactor;
             this.startIndex = startIndex;
             this.rowCount = rowCount;
@@ -154,6 +156,8 @@ public class LineItemGenerator implements TpchGenerator<LineItem> {
             // generate information for initial order
             orderDate = orderDateRandom.nextValue();
             lineCount = lineCountRandom.nextValue() - 1;
+
+            this.negate = negate;
         }
 
         @Override
@@ -201,7 +205,9 @@ public class LineItemGenerator implements TpchGenerator<LineItem> {
 
         private LineItem makeLineitem(long orderIndex) {
             long orderKey = makeOrderKey(orderIndex);
-
+            if (negate) {
+                orderKey = -orderKey;
+            }
             int quantity = quantityRandom.nextValue();
             int discount = discountRandom.nextValue();
             int tax = taxRandom.nextValue();

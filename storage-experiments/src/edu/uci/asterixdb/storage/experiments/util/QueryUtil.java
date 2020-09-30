@@ -1,12 +1,15 @@
 package edu.uci.asterixdb.storage.experiments.util;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
@@ -64,14 +67,29 @@ public class QueryUtil {
         return new QueryResult(key, resultArray, formattedTime);
     }
 
+    public static String executePost(Map<String, String> params, URI endpoint)
+            throws ClientProtocolException, IOException {
+        RequestBuilder builder = RequestBuilder.post(endpoint);
+        for (Map.Entry<String, String> e : params.entrySet()) {
+            builder.addParameter(e.getKey(), e.getValue());
+        }
+        builder.setCharset(StandardCharsets.UTF_8);
+        HttpUriRequest post = builder.build();
+        HttpClient client = HttpClients.custom().setRetryHandler(StandardHttpRequestRetryHandler.INSTANCE).build();
+        HttpResponse response = client.execute(post);
+        String queryResult = IOUtils.toString(response.getEntity().getContent(), Charset.defaultCharset());
+        LOGGER.warn(queryResult);
+        return queryResult;
+    }
+
     public static String formatTime(String time) {
         double value = 0.0d;
         if (time.endsWith("ms")) {
             value = Double.valueOf(time.substring(0, time.length() - 2));
-        } else if (time.endsWith("s")) {
-            value = Double.valueOf(time.substring(0, time.length() - 1)) * 1000;
+        } else if (time.endsWith("µs")) {
+            value = Double.valueOf(time.substring(0, time.length() - 2)) * 1000;
         } else {
-            throw new UnsupportedOperationException("Unknown time format " + time);
+            value = Double.valueOf(time.substring(0, time.length() - 1)) * 1000;
         }
         return TimeFormatter.format(value);
 

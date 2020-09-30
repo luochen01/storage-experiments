@@ -39,7 +39,7 @@ public abstract class TpchTable<E extends TpchEntity> {
     public static final TpchTable<LineItem> LINE_ITEM = new TpchTable<LineItem>("lineitem", LineItemColumn.values()) {
         @Override
         public Iterable<LineItem> createGenerator(double scaleFactor, int part, int partCount) {
-            return new LineItemGenerator(scaleFactor, part, partCount);
+            return new LineItemGenerator(scaleFactor, part, partCount, false);
         }
     };
 
