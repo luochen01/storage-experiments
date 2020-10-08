@@ -102,8 +102,9 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
+    lines = []
     for option in options:
-        ax.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha)
+        lines.append(ax.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth, alpha=option.alpha))
         i += 1
     ax.set_title(title)
     ax.set_xlabel(xlabel)
@@ -112,16 +113,17 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth
     ax.set_xlim([-0.5, len(x) - 0.5])
     if ylimit > 0:
         ax.set_ylim(0, ylimit)
+    return lines
 
 
-def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Time Range (Days)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
+def plot_shared_query(xvalues, options_1, options_2, options_3, output, titles, xlabel='Time Range (Days)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(6, 2.2))
-    plt.subplots_adjust(wspace=0.03, hspace=0)
-    plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(10, 2.5))
+    plt.subplots_adjust(wspace=0.03, hspace=0, top = 0.8)
+    lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit)
+    plot_options(xvalues, options_3, ax3, titles[2], xlabel, xlimit)
 
-    ax1.legend(loc=2, ncol=1, framealpha=framealpha)
     ax1.set_ylabel(ylabel)
 
     # ax1.set_ylim(0, 1000)
@@ -129,9 +131,14 @@ def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Tim
 
     ax1.set_yscale('log', basey=10)
     ax2.set_yscale('log', basey=10)
+    ax3.set_yscale('log', basey=10)
 
-    ax1.set_ylim(ymin=1)
-    ax2.set_ylim(ymin=1)
+
+    ax1.set_ylim(ymin=0.1)
+    ax2.set_ylim(ymin=0.1)
+    ax3.set_ylim(ymin=0.1)
+    
+    f.legend(handles = lines, loc='upper left', ncol=3, framealpha=framealpha, bbox_to_anchor=(0.25, 1.03),)
 
     plt.savefig(output)
     print('output figure to ' + output)
@@ -184,10 +191,10 @@ history_options = [
                 PlotOption(toTime(validation_5_history_results), 'validation', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
                 PlotOption(toTime(inplace_5_history_results), 'mutable-bitmap', marker=markers[2], linestyle=inplace_linestyle, color=inplace_color)]]
 
-# plot_shared_query(filter_strs, recent_options[0], recent_options[1], result_base_path + "query-filter-recent.pdf", ['Update Ratio 0%', 'Update Ratio 50%'])
-# plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)
-plot_query(filter_strs, recent_options[0], result_base_path + devices[index] + "-query-filter-recent-0.pdf", 'Update Ratio 50%')
-plot_query(filter_strs, recent_options[1], result_base_path + devices[index] + "-query-filter-recent-50.pdf", 'Update Ratio 50%')
-plot_query(filter_strs, history_options[0], result_base_path + devices[index] + "-query-filter-history-0.pdf", 'Update Ratio 0%', framealpha=0.8)
-plot_query(filter_strs, history_options[1], result_base_path + devices[index] + "-query-filter-history-50.pdf", 'Update Ratio 50%', framealpha=0.8)
+plot_shared_query(filter_strs, recent_options[1], history_options[0], history_options[1],  result_base_path + devices[index] + "-query-filter.pdf", ['Recent + 50% Updates', 'Old + 0% Updates', 'Old + 50% Updates'])
+#plot_shared_query(filter_strs, history_options[0], history_options[1], result_base_path + "query-filter-history.pdf", ['Update Ratio 0%', 'Update Ratio 50%'], framealpha=0.8)
+#plot_query(filter_strs, recent_options[0], result_base_path + devices[index] + "-query-filter-recent-0.pdf", 'Update Ratio 50%')
+#plot_query(filter_strs, recent_options[1], result_base_path + devices[index] + "-query-filter-recent-50.pdf", 'Update Ratio 50%')
+#plot_query(filter_strs, history_options[0], result_base_path + devices[index] + "-query-filter-history-0.pdf", 'Update Ratio 0%', framealpha=0.8)
+#plot_query(filter_strs, history_options[1], result_base_path + devices[index] + "-query-filter-history-50.pdf", 'Update Ratio 50%', framealpha=0.8)
 

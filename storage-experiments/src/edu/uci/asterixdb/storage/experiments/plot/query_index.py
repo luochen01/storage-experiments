@@ -9,12 +9,12 @@ import sys
 from base import *
 from pathlib import PurePath
 
-index = hdd_index
+index = ssd_index
 query_base_path = base_path + devices[index] + '/query-index/'
 
 ylimits = [250, 45]
 
-index_only_ylimits = [20, 15]
+index_only_ylimits = [25, 20]
 
 time_index = 'time'
 # sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
@@ -162,7 +162,7 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0
 
 def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=ylimits[index]):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(11, 2.2))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit)
@@ -192,8 +192,8 @@ query_options.append([ PlotOption(toTime(antimatter_5_results), 'eager', marker=
                 PlotOption(toTime(validation_norepair_5_pk_results), 'ts validation (no repair)', marker=markers[2], linestyle=validation_norepair_linestyle, color=validation_norepair_color, alpha=0.5)])
 
 titles = ['Update Ratio 0%', 'Update Ratio 50%']
-titles = [None, None]
-plot_shared_query(sels, query_options[0], query_options[1], result_base_path + devices[index] + "-query-index.pdf", [None, None])
+
+plot_shared_query(sels, query_options[0], query_options[1], result_base_path + devices[index] + "-query-index.pdf",titles)
 
 validation_pk_512M_pattern = "_false_512MB"
 
@@ -256,11 +256,11 @@ def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, 
 
     plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit, barwidth)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit, barwidth)
-    #ax1.set_yscale('log', basey=10)
-    #ax2.set_yscale('log', basey=10)
+    ax1.set_yscale('log', basey=10)
+    ax2.set_yscale('log', basey=10)
 
-    #ax1.set_ylim(0.005, ylimit)
-    #ax2.set_ylim(0.005, ylimit)
+    ax1.set_ylim(0.005, ylimit)
+    ax2.set_ylim(0.005, ylimit)
 
     ax1.legend(loc=2, ncol=1)
     ax1.set_ylabel(ylabel)

@@ -141,7 +141,7 @@ sort_options = [PlotOption(toTime(sort_results), 'No Batching', marker=markers[1
                 PlotOption(toTime(batch_results), 'Batching', marker=markers[2], linestyle=validation_linestyle, color=validation_norepair_color, alpha=0.5),
                 PlotOption(diffTime(sort_batch_results, batch_results), 'Sorting', marker=markers[2], linestyle=validation_linestyle, color=validation_color, alpha=0.5)]
 
-plt.rcParams.update({'figure.figsize':(3.25, 2.5)})
+#plt.rcParams.update({'figure.figsize':(3.25, 2.5)})
 
 
 def plot_batch_sort(xvalues, nobatch, batch, sort, output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, framealpha=0.5, barwidth=0.22, legendsize=14):

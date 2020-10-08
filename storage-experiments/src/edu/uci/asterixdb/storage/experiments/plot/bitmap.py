@@ -7,19 +7,20 @@ import os
 from base import *
 from pathlib import PurePath
 
-index = hdd_index
+index = ssd_index
 
-ylimits = [0, 60]
+ylimits = [[100, 100, 250], [80,80,80]]
 query_base_path = base_path + devices[index] + '/query/'
 
 time_index = 'time'
 
+set_large_fonts(13)
 
 def plot_options(xvalues, options, ax, xlabel, xlimit, ylimit):
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
-    barwidth = 0.25
+    barwidth = 0.2
     for option in options:
         ax.bar(x + (i - numbars / 2) * barwidth, option.data, align='edge', label=option.legend, color=option.color, width=barwidth)
         i += 1
@@ -29,19 +30,24 @@ def plot_options(xvalues, options, ax, xlabel, xlimit, ylimit):
     ax.set_ylim(0, ylimit)
 
 
-def plot_shared_bitmap(xvalues, options_1, options_2, options_3, output, xlabels, ylabel='Repair Time (s)', xlimit=110, ylimit=1100):
+def plot_shared_bitmap(xvalues, options_1, options_2, options_3, output, xlabels, ylabel='Merge Time (s)', xlimit=110, ylimit=[None, None, None]):
     # use as global
 
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(7.5, 2))
-    plt.subplots_adjust(wspace=0.02, hspace=0)
-    plot_options(xvalues[0], options_1, ax1, xlabels[0], xlimit, ylimit)
-    plot_options(xvalues[1], options_2, ax2, xlabels[1], xlimit, ylimit)
-    plot_options(xvalues[2], options_3, ax3, xlabels[2], xlimit, ylimit)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=False, figsize=(11, 2.5))
+    plt.subplots_adjust(wspace=0.25, hspace=0)
+    plot_options(xvalues[0], options_1, ax1, xlabels[0], xlimit, ylimit[0])
+    plot_options(xvalues[1], options_2, ax2, xlabels[1], xlimit, ylimit[1])
+    plot_options(xvalues[2], options_3, ax3, xlabels[2], xlimit, ylimit[2])
 
     legend_col = 1
 
     ax1.legend(loc=2, ncol=legend_col)
+    ax2.legend(loc=2, ncol=legend_col)
+    ax3.legend(loc=2, ncol=legend_col)
+
     ax1.set_ylabel(ylabel)
+    ax2.set_ylabel(ylabel)
+    ax3.set_ylabel(ylabel)
 
     plt.savefig(output)
     print('output figure to ' + output)
@@ -74,7 +80,7 @@ record_options = [ PlotOption(none_records[index], 'Baseline', marker=markers[0]
 
 plot_shared_bitmap(
     [updates, records, sizes], update_options, record_options, size_options , result_base_path + devices[index] + '-bitmap.pdf',
-                   ['Update Ratio', '#Records/Component', 'Record Size (Bytes)'], ylimit=80)
+                   ['Update Ratio', '#Records/Component', 'Record Size (Bytes)'], ylimit=ylimits[index])
 
 
 def plot_bar(xvalues, options, output, title, xlabel='Time Range (Days)', ylabel='Query Time (s)', ylimit=0, legendloc=2, legendcol=1):
@@ -103,18 +109,18 @@ def plot_bar(xvalues, options, output, title, xlabel='Time Range (Days)', ylabel
     print('output figure to ' + output)
 
 
-plot_bar(records, [ PlotOption(none_records[index], 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(sidefile_records[index], 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(lock_records[index], 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
-                result_base_path + devices[index] + '-bitmap-records.pdf', "", xlabel='#Records (Million)', legendloc=2)
-
-plot_bar(updates, [ PlotOption(none_updates[index], 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(sidefile_updates[index], 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(lock_updates[index], 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
-                result_base_path + devices[index] + '-bitmap-updates.pdf', "", xlabel='Update Ratio', legendloc=1, ylimit=ylimits[index], legendcol=1)
-
-plot_bar(sizes, [ PlotOption(none_sizes[index], 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
-                PlotOption(sidefile_sizes[index], 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
-                PlotOption(lock_sizes[index], 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
-                result_base_path + devices[index] + '-bitmap-sizes.pdf', "", xlabel='Record Size (Bytes)', legendloc=2)
+# plot_bar(records, [ PlotOption(none_records[index], 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(sidefile_records[index], 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(lock_records[index], 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
+#                 result_base_path + devices[index] + '-bitmap-records.pdf', "", xlabel='#Records (Million)', legendloc=2)
+# 
+# plot_bar(updates, [ PlotOption(none_updates[index], 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(sidefile_updates[index], 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(lock_updates[index], 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
+#                 result_base_path + devices[index] + '-bitmap-updates.pdf', "", xlabel='Update Ratio', legendloc=1, ylimit=ylimits[index], legendcol=1)
+# 
+# plot_bar(sizes, [ PlotOption(none_sizes[index], 'Baseline', marker=markers[0], linestyle=antimatter_linestyle, color=antimatter_color),
+#                 PlotOption(sidefile_sizes[index], 'Side-file', marker=markers[1], linestyle=validation_linestyle, color=validation_color),
+#                 PlotOption(lock_sizes[index], 'Lock', marker=markers[2], linestyle=inplace_linestyle, color=validation_norepair_color)],
+#                 result_base_path + devices[index] + '-bitmap-sizes.pdf', "", xlabel='Record Size (Bytes)', legendloc=2)
 

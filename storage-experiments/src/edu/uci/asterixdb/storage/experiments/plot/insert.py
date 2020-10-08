@@ -7,7 +7,7 @@ from pathlib import PurePath
 
 ylimits = [500, 450]
 
-index = ssd_index
+index = hdd_index
 
 insert_base_path = base_path + devices[index] + "/insert/"
 
@@ -27,7 +27,7 @@ insert_nopk_05 = open_csv(insert_base_path + 'insert-nopk-0.5.log')
 
 insert_linestyle = 'solid'
 
-set_large_fonts(14)
+set_large_fonts(12)
 no_pk_linestyle = 'dashed'
 plot_basic([ PlotOption(insert_0, 'pk-idx 0% dup', marker=markers[0], linestyle=insert_linestyle, color=antimatter_color),
             PlotOption(insert_05, 'pk-idx 50% dup', marker=markers[1], linestyle=insert_linestyle, color=antimatter_color),

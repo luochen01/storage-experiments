@@ -9,7 +9,7 @@ time_index = 'counter'
 total_records_index = 'total_records'
 base_path = '/Users/luochen/Documents/Research/experiments/results/lsm-new/'
 result_base_path = '/Users/luochen/Documents/Research/experiments/results/lsm-new/'
-result_base_path = "/Users/luochen/Desktop/tmp/"
+result_base_path = "/Users/luochen/Documents/Research/papers/phd-thesis/topic1/"
 
 
 antimatter_color = 'red'
@@ -44,8 +44,8 @@ if not os.path.exists(result_base_path):
 font_size = 11
 font_weight = 100
 params = {
-    #'font.family': 'Times New Roman',
-    'font.family': 'Calibri',
+    'font.family': 'Times New Roman',
+    #'font.family': 'Calibri',
     'font.weight': font_weight,
     'axes.labelweight': font_weight,
     'figure.titleweight': font_weight,
@@ -74,13 +74,12 @@ params = {
     "xtick.direction": 'out',
     "ytick.direction": 'out',
 }
-markers = ['D', 's', 'o', '^', '*']
 markers = ['o', '^', 'v', 'x', '*']
 
 plt.rcParams.update(params)
 
-# shared_fig_size = (10, 3)
-# shared_font_size = 12
+shared_fig_size = (10, 2.75)
+shared_font_size = 12
 ingestion_xlabel = 'Time (Minutes)'
 ingestion_ylabel = 'Total Records (Millions)'
 
@@ -134,6 +133,12 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     for option in options:
         plt.plot(option.data.time, option.data.total_records, label=option.legend, color=option.color, linestyle=option.linestyle,
                   markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery)
+        tail = option.data.total_records.tail(1)
+        if option.marker == 'x':
+            plt.scatter(xlimit-10, tail, marker=option.marker, facecolor=option.color, edgecolor=option.color, linewidth=1.0)
+        else:
+            plt.scatter(xlimit-10, tail, marker=option.marker, facecolor='none', edgecolor=option.color, linewidth=1.0)
+  
 
     legend_col = 1
     if len(options) > 5:
@@ -202,11 +207,11 @@ def plot_totals(options, xvalues, output, xlabel=ingestion_xlabel, ylabel=ingest
     for option in options:
         plt.plot(np.arange(len(xvalues)), option.data, label=option.legend, color=option.color, linestyle=option.linestyle,
                   markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=1)
-    plt.legend(loc=1, ncol=2, bbox_to_anchor=(1.04, 1), columnspacing=0.2, numpoints=1, framealpha=0, handlelength=1.3)
+    plt.legend(loc=1, ncol=2, columnspacing=0.2, numpoints=1, framealpha=0, handlelength=1.3)
     plt.grid(False)
     # plt.title(title)
     plt.xlabel(xlabel)
-    plt.xlim([-0.1, len(xvalues) - 0.9])
+    plt.xlim([-0.2, len(xvalues)-0.75])
     plt.xticks(np.arange(len(xvalues)), xvalues)
     plt.ylim(0, ylimit)
     plt.ylabel(ylabel)

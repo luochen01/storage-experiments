@@ -9,7 +9,7 @@ from pathlib import PurePath
 index = ssd_index
 
 ysteps = [100, 100]
-ylimits = [550, 350]
+ylimits = [500, 400]
 
 upsert_base_path = base_path + devices[index] + '/upsert/'
 
@@ -41,14 +41,28 @@ upsert_inplaces = [upsert_inplace_0, upsert_inplace_UNIFORM_05, upsert_inplace_Z
 
 def plot_options(options, ax, title, xlabel, xlimit, ylimit):
     lines = []
+    step = 0
+    if xlimit / 6 <= 35:
+        step = 30
+    else:
+        step = 60
+        
     for option in options:
         line, = ax.plot(option.data.time, option.data.total_records, label=option.legend, color=option.color, linestyle=option.linestyle,
-                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=60,
+                  markerfacecolor='none', markeredgecolor=option.color, marker=option.marker, markevery=option.markevery,
                   linewidth=1.0)
+        tail = option.data.total_records.tail(1)
+        if option.marker == 'x':
+            ax.scatter(xlimit-10, tail, marker=option.marker, facecolor=option.color, edgecolor=option.color, linewidth=1.0)
+        else:
+            ax.scatter(xlimit-10, tail, marker=option.marker, facecolor='none', edgecolor=option.color, linewidth=1.0)
         lines.append(line)
     ax.set_title(title)
     ax.set_xlabel(xlabel)
-    ax.set_xticks(np.arange(0, xlimit, step=120))
+   
+
+    plt.xlabel(xlabel)
+    ax.set_xticks(np.arange(0, xlimit, step=step))
     ax.set_xlim(0, xlimit)
     ax.set_ylim(0, ylimit)
     return lines
@@ -58,15 +72,16 @@ def plot_shared_ingestion(options_1, options_2, options_3, titles, output, xlabe
     # use as global
     set_large_fonts(shared_font_size)
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=shared_fig_size)
-    plt.subplots_adjust(wspace=0.1, hspace=0)
+    plt.subplots_adjust(wspace=0.1, hspace=0, top=0.8)
     lines = plot_options(options_1, ax1, titles[0] , "", xlimit, ylimit)
     plot_options(options_2, ax2, titles[1], xlabel, xlimit, ylimit)
     plot_options(options_3, ax3, titles[2], "", xlimit, ylimit)
 
     legend_col = 1
-    f.legend(handles=lines, loc='upper left', ncol=2, columnspacing=4.2, bbox_to_anchor=(0.08, 1.03), shadow=False, framealpha=0)
+    f.legend(handles=lines, loc='upper left', ncol=4, columnspacing=4.2, bbox_to_anchor=(0.08, 1.03), shadow=False, framealpha=0)
 
     # ax1.legend(loc=2, ncol=legend_col)
+
     ax1.set_ylabel(ylabel)
 
     plt.savefig(output)
@@ -81,9 +96,9 @@ for i in [0, 1, 2]:
             PlotOption(upsert_validations[i], 'validation', marker=markers[2], linestyle=validation_linestyle, color=validation_color),
             PlotOption(upsert_inplaces[i], 'mutable-bitmap', marker=markers[3], linestyle=inplace_linestyle, color=inplace_color)])
 
-# plot_shared_ingestion(options[0], options[1], options[2], ['No Update', '50% Uniform Updates', '50% Zipf Updates'], result_base_path + 'upsert-secondary-update.pdf', ylimit=180)
+plot_shared_ingestion(options[0], options[1], options[2], ['No Update', '50% Uniform Updates', '50% Zipf Updates'], result_base_path + devices[index] + '-upsert-secondary-update.pdf', xlimit=xlimits[index], ylimit=ylimits[index])
 
-plot_basic(options[0], result_base_path + devices[index] + '-upsert-secondary-update-0.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
-plot_basic(options[1], result_base_path + devices[index] + '-upsert-secondary-update-uniform-50.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
-plot_basic(options[2], result_base_path + devices[index] + '-upsert-secondary-update-zipf-50.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
+# plot_basic(options[0], result_base_path + devices[index] + '-upsert-secondary-update-0.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
+# plot_basic(options[1], result_base_path + devices[index] + '-upsert-secondary-update-uniform-50.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
+# plot_basic(options[2], result_base_path + devices[index] + '-upsert-secondary-update-zipf-50.pdf', '', xlimit=xlimits[index], ylimit=ylimits[index], ystep=ysteps[index])
 
