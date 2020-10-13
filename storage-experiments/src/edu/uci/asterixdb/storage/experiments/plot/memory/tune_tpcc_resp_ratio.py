@@ -33,7 +33,7 @@ def get_option(x, y, name):
 
 
 def plot_tune_tpcc_change_step():
-    fig, ax = plt.subplots(1, 2, figsize=(4.5, 2.3))
+    fig, ax = plt.subplots(1, 2, figsize=(5.8, 2.8))
 
     sheet = tune_workbook.sheet_by_name("tpcc-tune-change-memory-ratio")
     
@@ -61,10 +61,10 @@ def plot_tune_tpcc_change_step():
     ax[1].vlines(3600, 0, 3, linestyle='dashed')
     ax[1].text(3800, 1.5, 'workload\nchanged')
    
-    fig.tight_layout(pad=0.0)
+    fig.tight_layout(pad=0.0, w_pad = 1.0)
 
     fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0, handlelength=1.0, columnspacing=0)
-    plt.subplots_adjust(top=0.84)
+    plt.subplots_adjust(top=0.9)
 
     
     path = output_path + "expr-tune-tpcc-change-step.pdf"

@@ -9,7 +9,7 @@ from matplotlib.pyplot import legend
 from datetime import datetime
 
 base_path = '/Users/luochen/Documents/Research/experiments/results/flowcontrol/'
-result_base_path = '/Users/luochen/Documents/Research/papers/lsm-stability-paper/'
+result_base_path = '/Users/luochen/Documents/Research/papers/phd-thesis/topic2/'
 
 zipf = "zipf"
 uniform = "uniform"
@@ -19,8 +19,6 @@ zipf_path = base_path + zipf
 
 if not os.path.exists(result_base_path):
     os.makedirs(result_base_path)
-
-fig_size_small = [2.75, 2.3]
 
 font_size = 10
 font_weight = 100
@@ -46,7 +44,7 @@ params = {
    'text.usetex': False,
    'savefig.bbox':'tight',
    'savefig.pad_inches':0,
-   'figure.figsize':(3.25, 2.3),
+   'figure.figsize':(3, 2.5),
    "legend.fancybox":True,
    "legend.shadow":False,
    "legend.framealpha":0,
@@ -202,8 +200,8 @@ def plot_basic(options, output, xlabel, ylabel, xstep, xlimit, ylimit, ymin=0, x
             plt.scatter(option.x, option.y, 1,
                   label=option.legend, color=option.color, linestyle=option.linestyle)
 
-    if title != None:
-        plt.title(title)
+    #if title != None:
+    #    plt.title(title)
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)

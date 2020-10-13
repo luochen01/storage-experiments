@@ -42,7 +42,7 @@ def parse_size_latencies(base_path, sizes, policy):
     return size_latencies
 
 
-settings.fig_size = [2.5, 2.5]
+#settings.fig_size = [2.5, 2.5]
 
 roundrobin_writes = np.array([4224, 4478, 4076, 4056, 4177]) / 1000
 choosebest_writes = np.array([3972, 4352, 4014, 4056, 4182]) / 1000
@@ -72,7 +72,7 @@ def post():
         plt.legend(loc=2, ncol=1, framealpha=0)
     
 
-settings.fig_size = [2.75, 2.5]
+#settings.fig_size = [2.75, 2.5]
 
 plot_basic(
     [

@@ -11,7 +11,7 @@ from matplotlib.ticker import StrMethodFormatter
 
 settings.init()
 
-#settings.fig_size = (3.25, 2.5)
+settings.fig_size = (3, 2.5)
 
 def process_query(base_path, fair_input, greedy_input, output, ylabel, window, title, ylimit):
     df = open_csv(get_latest_file(base_path, fair_input), header=1)
@@ -31,7 +31,7 @@ def process_query(base_path, fair_input, greedy_input, output, ylabel, window, t
         greedy_queries = greedy_queries / 1000
     
     def post():
-        plt.title(title)
+        #plt.title(title)
         if 'scan' in fair_input:
             plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.1f}'))
     

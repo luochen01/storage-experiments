@@ -13,7 +13,7 @@ xstep = 1800
 settings.init()
 
 
-settings.fig_size = [2.75, 2.5]
+#settings.fig_size = [2.75, 2.5]
 
 def process(dist):
     prefix_base_path = base_path + dist + "/prefix/"

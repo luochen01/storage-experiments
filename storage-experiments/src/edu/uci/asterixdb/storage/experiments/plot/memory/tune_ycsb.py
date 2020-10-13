@@ -37,7 +37,8 @@ def get_option(x, y, name):
 
 
 def plot_tune_ycsb():
-    fig, axs = plt.subplots(1, 4, figsize=(10, 2.5))
+    fig, tmp = plt.subplots(2, 2, figsize=(6, 5.5))
+    axs = [tmp[0][0], tmp[0][1], tmp[1][0], tmp[1][1]]
 
     sheet = tune_workbook.sheet_by_name("ycsb-tune-memory")
     
@@ -71,9 +72,9 @@ def plot_tune_ycsb():
         options.append(get_option(xvalues, yvalues, names[i]))
     lines = plot_axis(axs[3], '(d) Tuned I/O Cost/20GB', time_values, limit_cost, options, xlabel=xlabel_time, ylabel=ylabel_op_io, use_raw_value=True)  
     
-    plt.tight_layout(pad=0, w_pad=0.1)
+    fig.tight_layout(pad=0, w_pad=1.0, h_pad=1.5)
     fig.legend(lines, labels=names, ncol=5, loc='upper center', borderpad=0)
-    plt.subplots_adjust(top=0.84)
+    plt.subplots_adjust(top=0.95)
     
     path = output_path + "expr-tune-ycsb.pdf"
     plt.savefig(path)

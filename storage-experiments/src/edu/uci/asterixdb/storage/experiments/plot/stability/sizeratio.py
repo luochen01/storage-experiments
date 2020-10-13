@@ -23,7 +23,7 @@ def parse_sizeratio_latencies(base_path, size_ratios, scheduler, policy):
     return size_latencies
 
 
-settings.fig_size = [2.5, 2.5]
+#settings.fig_size = [3.25, 2.3]
 
 level_writes = np.array([8233, 6364, 5135, 4739, 3600]) / 0.95 / 1000
 tier_writes = np.array([8250, 13764, 17604, 18815, 20112]) / 0.95 / 1000
@@ -54,7 +54,7 @@ def post():
         plt.legend(loc=2, ncol=1, framealpha = 0.5)
     
 
-settings.fig_size = [2.75, 2.5]
+#settings.fig_size = [3.25, 2.3]
 
 plot_basic(
     [

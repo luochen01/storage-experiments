@@ -17,6 +17,9 @@ def process(dist):
     level_base_path = base_path + dist + "/level/"
     print(level_base_path)
 
+    settings.fig_size = (3, 2.5)
+
+
     df = open_csv(get_latest_file(level_base_path, 'write-level'), header=1)
     fair_time = get_write_times(df, load_window)
     fair_data = get_write_rates(df, load_window)
@@ -101,8 +104,6 @@ def process(dist):
     def post_latency():
         plt.legend(loc=2, ncol=1, framealpha=0.8)
     
-    settings.fig_size = fig_size_small
-    
     plot_latencies([
                     get_local_fair_scheduler(np.arange(len(fair_latencies)), local_fair_latencies, True),
                     get_local_greedy_scheduler(np.arange(len(fair_latencies)), local_greedy_latencies, True),
@@ -111,7 +112,7 @@ def process(dist):
                     result_base_path + 'write-level-write-latency-local-' + dist + '.pdf', ylimit=300,
                     ymin=-10, post=post_latency, logy=False, title = '(b) Leveling Merge Policy')
     
-    settings.fig_size = None
+    #settings.fig_size = None
     
     (single_times, single_components) = parse_components(level_base_path + "write-level-open-95-single.log")
     (fair_times, fair_components) = parse_components(level_base_path + "write-level-open-95.log")

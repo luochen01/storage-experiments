@@ -40,7 +40,7 @@ def process(dist):
     closed_time = get_write_times(df, write_window)
     closed_data = get_write_rates(df, write_window)
     
-    settings.fig_size = (2.75, 2.5)
+    #settings.fig_size = (2.75, 2.5)
     
     def post_write():
         plt.legend(loc=2, ncol=1, bbox_to_anchor=None, framealpha=0)

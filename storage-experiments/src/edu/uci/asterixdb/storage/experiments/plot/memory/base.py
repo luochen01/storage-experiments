@@ -2,7 +2,7 @@ import xlrd
 import matplotlib.pyplot as plt
 import numpy as np
 
-output_path = "/Users/luochen/Documents/Research/papers/lsm-memory/"
+output_path = "/Users/luochen/Documents/Research/papers/phd-thesis/topic3/"
 
 font_size = 10
 font_weight = 100
@@ -139,7 +139,7 @@ def get_option(x, y, name):
         return PlotOption(x, y, name, linestyle='solid', marker='^', markevery=1, color='dimgray')
 
 
-def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=ylabel_throughput, use_raw_value=False, ystep=None):
+def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=ylabel_throughput, use_raw_value=False, ystep=None, title_pos = None):
     x = np.arange(len(xvalues))
     i = 0
     lines = []
@@ -149,8 +149,8 @@ def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=y
             xvalue = option.x
         line = ax.plot(xvalue, option.y, label=option.legend, color=option.color, alpha=option.alpha, linestyle=option.linestyle, marker=option.marker, markevery=option.markevery)
         lines.append(line)
-    ax.set_title(name)
-    ax.set_xlabel(xlabel)
+    #ax.set_title(name)
+    ax.set_xlabel(xlabel + "\n\n" + name)
     ax.set_ylabel(ylabel)
     if use_raw_value:
         ax.set_xticks(xvalues)
@@ -163,4 +163,3 @@ def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=y
     
     # ax.set_yscale("log")
     return lines
-

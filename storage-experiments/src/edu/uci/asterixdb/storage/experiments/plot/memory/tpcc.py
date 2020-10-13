@@ -12,7 +12,8 @@ write_limit = 70
 
 
 def plot_tpcc():
-    fig, axs = plt.subplots(1, 4, figsize=(10, 2.5))
+    fig, tmp = plt.subplots(2, 2, figsize=(6, 6))
+    axs = [tmp[0][0], tmp[0][1], tmp[1][0], tmp[1][1]]
 
     sheet = workbook.sheet_by_name("tpcc-500")
     
@@ -43,9 +44,9 @@ def plot_tpcc():
         options.append(get_option(params, values, names[i]))
     lines = plot_axis(axs[3], '(d) Write Cost (SF=2000)', write_memory_values, write_limit, options, ylabel=ylabel_transaction_write)  
 
-    fig.tight_layout(pad=0.0, w_pad=0.1)
-    fig.legend(lines, labels=names, ncol=7, loc='upper center', borderpad=0)
-    plt.subplots_adjust(top=0.84)
+    fig.tight_layout(pad=0, w_pad=1.0, h_pad=1.5)
+    fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0)
+    plt.subplots_adjust(top=0.92)
     
     path = output_path + "expr-tpcc.pdf"
     plt.savefig(path)

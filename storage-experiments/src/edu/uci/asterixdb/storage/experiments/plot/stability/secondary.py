@@ -43,16 +43,11 @@ def process_query(base_path, selectivity, strategy, ylimit, title):
     greedy_times = get_write_times(df, query_window)
     greedy_queries = get_queries(df, query_window)
     
-    if selectivity == '1' or selectivity == '10':
-        y_label = "Query Throughput (1000 ops/s)"
+    if selectivity == '1' or selectivity == '10' or selectivity == '100':
+        y_label = "Query Throughput (kops/s)"
         fair_queries = fair_queries / 1000
         greedy_queries = greedy_queries / 1000
         ylimit = ylimit / 1000
-    elif selectivity == '100':
-        y_label = "Query Throughput (100 ops/s)"
-        fair_queries = fair_queries / 100
-        greedy_queries = greedy_queries / 100
-        ylimit = ylimit / 100
     else:
         y_label = "Query Throughput (10 ops/s)"
         fair_queries = fair_queries / 10
@@ -75,7 +70,6 @@ def process(dist):
     eager_time = get_write_times(df, load_window)
     eager_data = get_write_rates(df, load_window)
     
-    settings.fig_size = (2.75, 2.5)
     
     plot_writes([
         get_lazy(lazy_time, lazy_data),
@@ -143,6 +137,8 @@ def process(dist):
                     result_base_path + 'write-secondary-write-latency-eager-' + dist + '.pdf',
                     post=post, logy=True, ylimit=300, ymin=0.01, title='(b) Percentile Write\nLatencies')
 
+    settings.fig_size = (3.5, 2.5)
+
     speeds = [7220, 6840, 6460, 6080, 5700, 5320, 4940, 4560]
     utils = ['95%', '90%', '85%', '80%', '75%', '70%', '65%', '60%']
     util_latencies = parse_eager_util_latencies(secondary_base_path, speeds)
@@ -151,12 +147,12 @@ def process(dist):
        for i in range(0, len(speeds)):
            plt.text(i - 0.3, util_latencies[i] + 5, "{0:.2f}".format(util_latencies[i])) 
     
-    # settings.fig_size = (3.72, 2.25)
-    settings.fig_size = None
     plot_basic([PlotOption(utils, util_latencies, color='red', marker='s')],
         result_base_path + 'write-secondary-eager-util-latency.pdf', 'System Utilization', latency_ylabel, 1, xlimit=0, ylimit=150, xtick_labels=utils, logy=False, post=post)
     
-    settings.fig_size = (2.75, 2.3)
+    settings.fig_size = None
+
+    
     secondary_base_path = base_path + dist + "/secondary-query/"
     
     sels = [1, 10, 100, 1000]

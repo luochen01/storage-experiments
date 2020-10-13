@@ -14,6 +14,9 @@ settings.init()
 def process(dist):
     tier_base_path = base_path + dist + "/tier/"
     print(tier_base_path)
+    
+    settings.fig_size = (3, 2.5)
+
     df = open_csv(get_latest_file(tier_base_path, 'write-tier'), header=1)
     fair_time = get_write_times(df, load_window)
     fair_data = get_write_rates(df, load_window)
@@ -40,8 +43,6 @@ def process(dist):
         get_fair_scheduler(fair_time, fair_data),
         # get_local_scheduler(local_time, local_data),
         get_greedy_scheduler(greedy_time, greedy_data)], result_base_path + 'write-tier-' + dist + '.pdf', ylimit=ylimit, title = '(a) Tiering Merge Policy', post = post)
-    
-    settings.fig_size = None
     
     df = open_csv(get_latest_file(tier_base_path, 'write-tier-open-95'), header=1)
     fair_time = get_write_times(df, write_window)
@@ -96,7 +97,7 @@ def process(dist):
     def post_latency():
         plt.legend(loc=2, ncol=1, framealpha = 0.8)
     
-    settings.fig_size = fig_size_small
+    #settings.fig_size = fig_size_small
     
     plot_latencies([
                     get_local_fair_scheduler(np.arange(len(local_fair_latencies)), local_fair_latencies, True),
@@ -114,7 +115,7 @@ def process(dist):
     def post():
         plt.legend(loc=2, ncol=1, framealpha=0.8)
     
-    settings.fig_size = None
+    #settings.fig_size = None
     
     plot_components([
                     get_single_scheduler(single_times, single_components),

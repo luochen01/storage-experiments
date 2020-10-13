@@ -43,14 +43,13 @@ def plot_io_axis(ax, options):
         ax.bar(x + start, array[1].y, width, bottom=array[0].y, label=array[1].legend, color=array[1].color, alpha=0.5)
         start += width
         
-    ax.set_xlabel(xlabel_total_memory)
+    ax.set_xlabel(xlabel_total_memory + "\n\n" + '(a) Weighted I/O Cost')
     ax.set_ylabel(ylabel_transaction_weighted_cost)
     ax.set_xticks(x)
     ax.set_xticklabels(total_memory_values)
     ax.set_ylim(0, 4.5)
     ax.set_xlim(-width * 2 - width/2, len(total_memory_values) -width * 2 -  width +width/2)
     ax.legend(ncol=2, loc='upper right', columnspacing=0.15, labelspacing=0.05, handlelength=1.15)
-    ax.set_title('(a) Weighted I/O Cost')
 
     
 def plot_txn_axis(ax, options):
@@ -62,17 +61,16 @@ def plot_txn_axis(ax, options):
         ax.bar(x + start, array[0].y, width, label=array[0].legend, color=array[0].color, alpha=0.8)
         start += width
     
-    ax.set_xlabel(xlabel_total_memory)
+    ax.set_xlabel(xlabel_total_memory + "\n\n" + '(b) Transaction Throughput')
     ax.set_ylabel(ylabel_transaction)
     ax.set_xticks(x)
     ax.set_xticklabels(total_memory_values)
     ax.set_ylim(0, 4.5)
     ax.legend(ncol=4, loc='upper right', columnspacing=0.15, labelspacing=0.05, handlelength=1.15)
-    ax.set_title('(b) Transaction Throughput')
 
 
 def plot_tpcc():
-    fig, axs = plt.subplots(1, 2, figsize=(5, 2.3))
+    fig, axs = plt.subplots(1, 2, figsize=(5.5, 2.5))
 
     sheet = tune_workbook.sheet_by_name("tpcc-tune-io")
     
@@ -91,7 +89,7 @@ def plot_tpcc():
         options.append(array)
     lines = plot_txn_axis(axs[1], options)
    
-    fig.tight_layout(pad=0.0)
+    fig.tight_layout(pad=0.0, w_pad = 1)
     plt.subplots_adjust()
     
     path = output_path + "expr-tune-tpcc.pdf"

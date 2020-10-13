@@ -16,7 +16,6 @@ component_str = "Component state: "
 dashes = (3, 1)
 
 
-
 def get_round_scheduler(x, y):
     return PlotOption(x, y, legend='round-robin', color=green)
 
@@ -106,7 +105,6 @@ def parse_partitioned_component_points(path):
     fp.close()
     return (times, components)
 
-settings.fig_size = fig_size_small
 
 def process(dist):
     partition_base_path = base_path + dist + "/partition/"
@@ -206,7 +204,6 @@ def process(dist):
     
     plt.rcParams.update(params)
     
-    #settings.fig_size = (3.75, 2.5)
     
     (round_times, round_components) = parse_partitioned_components(partition_base_path + "write-partition-open-95-slow.log")
     (choose_times, choose_components) = parse_partitioned_components(partition_base_path + "write-partition-open-95-slow-choosebest.log")

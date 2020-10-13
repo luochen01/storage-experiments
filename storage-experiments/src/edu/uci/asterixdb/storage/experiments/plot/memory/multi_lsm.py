@@ -10,7 +10,7 @@ names = [btree_static_default, btree_static_tuned, btree_dynamic_max_memory,
 
 ylimit = 55
 params = {
-    'legend.fontsize': 9,
+    'legend.fontsize': 10,
     #"legend.labelspacing":0,
     #"legend.columnspacing":0,
     #"legend.handletextpad":0,
@@ -25,7 +25,7 @@ plt.tight_layout()
 
 def plot_multi_lsm():
     sheet = workbook.sheet_by_name("multi-lsm")
-    fig, ax = plt.subplots(figsize=(4.5, 2.5))
+    fig, ax = plt.subplots(figsize=(6, 3))
     gs = gridspec.GridSpec(1, 2, width_ratios=[5, 5]) 
     ax0 = plt.subplot(gs[0])
     ax1 = plt.subplot(gs[1])
@@ -44,9 +44,9 @@ def plot_multi_lsm():
         options.append(get_option(params, values, names[i]))
     lines = plot_axis(ax1, '(b) Vary Skewness', skew_values, ylimit, options, xlabel=xlabel_skewness)  
 
-    fig.tight_layout(pad=0.0, w_pad=0.1)
+    fig.tight_layout(pad=0.0, w_pad=1.0)
     fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0)
-    plt.subplots_adjust(top=0.78)
+    plt.subplots_adjust(top=0.85)
 
     path = output_path + "expr-multi-lsm.pdf"
     plt.savefig(path)
