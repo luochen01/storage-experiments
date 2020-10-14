@@ -7,7 +7,7 @@ from pathlib import PurePath
 
 ylimits = [500, 450]
 
-index = hdd_index
+index = ssd_index
 
 insert_base_path = base_path + devices[index] + "/insert/"
 

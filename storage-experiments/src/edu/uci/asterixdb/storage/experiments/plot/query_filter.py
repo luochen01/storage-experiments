@@ -7,7 +7,7 @@ import os
 from base import *
 from pathlib import PurePath
 
-index = hdd_index
+index = ssd_index
 
 query_base_path = base_path + devices[index] + '/query/'
 filter_base_path = base_path + devices[index] + '/query-filter/'
@@ -40,7 +40,7 @@ def toTime(results):
 
 
 def toStd(results):
-    stds = []
+    stds = [] 
     for result in results:
         stds.append(result.std)
     return stds
@@ -118,8 +118,8 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth
 
 def plot_shared_query(xvalues, options_1, options_2, options_3, output, titles, xlabel='Time Range (Days)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
     # use as global
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(10, 2.5))
-    plt.subplots_adjust(wspace=0.03, hspace=0, top = 0.8)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(8, 2.25))
+    plt.subplots_adjust(wspace=0.05, hspace=0, top = 0.75)
     lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit)
     plot_options(xvalues, options_3, ax3, titles[2], xlabel, xlimit)
@@ -133,10 +133,10 @@ def plot_shared_query(xvalues, options_1, options_2, options_3, output, titles, 
     ax2.set_yscale('log', basey=10)
     ax3.set_yscale('log', basey=10)
 
-
-    ax1.set_ylim(ymin=0.1)
-    ax2.set_ylim(ymin=0.1)
-    ax3.set_ylim(ymin=0.1)
+    ylimit = 1000
+    ax1.set_ylim(ymin=0.1, ymax = ylimit)
+    ax2.set_ylim(ymin=0.1, ymax = ylimit)
+    ax3.set_ylim(ymin=0.1, ymax = ylimit)
     
     f.legend(handles = lines, loc='upper left', ncol=3, framealpha=framealpha, bbox_to_anchor=(0.25, 1.03),)
 

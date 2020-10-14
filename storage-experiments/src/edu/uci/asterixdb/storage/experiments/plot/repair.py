@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 
 repair_base_path = base_path + devices[index] + '/repair/'
 

@@ -72,13 +72,13 @@ def plot_shared_ingestion(options_1, options_2, options_3, titles, output, xlabe
     # use as global
     set_large_fonts(shared_font_size)
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=shared_fig_size)
-    plt.subplots_adjust(wspace=0.1, hspace=0, top=0.8)
+    plt.subplots_adjust(hspace=0, wspace=0.05, top=0.775)
     lines = plot_options(options_1, ax1, titles[0] , "", xlimit, ylimit)
     plot_options(options_2, ax2, titles[1], xlabel, xlimit, ylimit)
     plot_options(options_3, ax3, titles[2], "", xlimit, ylimit)
 
     legend_col = 1
-    f.legend(handles=lines, loc='upper left', ncol=4, columnspacing=4.2, bbox_to_anchor=(0.08, 1.03), shadow=False, framealpha=0)
+    f.legend(handles=lines, loc='upper left', ncol=4, bbox_to_anchor=(0.08, 1.03), shadow=False, framealpha=0)
 
     # ax1.legend(loc=2, ncol=legend_col)
 

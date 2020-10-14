@@ -8,7 +8,7 @@ import base
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 ysteps = [100, 100]
 ylimits = [300, 350]
 
@@ -91,7 +91,7 @@ def plot_bar(xvalues, options,
              line_options,
              output, title, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', ylimit=0, legendloc=2):
     # use as global
-    plt.figure(figsize=(6, 2.5))
+    plt.figure(figsize=(6, 2.75))
     x = np.arange(len(xvalues))
     numbars = float(len(options))
     i = 0
@@ -143,7 +143,7 @@ def plot_options(xvalues, options, ax, title, xlabel, ylimit=0, barwidth=0.17):
 
 def plot_shared_query(xvalues_1, xvalues_2, options_1, options_2, line_options, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', framealpha=0):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=False, figsize=(8, 2.2))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=False, figsize=(8, 2.35))
     plt.subplots_adjust(wspace=0.18, hspace=0)
     x = np.arange(len(xvalues_2))
 
@@ -199,14 +199,14 @@ high_options = [ PlotOption(toTime(second_half(baseline_results)), 'naive', mark
                 PlotOption(toTime(second_half(batch_btree_bf_results)), 'batch/sLookup/bBF', marker=markers[3], linestyle=inplace_linestyle, color=color, alpha=alphas[3]),
                 PlotOption(toTime(second_half(batch_btree_bf_id_results)), 'batch/sLookup/bBF/pID', marker=markers[4], linestyle=delete_btree_linestyle, color=color, alpha=alphas[4])]
 
-plot_bar(first_half(sels), low_options,
-                [],
-                result_base_path + devices[index] + '-query-opt-breakdown-low.pdf', "", legendloc=2)
-
-plot_bar(second_half(sels), high_options,
-               [ PlotOption(toTime(second_half(scan_results)), 'scan', marker=None, linestyle='dotted', color='green'),
-                PlotOption(toTime(second_half(seq_scan_results)), 'scan (sequential keys)', marker=None, linestyle='dotted', color='green')],
-                result_base_path + devices[index] + '-query-opt-breakdown-high.pdf', "", legendloc=2)
+# plot_bar(first_half(sels), low_options,
+#                 [],
+#                 result_base_path + devices[index] + '-query-opt-breakdown-low.pdf', "", legendloc=2)
+# 
+# plot_bar(second_half(sels), high_options,
+#                [ PlotOption(toTime(second_half(scan_results)), 'scan', marker=None, linestyle='dotted', color='green'),
+#                 PlotOption(toTime(second_half(seq_scan_results)), 'scan (sequential keys)', marker=None, linestyle='dotted', color='green')],
+#                 result_base_path + devices[index] + '-query-opt-breakdown-high.pdf', "", legendloc=2)
 
 plot_shared_query(first_half(sels), second_half(sels), low_options, high_options,
                [ PlotOption(toTime(second_half(scan_results)), 'scan', marker=markers[0], linestyle='solid', color=antimatter_color),

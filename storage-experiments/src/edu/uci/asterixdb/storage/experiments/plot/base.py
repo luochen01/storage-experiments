@@ -63,7 +63,7 @@ params = {
    'text.usetex': False,
    'savefig.bbox':'tight',
    'savefig.pad_inches':0,
-   'figure.figsize':(3.75, 2.5),
+   'figure.figsize':(3.5, 2.5),
    "legend.fancybox":True,
    "legend.shadow":False,
    "legend.framealpha":0,
@@ -78,7 +78,7 @@ markers = ['o', '^', 'v', 'x', '*']
 
 plt.rcParams.update(params)
 
-shared_fig_size = (10, 2.75)
+shared_fig_size = (9, 2.6)
 shared_font_size = 12
 ingestion_xlabel = 'Time (Minutes)'
 ingestion_ylabel = 'Total Records (Millions)'
@@ -148,10 +148,10 @@ def plot_basic(options, output, title, xlabel=ingestion_xlabel, ylabel=ingestion
     # plt.title(title)
 
     step = 0
-    if xlimit / 6 <= 65:
+    if xlimit / 6 <= 30:
         step = 30
     else:
-        step = 300
+        step = 60
 
     plt.xlabel(xlabel)
     plt.xticks(np.arange(0, xlimit, step=step))

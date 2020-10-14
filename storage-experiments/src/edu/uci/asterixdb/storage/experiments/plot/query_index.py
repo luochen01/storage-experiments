@@ -9,12 +9,12 @@ import sys
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 query_base_path = base_path + devices[index] + '/query-index/'
 
 ylimits = [250, 45]
 
-index_only_ylimits = [25, 20]
+index_only_ylimits = [50, 30]
 
 time_index = 'time'
 # sel_strs = ['0.00001', '0.000025', '0.00005', '0.0001', '0.00025' , '0.0005', '0.001', '0.01']
@@ -162,7 +162,7 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit, barwidth=0
 
 def plot_shared_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=ylimits[index]):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 2.2))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(8, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit, ylimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit, ylimit)
@@ -218,7 +218,7 @@ def plot_query(xvalues, options, output, title, xlabel='Query Selectivity (%)', 
     plt.xlabel(xlabel)
     plt.xticks(x, xvalues)
     plt.xlim([-0.5, len(x) - 0.5])
-    plt.legend(loc=2, ncol=1, framealpha=0.5)
+    plt.legend(loc=2, ncol=1, framealpha=0)
     plt.ylabel(ylabel)
 
     # ax1.set_ylim(0, 1000)
@@ -250,7 +250,7 @@ validation_norepair_5_pk_indexonly_results = parse_query_experiment(validation_n
 
 def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=index_only_ylimits[index]):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 2.2))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(8, 2.2))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     barwidth = 0.2
 
