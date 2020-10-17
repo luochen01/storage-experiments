@@ -56,12 +56,12 @@ def plot_tune_tpcc_change_step():
         yvalues = sheet.col_values(i * 3 + 2, start_index, start_index + length)
         yvalues = np.array(yvalues)/100
         options.append(get_option(xvalues, yvalues, names[i]))
-    lines = plot_axis(ax[1], "(b) Tuned I/O Cost", time_values, 3, options, xlabel=xlabel_time, ylabel=ylabel_transaction_weighted_cost, use_raw_value=True)  
+    lines = plot_axis(ax[1], "(b) Weighted I/O Cost", time_values, 3, options, xlabel=xlabel_time, ylabel=ylabel_transaction_weighted_cost, use_raw_value=True)  
        
     ax[1].vlines(3600, 0, 3, linestyle='dashed')
     ax[1].text(3800, 1.5, 'workload\nchanged')
    
-    fig.tight_layout(pad=0.0, w_pad = 1.0)
+    fig.tight_layout(pad=0.0, w_pad = 1.5)
 
     fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0, handlelength=1.0, columnspacing=0)
     plt.subplots_adjust(top=0.9)

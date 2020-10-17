@@ -15,7 +15,7 @@ ylimit = 35
 
 def plot_multi_sk():
     sheet = workbook.sheet_by_name("multi-sk")
-    fig, axs = plt.subplots(1, 3, figsize=(8, 3))
+    fig, axs = plt.subplots(1, 3, figsize=(7, 2.6))
     
     lines = []
     
@@ -39,7 +39,7 @@ def plot_multi_sk():
 
     fig.tight_layout(pad=0.0, w_pad=0.1)
     fig.legend(lines, labels=names, ncol=4, loc='upper center', columnspacing=0.5, borderpad=0)
-    plt.subplots_adjust(top=0.85)
+    plt.subplots_adjust(top=0.83)
 
     path = output_path + "expr-multi-sk.pdf"
     plt.savefig(path)

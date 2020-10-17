@@ -4,7 +4,7 @@ import numpy as np
 from base import *
 
 num_exprs = 7
-names = [btree_static_default, btree_static_tuned, btree_dynamic, accordian_data, accordion_index, partitioned]
+names = [btree_static_default, btree_static_tuned, btree_dynamic, partitioned]
 
 output_path = "/Users/luochen/Desktop/tmp/"
 
@@ -13,14 +13,9 @@ workloads = ["(a) Write-Only", "(b) Write-Heavy", "(c) Read-Heavy", "(d) Scan-He
 ylimits = [75, 75, 75, 7.5]
 
 
-params = {
-    'font.family': 'Calibri',
-}
-plt.rcParams.update(params)
-
 
 def plot_single():
-    sheet = workbook.sheet_by_name("single")
+    sheet = workbook.sheet_by_name("single-talk")
     fig, axs = plt.subplots(1, 4, figsize=(10, 2.5))
     lines = []
     for i in range(0, len(workloads)):

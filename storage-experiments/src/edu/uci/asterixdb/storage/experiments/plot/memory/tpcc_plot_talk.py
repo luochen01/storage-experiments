@@ -30,7 +30,7 @@ def get_option(x, y, name):
 
 
 def plot_tpcc():
-    fig, axs = plt.subplots(1, 2, figsize=(6, 2.3))
+    fig, axs = plt.subplots(1, 2, figsize=(6, 2.5))
 
     sheet = tune_workbook.sheet_by_name("ycsb-plot")
     
@@ -54,7 +54,7 @@ def plot_tpcc():
   
     fig.tight_layout(pad=0.0, w_pad=5.0)
     fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0)
-    plt.subplots_adjust(top=0.84)
+    plt.subplots_adjust(top=0.82)
     
     path = output_path + "expr-plot-tpcc.pdf"
     plt.savefig(path)

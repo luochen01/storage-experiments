@@ -17,6 +17,9 @@ params = {
 plt.tight_layout()
 
 
+output_path = "/Users/luochen/Desktop/tmp/"
+
+
 def get_option(x, y, name):
     if name == lsm:
         return PlotOption(x, y, name, linestyle='dashed', marker='D', markevery=1, color='gray')
@@ -38,7 +41,7 @@ def plot_bar(ax, options):
     ax.set_ylabel(ylabel_throughput)
     ax.set_xticks(x)
     ax.set_xticklabels(workloads)
-    ax.set_ylim(0, 100)
+    ax.set_ylim(0, 120)
     #ax.set_xlim(-1.5 * width , len(workloads) - 4 * width)
     ax.legend(ncol=1, loc='upper left')
 

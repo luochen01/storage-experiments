@@ -13,7 +13,7 @@ ylimits = [75, 75, 75, 7.5]
 
 def plot_single():
     sheet = workbook.sheet_by_name("single")
-    fig, tmp = plt.subplots(2, 2, figsize=(6.5, 6))
+    fig, tmp = plt.subplots(2, 2, figsize=(5, 5))
     axs = [tmp[0][0], tmp[0][1], tmp[1][0], tmp[1][1]]
     
     lines = []
@@ -26,9 +26,9 @@ def plot_single():
             pos += num_exprs + 1
         lines = plot_axis(axs[i], workloads[i], write_memory_values, ylimits[i], options)
 
-    fig.tight_layout(pad=0, w_pad=1.0, h_pad=1.5)
-    fig.legend(lines, labels=names, ncol=6, loc='upper center', borderpad=0)
-    plt.subplots_adjust(top=0.95)
+    fig.tight_layout(pad=0, w_pad=1.5, h_pad=1.5)
+    fig.legend(lines, labels=names, ncol=3, loc='upper center', borderpad=0)
+    plt.subplots_adjust(top=0.92)
 
     path = output_path + "expr-single.pdf"
     plt.savefig(path)

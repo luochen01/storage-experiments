@@ -150,7 +150,7 @@ def process(dist):
     plot_basic([PlotOption(utils, util_latencies, color='red', marker='s')],
         result_base_path + 'write-secondary-eager-util-latency.pdf', 'System Utilization', latency_ylabel, 1, xlimit=0, ylimit=150, xtick_labels=utils, logy=False, post=post)
     
-    settings.fig_size = None
+    settings.fig_size = (2.75, 2.5)
 
     
     secondary_base_path = base_path + dist + "/secondary-query/"

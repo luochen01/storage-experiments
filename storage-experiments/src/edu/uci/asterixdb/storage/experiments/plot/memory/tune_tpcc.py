@@ -89,7 +89,7 @@ def plot_tpcc():
         options.append(array)
     lines = plot_txn_axis(axs[1], options)
    
-    fig.tight_layout(pad=0.0, w_pad = 1)
+    fig.tight_layout(pad=0.0, w_pad = 1.5)
     plt.subplots_adjust()
     
     path = output_path + "expr-tune-tpcc.pdf"

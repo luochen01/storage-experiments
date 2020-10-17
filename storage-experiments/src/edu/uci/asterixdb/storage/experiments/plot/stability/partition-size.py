@@ -56,7 +56,7 @@ plot_basic(
     [
         get_round_scheduler(np.arange(len(size_ratios)), roundrobin_writes),
         get_choose_scheduler(np.arange(len(size_ratios)), choosebest_writes)
-    ], result_base_path + 'write-partition-size.pdf', 'Partition Size', write_ylabel, 1, xlimit=0, ylimit=15,
+    ], result_base_path + 'write-partition-size.pdf', 'SSTable Size', write_ylabel, 1, xlimit=0, ylimit=15,
        xtick_labels=size_names, logy=False, post=post, title='(a) Testing Phase: Maximum\nWrite Throughput')
 
 partition_base_path = base_path + "uniform/partition/"
@@ -78,6 +78,6 @@ plot_basic(
     [
         get_round_scheduler(np.arange(len(size_ratios)), roundrobin_latencies),
         get_choose_scheduler(np.arange(len(size_ratios)), choosebest_latencies)
-    ], result_base_path + 'write-partition-size-latency.pdf', 'Partition Size', latency_ylabel, 1, xlimit=0, ylimit=2000, ymin=0.001,
+    ], result_base_path + 'write-partition-size-latency.pdf', 'SSTable Size', latency_ylabel, 1, xlimit=0, ylimit=2000, ymin=0.001,
        xtick_labels=size_names, logy=True, post=post, title='(b) Running Phase: 99%\nPercentile Write Latency')
 

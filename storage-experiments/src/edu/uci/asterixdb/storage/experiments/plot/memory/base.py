@@ -58,17 +58,17 @@ ylabel_transaction_weighted_cost = "Weighted I/O Cost (100KB/txn)"
 ylabel_write_memory = "Write Memory (GB)"
 ylabel_op_io = "I/O Cost (KB/op)"
 
-btree_static = r"B$^+$-static"
-btree_static_default = r"B$^+$-static"
-btree_static_tuned = r"B$^+$-static-tuned"
+btree_static = r"B$^+$-tree-static"
+btree_static_default = r"B$^+$-tree-static-default"
+btree_static_tuned = r"B$^+$-tree-static-tuned"
 #btree_dynamic = "B$^+$-tree-dynamic"
 accordian_data = "Accordion-data"
 accordion_index = "Accordion-index"
 
-btree_dynamic = "B$^+$-dynamic"
-btree_dynamic_max_memory = "B$^+$-dynamic-MEM"
-btree_dynamic_min_lsn = "B$^+$-dynamic-LSN"
-btree_dynamic_opt = "B$^+$-dynamic-OPT"
+btree_dynamic = "B$^+$-tree-dynamic"
+btree_dynamic_max_memory = "B$^+$-tree-dynamic-MEM"
+btree_dynamic_min_lsn = "B$^+$-tree-dynamic-LSN"
+btree_dynamic_opt = "B$^+$-tree-dynamic-OPT"
 
 partitioned = "Partitioned"
 partitioned_max_memory = "Partitioned-MEM"
@@ -149,8 +149,10 @@ def plot_axis(ax, name, xvalues, ylimit, options, xlabel=xlabel_memory, ylabel=y
             xvalue = option.x
         line = ax.plot(xvalue, option.y, label=option.legend, color=option.color, alpha=option.alpha, linestyle=option.linestyle, marker=option.marker, markevery=option.markevery)
         lines.append(line)
-    #ax.set_title(name)
-    ax.set_xlabel(xlabel + "\n\n" + name)
+    ax.set_title(name)
+    ax.set_xlabel(xlabel)
+
+    #ax.set_xlabel(xlabel + "\n\n" + name)
     ax.set_ylabel(ylabel)
     if use_raw_value:
         ax.set_xticks(xvalues)

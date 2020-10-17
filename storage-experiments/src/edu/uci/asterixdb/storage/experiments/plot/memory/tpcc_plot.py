@@ -49,7 +49,7 @@ def plot_tpcc():
         options.append(option)
     lines = plot_axis(axs[1], '(b) TPCC (SF=2000)', [0, 2, 4, 6, 8], 400, options, ylabel=ylabel_transaction_cost, use_raw_value=True)  
   
-    fig.tight_layout(pad=0.0, w_pad=0.1)
+    fig.tight_layout(pad=0.0, w_pad=1.5)
     fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0)
     plt.subplots_adjust(top=0.9)
     

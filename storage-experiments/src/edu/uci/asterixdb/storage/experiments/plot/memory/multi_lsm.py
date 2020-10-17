@@ -25,7 +25,7 @@ plt.tight_layout()
 
 def plot_multi_lsm():
     sheet = workbook.sheet_by_name("multi-lsm")
-    fig, ax = plt.subplots(figsize=(6, 3))
+    fig, ax = plt.subplots(figsize=(5.3, 2.8))
     gs = gridspec.GridSpec(1, 2, width_ratios=[5, 5]) 
     ax0 = plt.subplot(gs[0])
     ax1 = plt.subplot(gs[1])
@@ -44,7 +44,7 @@ def plot_multi_lsm():
         options.append(get_option(params, values, names[i]))
     lines = plot_axis(ax1, '(b) Vary Skewness', skew_values, ylimit, options, xlabel=xlabel_skewness)  
 
-    fig.tight_layout(pad=0.0, w_pad=1.0)
+    fig.tight_layout(pad=0.0, w_pad=1.5)
     fig.legend(lines, labels=names, ncol=4, loc='upper center', borderpad=0)
     plt.subplots_adjust(top=0.85)
 
