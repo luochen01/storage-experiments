@@ -7,7 +7,7 @@ import os
 from base import *
 from pathlib import PurePath
 
-index = ssd_index
+index = hdd_index
 
 query_base_path = base_path + devices[index] + '/query/'
 filter_base_path = base_path + devices[index] + '/query-filter/'
@@ -118,7 +118,7 @@ def plot_options(xvalues, options, ax, title, xlabel, xlimit, ylimit=0, barwidth
 
 def plot_shared_query(xvalues, options_1, options_2, options_3, output, titles, xlabel='Time Range (Days)', ylabel='Query Time (s)', xlimit=110, framealpha=0):
     # use as global
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(8, 2.25))
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(8, 2.5))
     plt.subplots_adjust(wspace=0.05, hspace=0, top = 0.75)
     lines = plot_options(xvalues, options_1, ax1, titles[0], xlabel, xlimit)
     plot_options(xvalues, options_2, ax2, titles[1], xlabel, xlimit)

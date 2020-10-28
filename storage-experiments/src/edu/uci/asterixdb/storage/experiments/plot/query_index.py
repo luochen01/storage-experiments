@@ -250,7 +250,7 @@ validation_norepair_5_pk_indexonly_results = parse_query_experiment(validation_n
 
 def plot_shared_index_only_query(xvalues, options_1, options_2, output, titles, xlabel='Query Selectivity (%)', ylabel='Query Time (s)', xlimit=110, ylimit=index_only_ylimits[index]):
     # use as global
-    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(8, 2.2))
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(8, 2.5))
     plt.subplots_adjust(wspace=0.03, hspace=0)
     barwidth = 0.2
 
