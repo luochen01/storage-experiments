@@ -31,7 +31,7 @@ public class FeedReporter extends TimerTask {
         File logFile = new File(logPath);
         if (logFile.getParentFile() != null) {
             if (!logFile.getParentFile().exists()) {
-                logFile.mkdirs();
+                logFile.getParentFile().mkdirs();
             }
         }
         logWriter = new BufferedWriter(new FileWriter(logFile));
