@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -20,85 +19,91 @@ interface PolicyCreator {
 class DistributionSimulator {
 
     // 100M
-    public static final int MAX_KEY = 100 * 1024 * 1024;
+    public static final int MAX_KEY = 1000 * 1000 * 1000;
 
-    public static final int NUM_KEYS = 1000 * 1000;
+    public static final int NUM_KEYS = 10 * 1000 * 1000;
 
-    public static final int PARTITIONS_PER_NODE = 16;
+    public static final int PARTITIONS_PER_NODE = 2;
 
-    private static final Random random = new Random(17);
+    public static final int ITERATIONS = 50;
+
+    private static final Random random = new Random(System.currentTimeMillis());
 
     public static void main(String[] args) {
         //        partitionSize(DistributionSimulator::createConsistentPolicies);
         //        partitionSize(DistributionSimulator::createStaticRangePolicies);
         //        partitionSize(DistributionSimulator::createDynamicRangePolicies);
-
-        //addNodes();
+        System.out.println("add nodes");
+        addNodes();
+        System.out.println("delete nodes");
         deleteNodes();
     }
 
-    private static void addNodes() {
-        int initNodes = 2;
-        int maxNodes = 100;
-        int keysPerNode = NUM_KEYS / maxNodes;
-        DistributionPolicy[] policies = createPolicies(initNodes, maxNodes, keysPerNode);
-
-        IntList keys = loadKeys();
-        loadPolicies(policies, keys, 0, initNodes * keysPerNode);
-        // load data
-        printHeader(policies);
-
-        for (int id = initNodes + 1; id <= maxNodes; id++) {
-            loadPolicies(policies, keys, (id - 1) * keysPerNode, keysPerNode);
-            List<RebalanceResult> list = new ArrayList<>();
-            for (DistributionPolicy policy : policies) {
-                list.add(policy.addNodes(Collections.singletonList(new Node(id))));
-            }
-            printLine(id, keysPerNode, list);
-        }
-    }
-
-    private static void partitionSize(PolicyCreator creator) {
-        int initNodes = 2;
-        int maxNodes = 100;
-        int keysPerNode = NUM_KEYS / maxNodes;
-
-        DistributionPolicy[] policies = creator.create(initNodes, maxNodes, keysPerNode, new int[] { 2, 4, 8, 16, 32 });
-
-        IntList keys = loadKeys();
-        loadPolicies(policies, keys, 0, initNodes * keysPerNode);
-        // load data
-        printHeader(policies);
-
-        for (int id = initNodes + 1; id <= maxNodes; id++) {
-            loadPolicies(policies, keys, (id - 1) * keysPerNode, keysPerNode);
-            List<RebalanceResult> list = new ArrayList<>();
-            for (DistributionPolicy policy : policies) {
-                list.add(policy.addNodes(Collections.singletonList(new Node(id))));
-            }
-            printLine(id, keysPerNode, list);
-        }
-    }
-
     private static void deleteNodes() {
-        int initNodes = 100;
-        int keysPerNode = NUM_KEYS / initNodes;
-        DistributionPolicy[] policies = createPolicies(initNodes, initNodes, keysPerNode);
-        loadPolicies(policies);
+        int[] nodes = { 20, 40, 60, 80, 100 };
+        int keysPerNode = NUM_KEYS / 100;
+
+        IntList keys = loadKeys(NUM_KEYS);
         // load data
-        printHeader(policies);
 
-        for (int i = 0; i < 100; i++) {
-            int node = ThreadLocalRandom.current().nextInt(initNodes);
-            List<RebalanceResult> list = new ArrayList<>();
-            for (DistributionPolicy policy : policies) {
-                RebalanceResult result = policy.removeNodes(Collections.singletonList(policy.getNodes().get(node)));
-                policy.addNodes(Collections.singletonList(new Node(initNodes + i + 1)));
-
-                list.add(result);
-
+        for (int node : nodes) {
+            DistributionPolicy[] policies = createPolicies(node, keysPerNode);
+            if (node == nodes[0]) {
+                printHeader(policies);
             }
-            printLine(initNodes - 1, keysPerNode, list);
+            loadPolicies(policies, keys, 0, node * keysPerNode);
+
+            List<AggregateRebalanceResult> list = new ArrayList<>();
+            for (int i = 0; i < policies.length; i++) {
+                list.add(new AggregateRebalanceResult());
+            }
+            for (int i = 0; i < ITERATIONS; i++) {
+                for (int p = 0; p < policies.length; p++) {
+                    DistributionPolicy policy = policies[p];
+                    List<Node> removed =
+                            Collections.singletonList(policy.getNodes().get(random.nextInt(policy.getNodes().size())));
+                    RebalanceResult result = policy.removeNodes(removed);
+                    policy.addNodes(Collections.singletonList(new Node(node + i + 1)));
+                    if (i > ITERATIONS / 2) {
+                        list.get(p).add(result);
+                    }
+                }
+            }
+            printLine(node, (double) keysPerNode * node / (node - 1), list);
+        }
+    }
+
+    private static void addNodes() {
+        int[] nodes = { 20, 40, 60, 80, 100 };
+        int keysPerNode = NUM_KEYS / 100;
+
+        IntList keys = loadKeys(NUM_KEYS);
+        // load data
+
+        for (int node : nodes) {
+            DistributionPolicy[] policies = createPolicies(node, keysPerNode);
+            if (node == nodes[0]) {
+                printHeader(policies);
+            }
+            loadPolicies(policies, keys, 0, node * keysPerNode);
+
+            List<AggregateRebalanceResult> list = new ArrayList<>();
+            for (int i = 0; i < policies.length; i++) {
+                list.add(new AggregateRebalanceResult());
+            }
+            for (int i = 0; i < ITERATIONS; i++) {
+                for (int p = 0; p < policies.length; p++) {
+                    DistributionPolicy policy = policies[p];
+                    RebalanceResult result = policy.addNodes(Collections.singletonList(new Node(node + i + 1)));
+                    List<Node> removed =
+                            Collections.singletonList(policy.getNodes().get(random.nextInt(policy.getNodes().size())));
+                    policy.removeNodes(removed);
+                    if (i > ITERATIONS / 2) {
+                        list.get(p).add(result);
+                    }
+                }
+            }
+            printLine(node, (double) keysPerNode * node / (node + 1), list);
         }
     }
 
@@ -107,7 +112,7 @@ class DistributionSimulator {
         DistributionPolicy[] policies = new DistributionPolicy[partitionsPerNodes.length];
         int pos = 0;
         for (int partition : partitionsPerNodes) {
-            policies[pos++] = new DynamicRangePolicy(keysPerNode / partition, createNodes(initNodes));
+            policies[pos++] = new DynamicPartitionPolicy(keysPerNode / partition, createNodes(initNodes));
         }
         return policies;
     }
@@ -132,18 +137,17 @@ class DistributionSimulator {
         return policies;
     }
 
-    private static DistributionPolicy[] createPolicies(int initNodes, int maxNodes, int keysPerNode) {
-        return new DistributionPolicy[] { new HashPolicy(createNodes(initNodes)),
-                new LinearHashPolicy(createNodes(initNodes)), new RangePolicy(createNodes(initNodes)),
-                new ConsistentHashPolicy(PARTITIONS_PER_NODE, createNodes(initNodes)),
-                new StaticPartitionPolicy(maxNodes * PARTITIONS_PER_NODE, createNodes(initNodes)),
-                new DynamicRangePolicy(keysPerNode / PARTITIONS_PER_NODE, createNodes(initNodes)) };
+    private static DistributionPolicy[] createPolicies(int nodes, int keysPerNode) {
+        return new DistributionPolicy[] { new ConsistentHashPolicy(4, createNodes(nodes)),
+                new ConsistentHashPolicy(8, createNodes(nodes)), new ConsistentHashPolicy(16, createNodes(nodes)),
+                new StaticPartitionPolicy(4, createNodes(nodes)), new StaticPartitionPolicy(8, createNodes(nodes)),
+                new StaticPartitionPolicy(16, createNodes(nodes)) };
     }
 
-    private static IntList loadKeys() {
-        IntSet set = new IntOpenHashSet(NUM_KEYS);
+    private static IntList loadKeys(int numKeys) {
+        IntSet set = new IntOpenHashSet(numKeys);
 
-        while (set.size() < NUM_KEYS) {
+        while (set.size() < numKeys) {
             set.add(random.nextInt(MAX_KEY));
         }
         IntList list = new IntArrayList(set);
@@ -152,7 +156,7 @@ class DistributionSimulator {
     }
 
     private static void loadPolicies(DistributionPolicy[] policies) {
-        IntList keys = loadKeys();
+        IntList keys = loadKeys(NUM_KEYS);
         loadPolicies(policies, keys, 0, keys.size());
     }
 
@@ -174,13 +178,13 @@ class DistributionSimulator {
         System.out.println(sb.toString());
     }
 
-    private static void printLine(int nodes, int keysPerNode, List<RebalanceResult> results) {
+    private static void printLine(int nodes, double keysPerNode, List<AggregateRebalanceResult> results) {
         StringBuilder sb = new StringBuilder();
         sb.append(nodes);
         sb.append("\t");
-        for (RebalanceResult result : results) {
-            sb.append(String.format("%.3f\t%.3f\t", (double) result.movement / keysPerNode,
-                    (double) result.maxKeys / keysPerNode));
+        for (AggregateRebalanceResult result : results) {
+            sb.append(String.format("%.3f\t%.3f\t", result.movement / result.count / keysPerNode,
+                    result.maxKeys / result.count / keysPerNode));
         }
         System.out.println(sb.toString());
     }

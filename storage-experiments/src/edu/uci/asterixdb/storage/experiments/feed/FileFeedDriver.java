@@ -72,7 +72,7 @@ public class FileFeedDriver implements IFeedDriver {
     public String inputFile = null;
 
     @Option(name = "-type", aliases = "--type", usage = "data type (tweet or kv)")
-    public DataType dataType = DataType.TWEET;
+    public DataType dataType = DataType.KV;
 
     @Option(name = "-size", aliases = "--size", usage = "record size (in bytes)")
     public int recordSize = 500;
@@ -103,7 +103,7 @@ public class FileFeedDriver implements IFeedDriver {
         clients = new FeedSocketAdapterClient[urls.length];
         for (int i = 0; i < clients.length; i++) {
             IRecordGenerator recordGen =
-                    dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator(recordSize);
+                    dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator();
             clients[i] = new FeedSocketAdapterClient(urls[i], Integer.valueOf(ports), recordGen);
         }
         reporter = new FeedReporter(clients, period, logPath);

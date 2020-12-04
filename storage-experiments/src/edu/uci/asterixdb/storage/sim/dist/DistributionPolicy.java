@@ -24,6 +24,21 @@ class RebalanceResult {
     }
 }
 
+class AggregateRebalanceResult {
+    int count;
+    double movement;
+    double minKeys;
+    double maxKeys;
+
+    public void add(RebalanceResult result) {
+        count++;
+        movement += result.movement;
+        minKeys += result.minKeys;
+        maxKeys += result.maxKeys;
+    }
+
+}
+
 interface DistributionPolicy {
     RebalanceResult addNodes(List<Node> nodes);
 
@@ -305,10 +320,11 @@ class StaticPartitionPolicy implements DistributionPolicy {
     private final List<Node> nodes = new ArrayList<>();
     private final Partition[] partitions;
 
-    public StaticPartitionPolicy(int partitions, List<Node> nodes) {
-        this.partitions = new Partition[partitions];
+    public StaticPartitionPolicy(int partitionsPerNode, List<Node> nodes) {
+        int numPartitions = partitionsPerNode * nodes.size();
+        this.partitions = new Partition[numPartitions];
         this.nodes.addAll(nodes);
-        for (int i = 0; i < partitions; i++) {
+        for (int i = 0; i < numPartitions; i++) {
             this.partitions[i] = new Partition(Integer.MIN_VALUE, Integer.MAX_VALUE);
             Node node = nodes.get(i % nodes.size());
             node.assignment.add(this.partitions[i]);
@@ -319,35 +335,24 @@ class StaticPartitionPolicy implements DistributionPolicy {
     public RebalanceResult addNodes(List<Node> newNodes) {
         this.nodes.addAll(newNodes);
 
-        int partitionsPerNodeLow = partitions.length / nodes.size();
-        int partitionsPerNodeHigh = partitionsPerNodeLow + ((partitions.length % nodes.size() != 0) ? 1 : 0);
-
         int count = 0;
         while (true) {
-            Node min = Utils.minPartitionsNode(nodes);
-            Node max = Utils.maxPartitionsNode(nodes);
+            Node minNode = Utils.minKeysNode(nodes);
+            Node maxNode = Utils.maxKeysNode(nodes);
 
-            if (min.numPartitions() >= partitionsPerNodeLow && max.numPartitions() <= partitionsPerNodeHigh) {
-                // we have ready reached the steady state
-                break;
-            }
-            if (min.numPartitions() < partitionsPerNodeHigh && max.numPartitions() > partitionsPerNodeLow) {
-                int moved = Math.min(max.numPartitions() - partitionsPerNodeLow,
-                        partitionsPerNodeHigh - min.numPartitions());
-                Preconditions.checkState(moved > 0);
-                int remaining = moved;
-                for (int i = 0; i < partitions.length && remaining > 0; i++) {
-                    if (partitions[i].getNode() == max) {
-                        max.assignment.remove(partitions[i]);
-                        min.assignment.add(partitions[i]);
-                        remaining--;
-                        count += partitions[i].numKeys();
-                    }
-                }
+            int oldDiff = maxNode.assignment.getTotalKeys() - minNode.assignment.getTotalKeys();
+            Partition smallest = maxNode.assignment.getPartitionList(Assignment.SIZE_SORTER).get(0);
+            int newDiff = Math.abs((maxNode.assignment.getTotalKeys() - smallest.numKeys())
+                    - (minNode.assignment.getTotalKeys() + smallest.numKeys()));
+
+            if (newDiff < oldDiff) {
+                // proceed to rebalance
+                maxNode.assignment.remove(smallest);
+                minNode.assignment.add(smallest);
+                count += smallest.numKeys();
             } else {
-                throw new IllegalStateException(
-                        String.format("Illegal partition assignment. min partitions %d max partitions %d",
-                                min.numPartitions(), max.numPartitions()));
+                // no need to rebalance
+                break;
             }
         }
         return new RebalanceResult(count, Utils.minKeysNode(nodes).numKeys(), Utils.maxKeysNode(nodes).numKeys());
@@ -392,7 +397,7 @@ class StaticPartitionPolicy implements DistributionPolicy {
 
     @Override
     public String toString() {
-        return "static-partition-" + partitions.length;
+        return "static-partition-" + partitions.length / nodes.size();
     }
 
     @Override
@@ -402,13 +407,13 @@ class StaticPartitionPolicy implements DistributionPolicy {
 
 }
 
-class DynamicRangePolicy implements DistributionPolicy {
+class DynamicPartitionPolicy implements DistributionPolicy {
     private final int maxPartitionSize;
     private final Partition searchKey = new Partition(-1, -1);
     private final List<Node> nodes = new ArrayList<>();
     private final List<Partition> partitions = new ArrayList<>();
 
-    public DynamicRangePolicy(int maxPartitionSize, List<Node> nodes) {
+    public DynamicPartitionPolicy(int maxPartitionSize, List<Node> nodes) {
         searchKey.setNode(new Node(-1));
         this.maxPartitionSize = maxPartitionSize;
         double step = (double) DistributionSimulator.MAX_KEY / nodes.size();
@@ -546,13 +551,13 @@ class ConsistentHashPolicy implements DistributionPolicy {
         this.nodes.addAll(nodes);
         this.partitionsPerNode = partitionsPerNode;
         int numPartitions = partitionsPerNode * nodes.size();
-        int step = DistributionSimulator.MAX_KEY / numPartitions;
+        double step = DistributionSimulator.MAX_KEY / numPartitions;
 
         List<Node> tmp = new ArrayList<>(this.nodes);
         int pos = 0;
         Collections.shuffle(tmp);
         for (int i = 0; i < numPartitions; i++) {
-            Partition partition = new Partition(i * step, (i + 1) * step - 1);
+            Partition partition = new Partition((int) (i * step), (int) ((i + 1) * step - 1));
             partitions.add(partition);
             Node node = tmp.get(pos++);
             if (pos == tmp.size()) {
@@ -561,6 +566,7 @@ class ConsistentHashPolicy implements DistributionPolicy {
             }
             node.assignment.add(partition);
         }
+        partitions.get(partitions.size() - 1).resetUpper(DistributionSimulator.MAX_KEY - 1);
     }
 
     @Override

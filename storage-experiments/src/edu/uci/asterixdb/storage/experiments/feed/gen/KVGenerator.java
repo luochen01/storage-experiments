@@ -26,29 +26,32 @@ import edu.uci.asterixdb.storage.experiments.feed.FileFeedDriver.UpdateDistribut
 public class KVGenerator implements IRecordGenerator {
     private static final String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
     private final Random random = new Random(17);
-    private final int recordLength;
 
-    public KVGenerator(int recordSize) {
-        recordLength = (recordSize) / 2;
+    public KVGenerator() {
     }
 
     @Override
     public String getRecord(long nextId) {
         StringBuilder sb = new StringBuilder();
-        sb.append("{\"key\":int64(\"");
+        sb.append("{\"pkey\":");
         sb.append(nextId);
-        sb.append("\"),");
-        sb.append("\"value\":\"");
-        genRandomString(recordLength, sb);
-        sb.append("\"}\n");
+        sb.append(",");
+        for (int i = 1; i <= 10; i++) {
+            sb.append("\"value");
+            sb.append(i);
+            sb.append("\":");
+            sb.append(random.nextLong());
+            if (i < 10) {
+                sb.append(",");
+            }
+        }
+        sb.append("}\n");
         return sb.toString();
     }
 
-    protected void genRandomString(int length, StringBuilder sb) {
-        while (sb.length() < length) { // length of the random string.
-            int index = (int) (random.nextFloat() * SALTCHARS.length());
-            sb.append(SALTCHARS.charAt(index));
-        }
+    public static void main(String[] args) {
+        KVGenerator gen = new KVGenerator();
+        System.out.println(gen.getRecord(1));
     }
 
 }

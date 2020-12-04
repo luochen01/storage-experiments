@@ -49,7 +49,7 @@ class Partition implements Comparable<Partition> {
     }
 
     public void addKey(int key) {
-        Preconditions.checkState(inRange(key));
+        Preconditions.checkState(inRange(key), "Illegal key %s for [%s, %s]", key, lowerBound, upperBound);
         keys.add(key);
         node.assignment.invalidateKeys();
     }
@@ -66,7 +66,7 @@ class Partition implements Comparable<Partition> {
     }
 
     public boolean inRange(int key) {
-        if (lowerBound < upperBound) {
+        if (lowerBound <= upperBound) {
             return lowerBound <= key && key <= upperBound;
         } else {
             return lowerBound <= key || key <= upperBound;
@@ -82,10 +82,10 @@ class Partition implements Comparable<Partition> {
     }
 
     public int middleBound() {
-        if (lowerBound < upperBound) {
-            return (upperBound + lowerBound) / 2;
+        if (lowerBound <= upperBound) {
+            return (lowerBound + upperBound) / 2;
         } else {
-            return (upperBound + lowerBound + DistributionSimulator.MAX_KEY) / 2;
+            return ((lowerBound + upperBound + DistributionSimulator.MAX_KEY) / 2) % DistributionSimulator.MAX_KEY;
         }
     }
 
