@@ -6,6 +6,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.RateLimiter;
 
 import edu.uci.asterixdb.storage.experiments.feed.gen.IRecordGenerator;
@@ -35,7 +36,7 @@ public class FileFeedDriver implements IFeedDriver {
     public String url;
 
     @Option(required = true, name = "-p", aliases = "--ports", usage = "ports of the feed socket")
-    public String ports;
+    public String port;
 
     @Option(name = "-l", aliases = "--log-path", usage = "path of the log file")
     public String logPath;
@@ -100,11 +101,12 @@ public class FileFeedDriver implements IFeedDriver {
         idGen = IdGenerator.create(distribution, theta, startRange, updateRatio, mode.equals(FeedMode.Random));
 
         String[] urls = url.split(",");
+        String[] ports = port.split(",");
         clients = new FeedSocketAdapterClient[urls.length];
         for (int i = 0; i < clients.length; i++) {
             IRecordGenerator recordGen =
                     dataType == DataType.TWEET ? new TweetGenerator(sidRange, recordSize) : new KVGenerator();
-            clients[i] = new FeedSocketAdapterClient(urls[i], Integer.valueOf(ports), recordGen);
+            clients[i] = new FeedSocketAdapterClient(urls[i], Integer.valueOf(ports[i]), recordGen);
         }
         reporter = new FeedReporter(clients, period, logPath);
         limiter = limit > 0 ? RateLimiter.create(limit) : null;
