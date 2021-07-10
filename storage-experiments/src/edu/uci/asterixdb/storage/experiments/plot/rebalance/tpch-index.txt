@@ -1,0 +1,24 @@
+Q3: LineItem: l_shipdate, l_extendedprice, l_discount
+	Orders: o_orderdate, o_custkey, o_shippriority
+	Customer: c_mktsegment
+
+Q4:
+	Orders: o_orderdate, o_orderpriority
+
+Q6: LineItem: l_shipdate, l_quantity, l_extendedprice, l_discount
+
+Q7: LineItem: l_shipdate, l_extendedprice, l_discount, l_suppkey
+
+Q8: Orders: o_orderdate, o_custkey
+
+Q10: Orders: o_orderdate, o_custkey
+
+Q11: Try index join on ps_suppkey
+	Build index on ps_suppkey
+
+Q14: LineItem: l_shipdate, l_partkey, l_extendedprice, l_discount
+	Try index join on LineItem
+
+Q15: LineItem: l_shipdate, l_suppkey, l_extendedprice, l_discount
+
+Q20: LineItem: l_shipdate, l_partkey, l_suppkey

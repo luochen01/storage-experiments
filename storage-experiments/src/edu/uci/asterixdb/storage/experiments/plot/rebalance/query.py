@@ -31,7 +31,7 @@ def plot_bar(ax, options, ylimit):
 
 def plot_query(nodes, legends, ylimit = 6000):
     sheet = workbook.sheet_by_name("query-" + nodes)
-    fig, ax = plt.subplots(1, figsize=(8, 2.3))
+    fig, ax = plt.subplots(1, figsize=(8, 2.1))
     
     queries = sheet.col_values(0, 1, 23)
     options = []

@@ -1,0 +1,19 @@
+use dataverse tpch;
+ 
+for $c in dataset Customer
+for $o in dataset NestedOrders
+where $c.c_custkey = $o.o_custkey
+and sum(for $t in $o.o_lineitems return $t.l_quantity) > 300
+for $l in $o.o_lineitems
+group by $c_name := $c.c_name, $c_custkey := $c.c_custkey, $o_orderkey := $o.o_orderkey, 
+         $o_orderdate := $o.o_orderdate, $o_totalprice := $o.o_totalprice with $l
+order by $o_totalprice desc, $o_orderdate 
+limit 100
+return {  
+  "c_name": $c_name,
+  "c_custkey": $c_custkey,
+  "o_orderkey": $o_orderkey,
+  "o_orderdate": $o_orderdate,
+  "o_totalprice": $o_totalprice,
+  "sum_quantity": sum(for $j in $l return $j.l_quantity)  
+}

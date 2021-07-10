@@ -44,7 +44,7 @@ params = {
 plt.rcParams.update(params)
 plt.tight_layout()
 
-names = ["hashing", "StaticHash", "DynaHash", "DynaHash-cleanup"]
+names = ["Hashing", "StaticHash", "DynaHash", "DynaHash-lazy-cleanup"]
 colors = ['tomato', 'dodgerblue', 'darkgray', 'orange']
 
 

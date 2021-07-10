@@ -1,0 +1,40 @@
+USE tpch;
+
+WITH tmp AS
+(
+SELECT
+    l_partkey AS lpkey,
+    l_quantity AS quantity,
+    l_extendedprice AS extndprice,
+    l_discount AS discount
+FROM LineItem
+WHERE (l_shipmode = 'AIR' or l_shipmode = 'AIR REG') 
+AND l_shipinstruct = 'DELIVER IN PERSON'
+)
+
+SELECT ELEMENT SUM(l.extndprice * (1 - l.discount))
+FROM tmp l
+JOIN Part p
+ON p.p_partkey = l.lpkey
+  WHERE
+  (
+    p.p_brand = 'Brand#12'
+    AND regexp_contains(p.p_container, 'SM CASE|SM BOX|SM PACK|SM PKG')
+    AND l.quantity >= 1 and l.quantity <= 11
+    AND p.p_size >= 1 and p.p_size <= 5
+  )
+  OR
+  (
+    p.p_brand = 'Brand#23'
+    AND regexp_contains(p.p_container, 'MED BAG|MED BOX|MED PKG|MED PACK')
+    AND l.quantity >= 10 and l.quantity <= 20
+    AND p.p_size >= 1 and p.p_size <= 10
+  )
+  OR
+  (
+    p.p_brand = 'Brand#34'
+    AND regexp_contains(p.p_container, 'LG CASE|LG BOX|LG PACK|LG PKG')
+    AND l.quantity >= 20 and l.quantity <= 30
+    AND p.p_size >= 1 and p.p_size <= 15
+  )
+;

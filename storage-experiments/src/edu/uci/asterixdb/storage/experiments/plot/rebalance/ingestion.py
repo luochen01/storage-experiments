@@ -84,7 +84,7 @@ def plot_rebalance_write():
     
     options = [get_option(write_speeds, rebalance_times, 2)]
     plot_bar(ax, options, 150, "Controlled Write Rate (krecords/s)")
-    # ax.legend(ncol=1, loc='upper right')
+    ax.legend(ncol=1, loc='upper left')
     path = output_path + "expr-rebalance-write.pdf"
     plt.savefig(path)
     print('plotted ' + path)

@@ -1,0 +1,23 @@
+use tpch;
+WITH tmp AS
+(
+    SELECT l_orderkey l_orderkey, sum(l.l_quantity) t_sum_quantity
+    FROM  LineItem AS l
+    GROUP BY l.l_orderkey as l_orderkey
+)
+
+SELECT c_name c_name, c_custkey c_custkey, o_orderkey o_orderkey,
+       o_orderdate o_orderdate, o_totalprice o_totalprice,
+       sum(l.l_quantity) sum_quantity
+FROM  Customer c,
+      Orders o,
+      tmp t,
+      LineItem l
+WHERE c.c_custkey = o.o_custkey AND o.o_orderkey = t.l_orderkey AND t.t_sum_quantity > 300
+      AND l.l_orderkey = t.l_orderkey
+GROUP BY c.c_name AS c_name,c.c_custkey AS c_custkey,
+         o.o_orderkey AS o_orderkey,o.o_orderdate AS o_orderdate,
+         o.o_totalprice AS o_totalprice
+ORDER BY o_totalprice DESC,o_orderdate
+LIMIT 100
+;

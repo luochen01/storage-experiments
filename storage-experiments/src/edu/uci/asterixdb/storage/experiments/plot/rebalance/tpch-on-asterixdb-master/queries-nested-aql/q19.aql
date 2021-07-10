@@ -1,0 +1,41 @@
+use dataverse tpch;
+
+set import-private-functions 'true';
+
+declare function q19_tmp() {
+  for $o in dataset NestedOrders
+  for $t in $o.o_lineitems  
+  where
+  ($t.l_shipmode = 'AIR' or $t.l_shipmode = 'AIR REG')
+  and $t.l_shipinstruct = 'DELIVER IN PERSON'
+  return {
+    "lpkey": $t.l_partkey,
+    "quantity": $t.l_quantity,
+    "extndprice": $t.l_extendedprice,
+    "discount": $t.l_discount
+  }
+}
+
+sum(
+  for $l in q19_tmp()
+  for $p in dataset Part
+  where $p.p_partkey = $l.lpkey
+    and ( (
+        $p.p_brand = 'Brand#12'
+        and regexp_contains($p.p_container,'SM CASE|SM BOX|SM PACK|SM PKG')
+        and $l.quantity >= 1 and $l.quantity <= 11
+        and $p.p_size >= 1 and $p.p_size <= 5
+      ) or (
+        $p.p_brand = 'Brand#23'
+        and regexp_contains($p.p_container, 'MED BAG|MED BOX|MED PKG|MED PACK')
+        and $l.quantity >= 10 and $l.quantity <= 20
+        and $p.p_size >= 1 and $p.p_size <= 10
+      ) or (
+        $p.p_brand = 'Brand#34'
+        and regexp_contains($p.p_container, 'LG CASE|LG BOX|LG PACK|LG PKG')
+        and $l.quantity >= 20 and $l.quantity <= 30
+        and $p.p_size >= 1 and $p.p_size <= 15
+      )
+    )
+  return $l.extndprice * (1 - $l.discount)
+)

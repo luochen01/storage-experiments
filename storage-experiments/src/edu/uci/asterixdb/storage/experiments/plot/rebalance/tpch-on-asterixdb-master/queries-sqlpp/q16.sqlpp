@@ -1,0 +1,27 @@
+USE tpch;
+
+WITH tmp AS
+(
+    SELECT psp.p_brand, psp.p_type, psp.p_size, psp.ps_suppkey
+    FROM  (
+            SELECT p.p_brand, p.p_type, p.p_size, ps.ps_suppkey
+            FROM  Partsupp ps,
+                  Part p
+            WHERE p.p_partkey = ps.ps_partkey AND p.p_brand != 'Brand#45' AND
+                  p.p_type NOT LIKE 'MEDIUM POLISHED%'
+           ) AS psp,
+           Supplier s
+    WHERE psp.ps_suppkey = s.s_suppkey AND s.s_comment NOT LIKE '%Customer%Complaints%'
+)
+
+SELECT p_brand, p_type, p_size, count(ps_suppkey) supplier_cnt
+FROM  (
+    SELECT p_brand, p_type, p_size, ps_suppkey
+    FROM  tmp
+    WHERE p_size = 49 OR p_size = 14 OR p_size = 23 OR p_size = 45 OR p_size = 19
+          OR p_size = 3 OR p_size = 36 OR p_size = 9
+    GROUP BY p_brand, p_type, p_size, ps_suppkey
+) AS t2
+GROUP BY p_brand, p_type, p_size
+ORDER BY supplier_cnt DESC, p_brand, p_type, p_size
+;
